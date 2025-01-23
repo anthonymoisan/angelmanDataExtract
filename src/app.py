@@ -28,5 +28,5 @@ def api_all():
     dict_df = df.to_dict(orient='records') 
     return jsonify(dict_df)
  
-  
-app.run()
+if __name__ == "__main__":  
+    app.run()
