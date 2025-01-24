@@ -1,0 +1,316 @@
+{
+    "Vancouver": {
+        "Hospitals": ["BC Children's Hospital"],
+        "City": "Vancouver, BC, Canada",
+        "Lat": 49.24966,
+        "Lon": -123.11934,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Boston": {
+        "Hospitals": ["Boston Children's Hospital",  "Massachusetts General Hospital"],
+        "City": "Boston, MA, USA",
+        "Lat": 42.35843,
+        "Lon": -71.05977,
+        "Sponsor": "Angelman Syndrome Foundation"},
+    "Boys Town": {
+        "Hospitals": ["Boys Town National Research Hospital"],
+        "City": "Boys Town, NE, USA",
+        "Lat": 41.26111,
+        "Lon": -96.13196,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Los Angeles": {
+        "Hospitals": ["Cedars-Sinai Guerin Children's", "Children's Hospital Los Angeles"],
+        "City": "Los Angeles, CA, USA",
+        "Lat": 34.05223,
+        "Lon": -118.24368,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Dallas":{
+        "Hospitals": ["Children's Health Dallas"],
+        "City": "Dallas, TX, USA",
+        "Lat": 32.78306,
+        "Lon": -96.80667,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Aurora": {
+        "Hospitals": ["Children's Health Colorado"],
+        "City": "Aurora, CO, USA",
+        "Lat":39.72943,
+        "Lon": -104.83192,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Ottawa": {
+        "Hospitals": ["Children's Hospital of Eastern Ontario"],
+        "City": "Ottawa, ON, Canada",
+        "Lat": 45.41117,
+        "Lon": -75.69812,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Philadelphia": {
+        "Hospitals": ["Children's Hospital of Philadelphia"],
+        "City": "Philadelphia, PA, USA",
+        "Lat": 39.95233,
+        "Lon": -75.16379,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Kansas City": {
+        "Hospitals": ["Children's Mercy Kansas City"],
+        "City": "Kansas City, MO, USA",
+        "Lat": 39.09973,
+        "Lon": -94.57857,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Cincinatti": {
+        "Hospitals": ["Cincinnati Children's Hospital"],
+        "City": "Cincinatti, OH, USA",
+        "Lat": 39.12713,
+        "Lon": -84.51435,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Lewisburg": {
+        "Hospitals": ["Geisinger Autism & Developmental Medicine Institute"],
+        "City": "Lewisburg, PA, USA",
+        "Lat": 40.96453,
+        "Lon": -76.88441,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Baltimore": {
+        "Hospitals": ["Kennedy Krieger Institute"],
+        "City": "Baltimore, MD, USA",
+        "Lat": 39.29038,
+        "Lon": -76.61219,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Rochester": {
+        "Hospitals": ["Mayo Clinic"],
+        "City": "Rochester, MN, USA",
+        "Lat": 44.02163,
+        "Lon": -92.4699,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "St. Paul": {
+        "Hospitals": ["Minnesota Epilepsy Group"],
+        "City": "St. Paul, MN, USA",
+        "Lat": 44.94441,
+        "Lon": -93.09327,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Montreal": {
+        "Hospitals": ["Montréal Children's Hospital"],
+        "City": "Montréal, QC, Canada",
+        "Lat": 45.50884,
+        "Lon": -73.58781,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Miami": {
+        "Hospitals": ["Nicklaus Children's Hospital"],
+        "City": "Miami, FL, USA",
+        "Lat": 25.77427,
+        "Lon": -80.19366,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "New York": {
+        "Hospitals": ["NYU Langone Health", "Weill Cornell Medicine"],
+        "City": "New York, NY, USA",
+        "Lat": 40.71427,
+        "Lon": -74.00597,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "San Diego": {
+        "Hospitals": ["Rady Children's Hospital"],
+        "City": "San Diego, CA, USA",
+        "Lat": 32.71533,
+        "Lon": -117.15726,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Chicago": {
+        "Hospitals": ["Rush University Medical Center"],
+        "City": "Chicago, IL, USA",
+        "Lat": 41.85003,
+        "Lon": -87.65005,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Houston": {
+        "Hospitals" : ["Texas Children's Hospital", "Baylor College of Medicine", "Baylor College of Medicine, Texas Children's Hospital"],
+        "City": "Houston, TX, USA",
+        "Lat": 29.76328,
+        "Lon": -95.36327,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "San Francisco": {
+        "Hospitals": ["UCSF Benioff Children's Hospital"],
+        "City": "San Francisco, CA, USA",
+        "Lat": 37.77493,
+        "Lon": -122.41942,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Carrboro": {
+        "Hospitals": ["UNC Carolina Institute for Developmental Disabilities", "University of North Carolina at Chapel Hill School of Medicine"],
+        "City": "Carrboro, NC, USA",
+        "Lat": 35.91014,
+        "Lon": -79.07529,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Nashville": {
+        "Hospitals": ["Vanderbilt University Medical Center"],
+        "City": "Nashville, TN, USA",
+        "Lat": 36.16589,
+        "Lon": -86.78444,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Buenos Aires": {
+        "Hospitals": ["ASF Clinic Buenos Aires"],
+        "City": "San Isidro, Buenos Aires, Argentina",
+        "Lat": -34.4721,
+        "Lon": -58.52708,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Rotterdam": {
+        "Hospitals": ["Erasmus Medical Center Sophia Children's Hospital", "Erasmus MC", "Sophia Kinderziekenhuis"],
+        "City": "Rotterdam, ZH, The Netherlands",
+        "Lat": 51.9225,
+        "Lon": 4.47917,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Munich": {
+        "Hospitals": ["Angelman Center Munich"],
+        "City": "Munich, BY, Germany",
+        "Lat": 48.13743,
+        "Lon": 11.57549,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Aachen": {
+        "Hospitals": ["University Hospital RWTH Aachen", "Angelman Center Aachen"],
+        "City": "Aachen, NW, Germany",
+        "Lat": 50.77664,
+        "Lon": 6.08342,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Leipzig": {
+        "Hospitals": ["Universitaetsklinikum Leipzig", "Angelman Center Leipzig"],
+        "City": "Leipzig, SN, Germany",
+        "Lat": 51.33962,
+        "Lon": 12.37129,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Sabadell": {
+        "Hospitals": ["Corporacio Sanitaria Parc Tauli", "Parc Taulí", "Corporacio Sanitaria Parc Tauli - Hospital de Sabadell"],
+        "City": "Sabadell, Barcelona, Spain",
+        "Lat": 41.54329,
+        "Lon": 2.10942,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Budapest": {
+        "Hospitals": ["Bethesda Children's Hospital, Budapest"],
+        "City": "Budapest, Hungary",
+        "Lat": 47.49801,
+        "Lon": 19.03991,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Ramat Gan": {
+        "Hospitals": ["Sheba Medical Center", "Edmond and Lily Safra Children's Hospital"],
+        "City": "Sderot Gabriela, Ramat Gan, Israel",
+        "Lat": 32.08227,
+        "Lon": 34.81065,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Al Jadaf": {
+        "Hospitals": ["Latifa Women and Children's Hospital", "Al Jalila Children's Hospital"],
+        "City": "Al Jadaf, Dubai, UAE",
+        "Lat": 25.0657,
+        "Lon": 55.17128,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Brisbane": {
+        "Hospitals": ["Queensland Children's Hospital"],
+        "City": "South Brisbane, QLD, Australia",
+        "Lat": -27.48034,
+        "Lon": 153.02049,
+        "Sponsor": "FAST Australia"
+    },
+    "Melbourne": {
+        "Hospitals": ["Royal Children's Hospital"],
+        "City": "Melbourne, VIC, Australia",
+        "Lat": -37.814,
+        "Lon": 144.96332,
+        "Sponsor": "FAST Australia"
+    },
+    "Sydney": {
+        "Hospitals": ["Sydney Children's Hospital"],
+        "City": "Randwick, NSW, Australia",
+        "Lat": -33.91439,
+        "Lon": 151.24895,
+        "Sponsor": "FAST Australia"
+    },
+    "Manchester": {
+        "Hospitals": ["St Mary’s Hospital", "St Mary's Hospital, Manchester", "Saint Mary's Hospital, Central Manchester NHS Foundation Trust", "St Mary's Hospital, Manchester Academic Health Science Centre"],
+        "City": "Manchester, England, UK",
+        "Lat": 53.48076,
+        "Lon": -2.24263,
+        "Sponsor": "AngelmanUK"
+    },
+    "Paris":{
+        "Hospitals": ["Hôpital Necker-Enfants Malades APHP", "Necker Children's Hospital", "Groupe Hospitalier Pitie Salpetriere", "Aphp - Pitie Salpetriere", "Hopital La Pitie Salpetriere"],
+        "City": "Paris, Île-de-France, France",
+        "Lat": 48.85341,
+        "Lon": 2.3488,
+        "Sponsor": "National Health Ministry"
+    },
+    "Marseille": {
+        "Hospitals": ["Hôpital de la Timone", "AP-HM"],
+        "City": "Marseille, Provence-Alpes-Côte d'Azur, France",
+        "Lat": 43.29551,
+        "Lon": 5.38958,
+        "Sponsor": "National Health Ministry"
+    },
+    "Rouen": {
+        "Hospitals": ["CHU de Rouen", "Centre Hospitalier Universitaire de Rouen", "Rouen University Hospital"],
+        "City": "Rouen, Normandy, France",
+        "Lat": 49.44313,
+        "Lon": 1.09932,
+        "Sponsor": "National Health Ministry"
+    },
+    "Strasbourg": {
+        "Hospitals": ["CHU de Strasbourg", "Les Hôpitaux Universitaires de Strasbourg"],
+        "City": "Strasbourg, Alsace, France",
+        "Lat": 48.58392,
+        "Lon": 7.74553,
+        "Sponsor": "National Health Ministry"
+    },
+    "Garches": {
+        "Hospitals": ["Hôpital Raymond Poincaré", "Raymond Poincaré Hospital"],
+        "City": "Garches, Île-de-France, France",
+        "Lat": 48.84226,
+        "Lon": 2.18232,
+        "Sponsor": "National Health Ministry"
+    },
+    "Tours": {
+        "Hospitals": ["CHRU de Tours - Hopital Trousseau"],
+        "City": "Tours, Centre-Val de Loire, France",
+        "Lat": 47.38333,
+        "Lon": 0.68333,
+        "Sponsor": "National Health Ministry"
+    },
+    "Nantes": {
+        "Hospitals": ["CHU de Nantes", "Hôpital Mère-Enfant", "Hôpital Mère-Enfant de Nantes", "CHU", "Nantes University Hospital"],
+        "City": "Nantes, Pays de la Loire, France",
+        "Lat": 47.21725,
+        "Lon": -1.55336,
+        "Sponsor": "National Health Ministry"
+    },
+    "Toulouse": {
+        "Hospitals": ["CHU Toulouse", "Hôpital des Enfants"],
+        "City": "Toulouse, Occitania, France",
+        "Lat": 43.60426,
+        "Lon": 1.44367,
+        "Sponsor": "National Health Ministry"
+    },
+    "Besancon": {
+        "Hospitals": ["CHU de Besançon", "Hôpital Jean Minjoz"],
+        "City": "Besançon, Franche-Comte, France",
+        "Lat": 47.24878,
+        "Lon": 6.01815,
+        "Sponsor": "National Health Ministry"
+    }
+}
