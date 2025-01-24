@@ -1,0 +1,18 @@
+// supprimer un fichier en git
+git rm file.txt
+
+//git status
+
+//git clone projet .git
+
+//modification
+git add file
+
+//git commit -m "message"
+
+//git push
+
+//git pull
+
+//pour ne pas avoir des packages conda bizarre
+pip list --format=freeze > requirements.txt
