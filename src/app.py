@@ -14,6 +14,7 @@ import scraperASTrial as scrASTrial
 import os
 import json
 import pandas as pd
+import math
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
@@ -24,8 +25,6 @@ def home():
     return '''<h1>APIs</h1>
 <p>API in order for scraping data from PubMed</p>'''
 
-
- 
  
 @app.route('/api/v1/resources/articlesPubMed', methods=['GET'])
 def api_articles_all():
@@ -39,7 +38,8 @@ def api_articles_all():
 def api_ASTrials_all():
     df =  scrASTrial.as_trials()
     # The fonction jsonify from Flask convert a dictionnary Python
-    # in JSON format. We need to convert the dataframe Panda in a dictionnary    
+    # in JSON format. We need to convert the dataframe Panda in a dictionnary   
+    df.fillna("None",inplace = True)
     dict_df = df.to_dict(orient='records') 
     return jsonify(dict_df)
 

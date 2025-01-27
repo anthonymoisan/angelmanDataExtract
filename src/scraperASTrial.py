@@ -128,6 +128,8 @@ def as_trials():
     as_trials_locs_df1["Hover_City"] = as_trials_locs_df1[
         ["City", "State", "Country"]
     ].apply(lambda x: x.str.cat(sep=", "), axis=1)
+    
+   
 
     lat_lon_df = as_trials_locs_df1[["Lat", "Lon"]].drop_duplicates()
 
@@ -154,6 +156,7 @@ def as_trials():
         subset=["NCT_ID", "Facility", "Dedupe_City"]
     ).sort_values(by=["NCT_ID", "Dedupe_City", "Facility_dedupe"])
 
+   
     #all_cities.to_csv(f"{wkdir}/data/all_cities.csv", index=False)
 
     final_as_trials_locs = (
@@ -167,13 +170,12 @@ def as_trials():
     )
 
     #final_as_trials_locs.to_csv(f"{wkdir}/data/final_as_trials_locs.csv", index=False)
+    #all_cities = all_cities.set_index('NCT_ID')
     
     return all_cities
 
 if __name__ == "__main__":
-    # PULL PUBMED DATA
     # Get working directory
     wkdir = os.path.dirname(__file__)
-        
     all_cities = as_trials()
-    all_cities.to_csv(f"{wkdir}/../data/all_cities.csv")
+    all_cities.to_csv(f"{wkdir}/../data/all_cities.csv", index=False)
