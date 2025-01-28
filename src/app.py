@@ -30,7 +30,8 @@ def home():
 def api_articles_all():
     df =  scrPubMed.pubmed_by_year(1965)
     # The fonction jsonify from Flask convert a dictionnary Python
-    # in JSON format. We need to convert the dataframe Panda in a dictionnary    
+    # in JSON format. We need to convert the dataframe Panda in a dictionnary
+    df.fillna("None",inplace = True)    
     dict_df = df.to_dict(orient='records') 
     return jsonify(dict_df)
 
@@ -50,6 +51,7 @@ def api_ASFClinicaltrials_all():
         clinics_json = json.load(f)
     clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics.json", orient="index")
     df =  scrASFClinicalTrial.trials_asf_clinics(clinics_json_df,clinics_json)
+    df.fillna("None",inplace = True)
     # The fonction jsonify from Flask convert a dictionnary Python
     # in JSON format. We need to convert the dataframe Panda in a dictionnary    
     dict_df = df.to_dict(orient='records') 

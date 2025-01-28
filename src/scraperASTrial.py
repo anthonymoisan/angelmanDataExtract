@@ -170,7 +170,6 @@ def as_trials():
     )
 
     #final_as_trials_locs.to_csv(f"{wkdir}/data/final_as_trials_locs.csv", index=False)
-    #all_cities = all_cities.set_index('NCT_ID')
     
     return all_cities
 
