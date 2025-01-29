@@ -10,6 +10,9 @@ import time
 from datetime import datetime
 import os
 import numpy as np
+from configparser import ConfigParser
+
+
 
 def get_un_locations(locations_url):
     """
@@ -77,7 +80,6 @@ def get_country_pops(auth_token, indicators, start_year, end_year, countries_lis
                 response = requests.get(url, headers=headers, params=params)
                 i += 1
 
-        # print(response.json())
         response_json = response.json()
 
         # Convert json response to dataframe
@@ -112,7 +114,7 @@ def get_country_pops(auth_token, indicators, start_year, end_year, countries_lis
     return pop_df
 
 
-def un_population():
+def un_population(auth_token):
     """
     Pull national level UN population estimates to feed a map in the patient population
     section of the dashboard. Collect most recent data, then divide by 15000 to meet the
@@ -125,10 +127,6 @@ def un_population():
     countries_df = get_un_locations(f"{base_path}/locations")
     time.sleep(2)
 
-    # Read in api bearer token
-    with open(f"{key_dir}/un_population_bearer_token.txt") as api_txt:
-        auth_token = api_txt.read()
-
     # Set values for calling data api
     indicators = "70"
     start_year = datetime.now().year - 2
@@ -140,14 +138,17 @@ def un_population():
     locations_3 = ",".join(countries_df.loc[countries_df.index[200:300], "id"])
 
     # Call data api for all countries and concatenate all results
+    print("--- Pop 100 ---")
     pop_df_1 = get_country_pops(
         auth_token, indicators, start_year, end_year, locations_1
     )
     time.sleep(2)
+    print("--- Pop 200 ---")
     pop_df_2 = get_country_pops(
         auth_token, indicators, start_year, end_year, locations_2
     )
     time.sleep(2)
+    print("--- Pop 300 ---")
     pop_df_3 = get_country_pops(
         auth_token, indicators, start_year, end_year, locations_3
     )
@@ -188,10 +189,16 @@ def un_population():
     return un_pop_final_df
     
 if __name__ == "__main__":
-    # PULL PUBMED DATA
     # Get working directory
     wkdir = os.path.dirname(__file__)
-    key_dir = os.path.normpath(os.path.join(wkdir, "../angelman_viz_keys"))
     
-    un_pop_final_df = un_population()
-    un_pop_final_df.to_csv(f"{wkdir}/../data/un_wpp_pivot_data.csv", index=False)
+    config = ConfigParser()
+    filePath = f"{wkdir}/../angelman_viz_keys/Config3.ini"
+    if config.read(filePath):
+        auth_token = config['UnPopulation']['bearerToken']
+        un_pop_final_df = un_population(auth_token)
+        un_pop_final_df.to_csv(f"{wkdir}/../data/un_wpp_pivot_data.csv", index=False)
+    else:
+        print("Error Config3.ini File with auth_token")
+    
+    
