@@ -26,9 +26,15 @@ app.config["DEBUG"] = True
 @app.route('/', methods=['GET'])
 def home():
     return '''<h1>APIs</h1>
-<p>API in order for scraping data from PubMed</p>'''
+<ul>    
+<li>API in order for scraping data from PubMed : <a href="./api/v1/resources/articlesPubMed">./api/v1/resources/articlesPubMed</a></li>
+<li>API in order for scraping data from AS Trial : <a href="./api/v1/resources/ASTrials">./api/v1/resources/ASTrials</a></li>
+<li>API in order for scraping data from UN Population : <a href="./api/v1/resources/UnPopulation">./api/v1/resources/UnPopulation</a></li>
+<li>API in order for scraping data from ASF Clinical Trials : <a href="./api/v1/resources/ASFClinicalTrials">./api/v1/resources/ASFClinicalTrials</a></li>
+</ul>
+'''
 
- 
+
 @app.route('/api/v1/resources/articlesPubMed', methods=['GET'])
 def api_articles_all():
     start = time.time()
