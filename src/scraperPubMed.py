@@ -10,6 +10,8 @@ import pandas as pd
 import os
 from lxml import etree
 from bs4 import BeautifulSoup, Tag
+import time
+
 
 def pubmed_details(query_key, web_env):
     """
@@ -98,9 +100,11 @@ def pubmed_by_year(minyear):
     
 
 if __name__ == "__main__":
+    start = time.time()
     # PULL PUBMED DATA
     # Get working directory
     wkdir = os.path.dirname(__file__)
         
     pubmed_df = pubmed_by_year(1965)
     pubmed_df.to_csv(f"{wkdir}/../data/pub_details_df.csv")
+    print("Execute time : ",round(time.time() - start,2), "s")

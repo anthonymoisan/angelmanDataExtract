@@ -108,7 +108,7 @@ def get_country_pops(auth_token, indicators, start_year, end_year, countries_lis
         if next_page is None:
             break
         else:
-            time.sleep(2)
+            #time.sleep(2)
             page_num += 1
 
     return pop_df
@@ -189,6 +189,7 @@ def un_population(auth_token):
     return un_pop_final_df
     
 if __name__ == "__main__":
+    start = time.time()
     # Get working directory
     wkdir = os.path.dirname(__file__)
     
@@ -200,5 +201,7 @@ if __name__ == "__main__":
         un_pop_final_df.to_csv(f"{wkdir}/../data/un_wpp_pivot_data.csv", index=False)
     else:
         print("Error Config3.ini File with auth_token")
+    
+    print("Execute time : ",round(time.time() - start,2), "s")
     
     

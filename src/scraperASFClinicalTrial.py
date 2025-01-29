@@ -294,6 +294,7 @@ def trials_asf_clinics(clinics_json_df, clinics_json):
 
     
 if __name__ == "__main__":
+    start = time.time()
     wkdir = os.path.dirname(__file__)
     with open(f"{wkdir}/../data/asf_clinics.json") as f:
         clinics_json = json.load(f)
@@ -302,3 +303,4 @@ if __name__ == "__main__":
     #asf_all_trials_raw_trial_df = trials_asf_clinics(clinics_json_df, clinics_json)
     asf_all_trials_raw_trial_df = trials_asf_clinics(clinics_json_df,clinics_json )
     asf_all_trials_raw_trial_df.to_csv(f"{wkdir}/../data/asf_clinics_raw_trial_data.csv", index=False)
+    print("Execute time : ",round(time.time() - start,2), "s")
