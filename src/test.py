@@ -1,7 +1,7 @@
-import scraperPubMed as scrPubMed
-import scraperASFClinicalTrial as scrASFClinicalTrial
-import scraperASTrial as scrASTrial
-import scraperPopulation as scrPopulation
+import scraper.scraperPubMed as scrPubMed
+import scraper.scraperASFClinicalTrial as scrASFClinicalTrial
+import scraper.scraperASTrial as scrASTrial
+import scraper.scraperPopulation as scrPopulation
 import time
 import os
 from configparser import ConfigParser

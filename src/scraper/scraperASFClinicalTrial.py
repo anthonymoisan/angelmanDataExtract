@@ -296,11 +296,9 @@ def trials_asf_clinics(clinics_json_df, clinics_json):
 if __name__ == "__main__":
     start = time.time()
     wkdir = os.path.dirname(__file__)
-    with open(f"{wkdir}/../data/asf_clinics.json") as f:
+    with open(f"{wkdir}/../../data/asf_clinics.json") as f:
         clinics_json = json.load(f)
-    clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics.json", orient="index")
-    #fileJSon = {'file': open(f"{wkdir}/../data/asf_clinics.json", 'rb')}  # Specify the file you want 
-    #asf_all_trials_raw_trial_df = trials_asf_clinics(clinics_json_df, clinics_json)
+    clinics_json_df = pd.read_json(f"{wkdir}/../../data/asf_clinics.json", orient="index")
     asf_all_trials_raw_trial_df = trials_asf_clinics(clinics_json_df,clinics_json )
-    asf_all_trials_raw_trial_df.to_csv(f"{wkdir}/../data/asf_clinics_raw_trial_data.csv", index=False)
+    asf_all_trials_raw_trial_df.to_csv(f"{wkdir}/../../data/asf_clinics_raw_trial_data.csv", index=False)
     print("Execute time : ",round(time.time() - start,2), "s")

@@ -179,5 +179,5 @@ if __name__ == "__main__":
     # Get working directory
     wkdir = os.path.dirname(__file__)
     all_cities = as_trials()
-    all_cities.to_csv(f"{wkdir}/../data/all_cities.csv", index=False)
+    all_cities.to_csv(f"{wkdir}/../../data/all_cities.csv", index=False)
     print("Execute time : ",round(time.time() - start,2), "s")

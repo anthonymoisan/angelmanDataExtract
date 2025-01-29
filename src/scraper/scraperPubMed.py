@@ -106,5 +106,5 @@ if __name__ == "__main__":
     wkdir = os.path.dirname(__file__)
         
     pubmed_df = pubmed_by_year(1965)
-    pubmed_df.to_csv(f"{wkdir}/../data/pub_details_df.csv")
+    pubmed_df.to_csv(f"{wkdir}/../../data/pub_details_df.csv")
     print("Execute time : ",round(time.time() - start,2), "s")

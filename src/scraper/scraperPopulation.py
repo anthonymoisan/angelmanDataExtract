@@ -194,11 +194,11 @@ if __name__ == "__main__":
     wkdir = os.path.dirname(__file__)
     
     config = ConfigParser()
-    filePath = f"{wkdir}/../angelman_viz_keys/Config3.ini"
+    filePath = f"{wkdir}/../../angelman_viz_keys/Config3.ini"
     if config.read(filePath):
         auth_token = config['UnPopulation']['bearerToken']
         un_pop_final_df = un_population(auth_token)
-        un_pop_final_df.to_csv(f"{wkdir}/../data/un_wpp_pivot_data.csv", index=False)
+        un_pop_final_df.to_csv(f"{wkdir}/../../data/un_wpp_pivot_data.csv", index=False)
     else:
         print("Error Config3.ini File with auth_token")
     

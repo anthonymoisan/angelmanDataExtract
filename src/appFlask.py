@@ -8,10 +8,10 @@ API Rest with Flask
 # Import de bibliothèques
 import flask
 from flask import jsonify
-import scraperPubMed as scrPubMed
-import scraperASFClinicalTrial as scrASFClinicalTrial
-import scraperASTrial as scrASTrial
-import scraperPopulation as scrPopulation
+import scraper.scraperPubMed as scrPubMed
+import scraper.scraperASFClinicalTrial as scrASFClinicalTrial
+import scraper.scraperASTrial as scrASTrial
+import scraper.scraperPopulation as scrPopulation
 from configparser import ConfigParser
 import os
 import json

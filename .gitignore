@@ -171,5 +171,4 @@ cython_debug/
 .pypirc
 
 angelman_viz_keys/
-data/*.csv
 src/old/
