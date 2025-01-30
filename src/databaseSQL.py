@@ -213,11 +213,11 @@ def asfClinicalTrials():
 if __name__ == "__main__":
     start = time.time()
     
-    #articlesPubMed()
+    articlesPubMed()
     print("\n")
     asTrials()
     print("\n")
-    #unPopulation()
+    unPopulation()
     print("\n")
-    #asfClinicalTrials()
+    asfClinicalTrials()
     print("\nExecute time : ",round(time.time() - start,2), "s")

@@ -2,7 +2,7 @@
 """
 Created on Wed Jan 22 18:11:40 2025
 API Rest with Flask
-@author: antho
+@author: anthony Moisan
 """
 
 # Import de bibliothèques
@@ -32,6 +32,7 @@ def home():
 <li>API in order for scraping data from ASF Clinical Trials : <a href="./api/v1/resources/ASFClinicalTrials">./api/v1/resources/ASFClinicalTrials</a></li>
 </ul>
 '''
+
 
 @appFlask.route('/api/v1/resources/articlesPubMed', methods=['GET'])
 def api_articles_all():
