@@ -19,11 +19,10 @@ import pandas as pd
 import math
 import time
 
-app = flask.Flask(__name__)
-app.config["DEBUG"] = True
+appFlask = flask.Flask(__name__)
+appFlask.config["DEBUG"] = True
 
-
-@app.route('/', methods=['GET'])
+@appFlask.route('/', methods=['GET'])
 def home():
     return '''<h1>APIs</h1>
 <ul>    
@@ -34,8 +33,7 @@ def home():
 </ul>
 '''
 
-
-@app.route('/api/v1/resources/articlesPubMed', methods=['GET'])
+@appFlask.route('/api/v1/resources/articlesPubMed', methods=['GET'])
 def api_articles_all():
     start = time.time()
     df =  scrPubMed.pubmed_by_year(1965)
@@ -46,7 +44,7 @@ def api_articles_all():
     print("Execute time for articlesPubMed : ",round(time.time() - start,2), "s")
     return jsonify(dict_df)
 
-@app.route('/api/v1/resources/ASTrials', methods=['GET'])
+@appFlask.route('/api/v1/resources/ASTrials', methods=['GET'])
 def api_ASTrials_all():
     start = time.time()
     df =  scrASTrial.as_trials()
@@ -57,7 +55,7 @@ def api_ASTrials_all():
     print("Execute time for ASTrials : ",round(time.time() - start,2), "s")
     return jsonify(dict_df)
 
-@app.route('/api/v1/resources/UnPopulation', methods=['GET'])
+@appFlask.route('/api/v1/resources/UnPopulation', methods=['GET'])
 def api_UnPopulation_all():
     start = time.time()
     wkdir = os.path.dirname(__file__)
@@ -73,7 +71,7 @@ def api_UnPopulation_all():
     print("Execute time for UnPopulation : ",round(time.time() - start,2), "s")
     return jsonify(dict_df)
 
-@app.route('/api/v1/resources/ASFClinicalTrials', methods=['GET'])
+@appFlask.route('/api/v1/resources/ASFClinicalTrials', methods=['GET'])
 def api_ASFClinicaltrials_all():
     start = time.time()
     wkdir = os.path.dirname(__file__)
@@ -88,6 +86,5 @@ def api_ASFClinicaltrials_all():
     print("Execute time for ASFClinicalTrials : ",round(time.time() - start,2), "s") 
     return jsonify(dict_df)
 
- 
 if __name__ == "__main__":  
-    app.run()
+    appFlask.run()

@@ -1,13 +1,12 @@
 from sqlalchemy import create_engine, text
 from sshtunnel import SSHTunnelForwarder
 import sshtunnel
-#import MySQLdb
 import os
 from configparser import ConfigParser
 
 wkdir = os.path.dirname(__file__)
 config = ConfigParser()
-filePath = f"{wkdir}/../angelman_viz_keys/Config2.ini"
+filePath = f"{wkdir}/../../angelman_viz_keys/Config2.ini"
 if config.read(filePath):
     SSH_HOST = config['SSH']['SSH_HOST']
     SSH_USERNAME = config['SSH']['SSH_USERNAME']
