@@ -11,6 +11,7 @@ from thefuzz import process
 import os
 import time
 
+
 def as_trials():
     """
     Call the clinicaltrials.gov api and get list of trials for AS.
@@ -101,13 +102,13 @@ def as_trials():
             "Current_Status",
         ],
     )
-    #as_trials_df.to_csv(f"{wkdir}/data/as_trials_df.csv", index=False)
-    
+    # as_trials_df.to_csv(f"{wkdir}/data/as_trials_df.csv", index=False)
+
     as_trials_locs_df = pd.DataFrame(
         as_trials_locs_list,
         columns=["NCT_ID", "Facility", "City", "State", "Zip", "Country", "Lat", "Lon"],
     )
-    #as_trials_locs_df.to_csv(f"{wkdir}/data/as_trials_locs_df.csv", index=False)
+    # as_trials_locs_df.to_csv(f"{wkdir}/data/as_trials_locs_df.csv", index=False)
 
     loc_type_list = ["City", "State", "Zip", "Country"]
     as_trials_locs_dedup = as_trials_locs_df.loc[
@@ -129,12 +130,10 @@ def as_trials():
     as_trials_locs_df1["Hover_City"] = as_trials_locs_df1[
         ["City", "State", "Country"]
     ].apply(lambda x: x.str.cat(sep=", "), axis=1)
-    
-   
 
     lat_lon_df = as_trials_locs_df1[["Lat", "Lon"]].drop_duplicates()
 
-    #as_trials_locs_df1.to_csv(f"{wkdir}/data/as_trials_locs_df1.csv", index=False)
+    # as_trials_locs_df1.to_csv(f"{wkdir}/data/as_trials_locs_df1.csv", index=False)
     all_cities = pd.DataFrame()
     for city in lat_lon_df.itertuples():
         current_city = as_trials_locs_df1.loc[
@@ -157,8 +156,7 @@ def as_trials():
         subset=["NCT_ID", "Facility", "Dedupe_City"]
     ).sort_values(by=["NCT_ID", "Dedupe_City", "Facility_dedupe"])
 
-   
-    #all_cities.to_csv(f"{wkdir}/data/all_cities.csv", index=False)
+    # all_cities.to_csv(f"{wkdir}/data/all_cities.csv", index=False)
 
     final_as_trials_locs = (
         all_cities.groupby(["Facility_dedupe", "Dedupe_City", "Lat", "Lon"])
@@ -170,7 +168,7 @@ def as_trials():
         .rename(columns={"Facility_dedupe": "Institution", "Dedupe_City": "City"})
     )
 
-    #final_as_trials_locs.to_csv(f"{wkdir}/data/final_as_trials_locs.csv", index=False)
+    # final_as_trials_locs.to_csv(f"{wkdir}/data/final_as_trials_locs.csv", index=False)
     
     return all_cities
 
@@ -180,4 +178,4 @@ if __name__ == "__main__":
     wkdir = os.path.dirname(__file__)
     all_cities = as_trials()
     all_cities.to_csv(f"{wkdir}/../../data/all_cities.csv", index=False)
-    print("Execute time : ",round(time.time() - start,2), "s")
+    print("Execute time : ", round(time.time()-start, 2), "s")
