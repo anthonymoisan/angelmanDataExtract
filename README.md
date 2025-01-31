@@ -41,6 +41,8 @@ The main issue is that we could have timeout issues if the process of the scrape
 
 2) appFlaskMySQL
 
+   ![Image](https://github.com/user-attachments/assets/17f0e809-b420-4c82-b653-81f4ee0deb2a)
+
 The second solution is the best with a task that run automatically to execute the different scrapers and to store the results in MySQL database. The Dashboard only interact with the database MySQL and we don't have with this solution our timeout issue.
 
 ## SQLScript
