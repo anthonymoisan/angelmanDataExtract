@@ -13,7 +13,8 @@ import time
 import numpy as np
 from thefuzz import fuzz, process
 
-def filter_and_replace_fuzzy_match(df, column_name, match_strings, threshold=70):
+
+def __filter_and_replace_fuzzy_match(df, column_name, match_strings, threshold=70):
     """
     Filters rows of the dataframe based on fuzzy matching with a list of strings
     and replaces the original value with the best matching string.
@@ -54,7 +55,7 @@ def filter_and_replace_fuzzy_match(df, column_name, match_strings, threshold=70)
     return filtered_df
 
 
-def parse_trials(trials_json, loc_limiter=False, clinic=None):
+def __parse_trials(trials_json, loc_limiter=False, clinic=None):
     """
     Parse json data returned from api request to clinicaltrials.gov
     We need to parse data for both AS trials overall and trial at AS clinics
@@ -144,12 +145,9 @@ def parse_trials(trials_json, loc_limiter=False, clinic=None):
 
 
 def trials_asf_clinics(clinics_json_df, clinics_json):
-#def trials_asf_clinics(fileJson):
     """
     Pull list of trials that occured at ASF clinics. This will be fed into a map so it can be overlaid with the clinics.
     """
-    #clinics_json = json.load(fileJson)
-    #clinics_json_df = pd.read_json(fileJson, orient='index')
     clinics_json_df = clinics_json_df.explode("Hospitals").rename(
         columns={"Hospitals": "Facility"}
     )
@@ -196,7 +194,7 @@ def trials_asf_clinics(clinics_json_df, clinics_json):
             except KeyError:
                 next_page_token = None
 
-            trial_df_tuple = parse_trials(asf_trials_json)
+            trial_df_tuple = __parse_trials(asf_trials_json)
 
             asf_trials_df = trial_df_tuple[0]
             asf_trials_df["Treatment"] = intervention
@@ -206,7 +204,7 @@ def trials_asf_clinics(clinics_json_df, clinics_json):
                     (asf_trials_locs_df["Lat"] == clinic["Lat"])
                     & (asf_trials_locs_df["Lon"] == clinic["Lon"])
                 ]
-                asf_trials_locs_df = filter_and_replace_fuzzy_match(
+                asf_trials_locs_df = __filter_and_replace_fuzzy_match(
                     asf_trials_locs_df, "Facility", clinic["Hospitals"], threshold=70
                 )
                 asf_trials_locs_df.loc[:, ["Hover_City"]] = clinic["City"]
@@ -242,7 +240,7 @@ def trials_asf_clinics(clinics_json_df, clinics_json):
                 except KeyError:
                     next_page_token = None
 
-                trial_df_tuple = parse_trials(asf_trials_json)
+                trial_df_tuple = __parse_trials(asf_trials_json)
                 asf_trials_df = trial_df_tuple[0]
                 asf_trials_df["Treatment"] = intervention
                 try:
@@ -251,7 +249,7 @@ def trials_asf_clinics(clinics_json_df, clinics_json):
                         (asf_trials_locs_df["Lat"] == clinic["Lat"])
                         & (asf_trials_locs_df["Lon"] == clinic["Lon"])
                     ]
-                    asf_trials_locs_df = filter_and_replace_fuzzy_match(
+                    asf_trials_locs_df = __filter_and_replace_fuzzy_match(
                         asf_trials_locs_df,
                         "Facility",
                         clinic["Hospitals"],
@@ -272,16 +270,16 @@ def trials_asf_clinics(clinics_json_df, clinics_json):
         columns=["Hover_City", "City", "State", "Zip", "Country"], inplace=True
     )
 
-    #pivot_asf_trials_locs = pd.pivot_table(
+    # pivot_asf_trials_locs = pd.pivot_table(
     #   asf_all_trials_merge_df,
     #    values="NCT_ID",
     #    aggfunc=pd.Series.nunique,
     #    index=["Facility", "Lat", "Lon"],
     #    columns=["Treatment"],
     #    fill_value=0,
-    #)
-    #pivot_asf_trials_locs.reset_index(inplace=True)
-    #final_asf_trials_locs = (
+    # )
+    # pivot_asf_trials_locs.reset_index(inplace=True)
+    # final_asf_trials_locs = (
     #    clinics_json_df.merge(
     #        pivot_asf_trials_locs, how="left", on=["Lat", "Lon", "Facility"]
     #    )
@@ -289,16 +287,16 @@ def trials_asf_clinics(clinics_json_df, clinics_json):
     #    .fillna(value=0)
     #    .astype({"ASO": "int", "gene_therapy": "int"})
     #    .rename(columns={"Facility": "Institution"})
-    #)
+    # )
     return asf_all_trials_merge_df
 
-    
+
 if __name__ == "__main__":
     start = time.time()
     wkdir = os.path.dirname(__file__)
     with open(f"{wkdir}/../../data/asf_clinics.json") as f:
         clinics_json = json.load(f)
     clinics_json_df = pd.read_json(f"{wkdir}/../../data/asf_clinics.json", orient="index")
-    asf_all_trials_raw_trial_df = trials_asf_clinics(clinics_json_df,clinics_json )
+    asf_all_trials_raw_trial_df = trials_asf_clinics(clinics_json_df, clinics_json)
     asf_all_trials_raw_trial_df.to_csv(f"{wkdir}/../../data/asf_clinics_raw_trial_data.csv", index=False)
-    print("Execute time : ",round(time.time() - start,2), "s")
+    print("Execute time : ", round(time.time()-start, 2), "s")
