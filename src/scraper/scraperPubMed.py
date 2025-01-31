@@ -95,7 +95,6 @@ def pubmed_by_year(minyear):
         details_df = pubmed_details(query_key, web_env)
     else:
         details_df = pd.DataFrame()
-
     return details_df
     
 
