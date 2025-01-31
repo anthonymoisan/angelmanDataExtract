@@ -22,70 +22,90 @@ import time
 appFlask = flask.Flask(__name__)
 appFlask.config["DEBUG"] = True
 
+
 @appFlask.route('/', methods=['GET'])
 def home():
+    """
+    Explain the endpoints of the API
+    """
     return '''<h1>APIs</h1>
-<ul>    
-<li>API in order for scraping data from PubMed : <a href="./api/v1/resources/articlesPubMed">./api/v1/resources/articlesPubMed</a></li>
-<li>API in order for scraping data from AS Trial : <a href="./api/v1/resources/ASTrials">./api/v1/resources/ASTrials</a></li>
-<li>API in order for scraping data from UN Population : <a href="./api/v1/resources/UnPopulation">./api/v1/resources/UnPopulation</a></li>
-<li>API in order for scraping data from ASF Clinical Trials : <a href="./api/v1/resources/ASFClinicalTrials">./api/v1/resources/ASFClinicalTrials</a></li>
-</ul>
-'''
+    <ul>
+    <li>API in order for scraping data from PubMed : <a href="./api/v1/resources/articlesPubMed">./api/v1/resources/articlesPubMed</a></li>
+    <li>API in order for scraping data from AS Trial : <a href="./api/v1/resources/ASTrials">./api/v1/resources/ASTrials</a></li>
+    <li>API in order for scraping data from UN Population : <a href="./api/v1/resources/UnPopulation">./api/v1/resources/UnPopulation</a></li>
+    <li>API in order for scraping data from ASF Clinical Trials : <a href="./api/v1/resources/ASFClinicalTrials">./api/v1/resources/ASFClinicalTrials</a></li>
+    </ul>
+    '''
 
 
 @appFlask.route('/api/v1/resources/articlesPubMed', methods=['GET'])
 def api_articles_all():
+    """
+    API to expose the results from articles AS from Pub Med but we execute the scraper to obtain the results
+    """
     start = time.time()
-    df =  scrPubMed.pubmed_by_year(1965)
+    df = scrPubMed.pubmed_by_year(1965)
     # The fonction jsonify from Flask convert a dictionnary Python
     # in JSON format. We need to convert the dataframe Panda in a dictionnary
-    df.fillna("None",inplace = True)    
+    df.fillna("None", inplace=True)
     dict_df = df.to_dict(orient='records') 
-    print("Execute time for articlesPubMed : ",round(time.time() - start,2), "s")
+    print("Execute time for articlesPubMed : ", round(time.time()-start, 2), "s")
     return jsonify(dict_df)
+
 
 @appFlask.route('/api/v1/resources/ASTrials', methods=['GET'])
 def api_ASTrials_all():
+    """
+    API to expose the results from AS trials but we execute the scraper to obtain the results
+    """
     start = time.time()
-    df =  scrASTrial.as_trials()
+    df = scrASTrial.as_trials()
     # The fonction jsonify from Flask convert a dictionnary Python
     # in JSON format. We need to convert the dataframe Panda in a dictionnary   
-    df.fillna("None",inplace = True)
+    df.fillna("None", inplace=True)
     dict_df = df.to_dict(orient='records') 
-    print("Execute time for ASTrials : ",round(time.time() - start,2), "s")
+    print("Execute time for ASTrials : ", round(time.time()-start, 2), "s")
     return jsonify(dict_df)
+
 
 @appFlask.route('/api/v1/resources/UnPopulation', methods=['GET'])
 def api_UnPopulation_all():
+    """
+    API to expose the results from Un Population but we execute the scraper to obtain the results
+    """
     start = time.time()
     wkdir = os.path.dirname(__file__)
     config = ConfigParser()
     filePath = f"{wkdir}/../angelman_viz_keys/Config3.ini"
     if config.read(filePath):
         auth_token = config['UnPopulation']['bearerToken']
-    df =  scrPopulation.un_population(auth_token)
+    df = scrPopulation.un_population(auth_token)
     # The fonction jsonify from Flask convert a dictionnary Python
     # in JSON format. We need to convert the dataframe Panda in a dictionnary   
-    df.fillna("None",inplace = True)
+    df.fillna("None", inplace=True)
     dict_df = df.to_dict(orient='records') 
-    print("Execute time for UnPopulation : ",round(time.time() - start,2), "s")
+    print("Execute time for UnPopulation : ", round(time.time()-start, 2), "s")
     return jsonify(dict_df)
+
 
 @appFlask.route('/api/v1/resources/ASFClinicalTrials', methods=['GET'])
 def api_ASFClinicaltrials_all():
+    """
+    API to expose the results from ASF clinical trials but we execute the scraper to obtain the results
+    """
     start = time.time()
     wkdir = os.path.dirname(__file__)
     with open(f"{wkdir}/../data/asf_clinics.json") as f:
         clinics_json = json.load(f)
     clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics.json", orient="index")
-    df =  scrASFClinicalTrial.trials_asf_clinics(clinics_json_df,clinics_json)
-    df.fillna("None",inplace = True)
+    df = scrASFClinicalTrial.trials_asf_clinics(clinics_json_df, clinics_json)
+    df.fillna("None", inplace=True)
     # The fonction jsonify from Flask convert a dictionnary Python
     # in JSON format. We need to convert the dataframe Panda in a dictionnary    
     dict_df = df.to_dict(orient='records')
-    print("Execute time for ASFClinicalTrials : ",round(time.time() - start,2), "s") 
+    print("Execute time for ASFClinicalTrials : ", round(time.time()-start, 2), "s") 
     return jsonify(dict_df)
+
 
 if __name__ == "__main__":  
     appFlask.run()
