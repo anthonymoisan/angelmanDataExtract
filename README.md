@@ -34,6 +34,8 @@ You can execute the two API flask remotely (you need to have an account in Pytho
 
 1) appFlask
 
+   ![Image](https://github.com/user-attachments/assets/e1e26497-0da1-4f02-83d8-d09732d233ab)
+
 The first solution is an API flask where the Dashboard call the different scrapers.
 The main issue is that we could have timeout issues if the process of the scraper is heavy.
 
