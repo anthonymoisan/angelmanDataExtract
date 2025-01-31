@@ -4,7 +4,6 @@ Created on Wed Jan 22 09:26:07 2025
 Pub Med Methods
 @author: antho
 """
-
 import requests
 import pandas as pd
 import os
@@ -63,7 +62,6 @@ def pubmed_details(query_key, web_env):
         details_list,
         columns=["pmid", "journal", "journal_abbrv", "pub_year", "institution"],
     )
-
     return pubmed_details_df
 
 
@@ -83,8 +81,8 @@ def pubmed_by_year(minyear):
     )
     
     pub_tree = etree.fromstring(bytes(ncbi_base.text.strip(), encoding="utf8"))
-    #pub_count = int(pub_tree.find(".//Count").text)
-    #print(pub_count)
+    # pub_count = int(pub_tree.find(".//Count").text)
+    # print(pub_count)
     try:
         uid_list = [u.text for u in pub_tree.iterfind(".//IdList/Id")]
     except ValueError:
@@ -96,7 +94,7 @@ def pubmed_by_year(minyear):
     else:
         details_df = pd.DataFrame()
     return details_df
-    
+   
 
 if __name__ == "__main__":
     start = time.time()
@@ -106,4 +104,4 @@ if __name__ == "__main__":
         
     pubmed_df = pubmed_by_year(1965)
     pubmed_df.to_csv(f"{wkdir}/../../data/pub_details_df.csv")
-    print("Execute time : ",round(time.time() - start,2), "s")
+    print("Execute time : ", round(time.time()-start, 2), "s")
