@@ -141,9 +141,9 @@ def as_trials():
             & (as_trials_locs_df1["Lon"] == city[2])
         ]
         
-        #BE CAREFUL, I DON T FIND A METHOD DEDUPE WITH THIS ARG
-        #facilities_dedup = process.dedupe(current_city["Facility"], threshold=70, len_selector="shortest")
-        facilities_dedup = process.dedupe(current_city["Facility"], threshold=70)
+        #This requires the fork at https://github.com/smtodd/thefuzz
+        facilities_dedup = process.dedupe(current_city["Facility"], threshold=70, len_selector="shortest")
+        # facilities_dedup = process.dedupe(current_city["Facility"], threshold=70)
         current_city["Facility_dedupe"] = current_city["Facility"].apply(
             lambda x: process.extractOne(x, facilities_dedup)[0]
         )
