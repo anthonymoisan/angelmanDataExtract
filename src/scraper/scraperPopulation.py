@@ -87,7 +87,7 @@ def get_country_pops(auth_token, indicators, start_year, end_year, countries_lis
 
         # Keep all ages, 0-17, and 18+ age groups
         temp_filter_pop_df = temp_data_df.loc[
-            (temp_data_df["ageId"].isin([188, 7, 3, 25, 8])),
+            :,
             [
                 "locationId",
                 "location",
@@ -108,7 +108,7 @@ def get_country_pops(auth_token, indicators, start_year, end_year, countries_lis
         if next_page is None:
             break
         else:
-            # time.sleep(2)
+            time.sleep(2)
             page_num += 1
 
     return pop_df
@@ -128,7 +128,7 @@ def un_population(auth_token):
     time.sleep(2)
 
     # Set values for calling data api
-    indicators = "70"
+    indicators = "47"
     start_year = datetime.now().year - 2
     end_year = datetime.now().year - 2
 
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     # Get working directory
     wkdir = os.path.dirname(__file__)
     config = ConfigParser()
-    filePath = f"{wkdir}/../../angelman_viz_keys/Config3.ini"
+    filePath = f"{wkdir}/../../angelman_viz_keys/Config2.ini"
     if config.read(filePath):
         auth_token = config['UnPopulation']['bearerToken']
         un_pop_final_df = un_population(auth_token)
