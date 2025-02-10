@@ -37,7 +37,7 @@ six==1.16.0
 soupsieve==2.5
 SQLAlchemy==2.0.37
 sshtunnel==0.4.0
-git+https://github.com/smtodd/thefuzz.git@master#egg=thefuzz
+git+https://github.com/smtodd/thefuzz.git@import_221#egg=thefuzz
 typing_extensions==4.12.2
 tzdata==2023.3
 urllib3==2.3.0
