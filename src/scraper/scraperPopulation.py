@@ -153,39 +153,22 @@ def un_population(auth_token):
         auth_token, indicators, start_year, end_year, locations_3
     )
 
+    # concatenate dataframes to make one for all countries
     pop_df = pd.concat([pop_df_1, pop_df_2, pop_df_3], axis=0, ignore_index=True)
 
     # 1/15000 people are angels, so divide to get estimate
-    pop_df.loc[:, "wpp_angel_estimate"] = pop_df["value"] / 15000
+    pop_df.loc[:, "angelPopEstimate"] = pop_df["value"] / 15000
     pop_df["value"] = pop_df["value"].round().astype(int)
-    pop_df["wpp_angel_estimate"] = pop_df["wpp_angel_estimate"].round().astype(int)
+    pop_df["angelPopEstimate"] = pop_df["angelPopEstimate"].round().astype(int)
 
-    pop_total_df = (
-        pop_df.loc[
-            pop_df["ageLabel"] == "Total", pop_df.columns != "wpp_angel_estimate"
-        ]
-        .drop_duplicates()
-        .drop(columns="ageLabel")
-    )
-    pop_angel_df = pop_df.loc[:, ["iso3", "ageLabel", "wpp_angel_estimate"]]
-    pop_angel_wide_df = pop_angel_df.pivot_table(
-        values="wpp_angel_estimate", columns="ageLabel", index="iso3"
-    ).reset_index()
-
-    un_pop_final_df = pop_total_df.merge(
-        pop_angel_wide_df, how="left", on="iso3"
-    ).rename(
-        columns={
-            "value": "total_population",
-            "0-4": "angels_0-4",
-            "5-10": "angels_5-10",
-            "11-17": "angels_11-17",
-            "18+": "angels_18+",
-            "Total": "angels_Total",
-        }
+    # Rename columns for clarity
+    pop_df.rename(
+        columns={"location": "countryName", "iso3": "countryIso3_code",
+                 "timeLabel": "year", "ageID": "wppAgeIdCode", "ageLabel": "Age",
+                 "value": "totalPopEstimate"}
     )
 
-    un_pop_final_df.loc[:, 'angels_color'] = np.log(un_pop_final_df['angels_Total'])
+    un_pop_final_df.loc[:, 'angels_color'] = np.log(un_pop_final_df['angelPopEstimate'])
     return un_pop_final_df
 
 
