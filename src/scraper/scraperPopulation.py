@@ -132,29 +132,17 @@ def un_population(auth_token):
     start_year = datetime.now().year - 2
     end_year = datetime.now().year - 2
 
-    # Separate out countries into groups of 100
-    locations_1 = ",".join(countries_df.loc[countries_df.index[0:100], "id"])
-    locations_2 = ",".join(countries_df.loc[countries_df.index[100:200], "id"])
-    locations_3 = ",".join(countries_df.loc[countries_df.index[200:300], "id"])
-
-    # Call data api for all countries and concatenate all results
-    print("--- Pop 100 ---")
-    pop_df_1 = get_country_pops(
-        auth_token, indicators, start_year, end_year, locations_1
-    )
-    time.sleep(2)
-    print("--- Pop 200 ---")
-    pop_df_2 = get_country_pops(
-        auth_token, indicators, start_year, end_year, locations_2
-    )
-    time.sleep(2)
-    print("--- Pop 300 ---")
-    pop_df_3 = get_country_pops(
-        auth_token, indicators, start_year, end_year, locations_3
-    )
+    # Separate out countries into groups of 100 and call data api for all countries
+    pop_dfs = []
+    for i in range(0, len(countries_df), 100):
+        locations = ",".join(countries_df.loc[countries_df.index[i:i+100], "id"])
+        print(f"--- Pop {i+100} ---")
+        pop_df = get_country_pops(auth_token, indicators, start_year, end_year, locations)
+        pop_dfs.append(pop_df)
+        time.sleep(2)
 
     # concatenate dataframes to make one for all countries
-    pop_df = pd.concat([pop_df_1, pop_df_2, pop_df_3], axis=0, ignore_index=True)
+    pop_df = pd.concat(pop_dfs, axis=0, ignore_index=True)
 
     # 1/15000 people are angels, so divide to get estimate
     pop_df.loc[:, "angelPopEstimate"] = pop_df["value"] / 15000
