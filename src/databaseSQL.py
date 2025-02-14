@@ -5,7 +5,7 @@ import os
 from configparser import ConfigParser
 import time
 import scraper.scraperPubMed as scrPubMed
-import scraper.scraperASTrial as scrASTrial
+import scraper.scraperASTrial as scrASTrialBis
 import scraper.scraperPopulation as scrPopulation
 import scraper.scraperASFClinicalTrial as scrASFClinicalTrial
 import pandas as pd
@@ -161,7 +161,7 @@ def asTrials():
 
     print("--- Scraper")
     # 2) Use scraper to obtain dataframe
-    df = scrASTrial.as_trials()
+    df = scrASTrialBis.as_trials()
     df = df.replace([np.inf, -np.inf], np.nan)
     df.fillna("None", inplace=True)
 
@@ -265,11 +265,11 @@ if __name__ == "__main__":
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
-    articlesPubMed()
+    #articlesPubMed()
     print("\n")
     asTrials()
     print("\n")
-    unPopulation()
+    #unPopulation()
     print("\n")
-    asfClinicalTrials()
+    #asfClinicalTrials()
     print("\nExecute time : ", round(time.time()-start, 2), "s")

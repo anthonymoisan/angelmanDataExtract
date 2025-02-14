@@ -175,3 +175,6 @@ src/old/
 
 # VS Code
 .vscode/
+
+data/*.csv
+data/all_cities.json

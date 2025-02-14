@@ -32,6 +32,7 @@ def pubmed_details(query_key, web_env):
 
     details_list = []
     soup = BeautifulSoup(details_base.content, "lxml-xml")
+
     pubs = soup.find_all("MedlineCitation")
     for pub in pubs:
         pmid = pub.find("PMID").text

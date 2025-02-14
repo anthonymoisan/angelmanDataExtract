@@ -10,7 +10,180 @@ import pandas as pd
 from thefuzz import process
 import os
 import time
+import json
 
+def __getNctId(study):
+    return study["protocolSection"]["identificationModule"]["nctId"]
+
+def __getOrganization(study):
+    return study["protocolSection"]["identificationModule"]["organization"]["fullName"]
+
+def __getTitle(study):
+    try:
+        return study["protocolSection"]["identificationModule"]["officialTitle"]
+    except KeyError:
+        return study["protocolSection"]["identificationModule"]["briefTitle"]
+
+def __getFirstSumbitDate(study):
+    return study["protocolSection"]["statusModule"]["studyFirstSubmitDate"]
+
+def __getCompletionDate(study):
+    try:
+        return study["protocolSection"]["statusModule"]["completionDateStruct"]["date"]
+    except KeyError:
+        return "unknown"
+
+def __getOverallStatus(study):
+    return study["protocolSection"]["statusModule"]["overallStatus"]
+
+def __getMinimumAge(study):
+    try:
+        return study["protocolSection"]["eligibilityModule"]["minimumAge"]
+    except KeyError:
+        return "unknown"
+
+def __getMaximumAge(study):
+    try:
+        return study["protocolSection"]["eligibilityModule"]["maximumAge"]
+    except KeyError:
+        return "unknown"
+
+def __getSex(study):
+    try:
+        return study["protocolSection"]["eligibilityModule"]["sex"]
+    except KeyError:
+        return "unknown"
+
+def __getEligibilityCriteria(study):
+    try:
+        return study["protocolSection"]["eligibilityModule"]["eligibilityCriteria"]
+    except KeyError:
+        return "unknown"
+
+def __getStudyType(study):
+    try:
+        return study["protocolSection"]["designModule"]["studyType"]
+    except KeyError:
+        return "unknown"
+
+def __getPhases(study):
+    try:
+        enumPhases = study["protocolSection"]["designModule"]["phases"]
+        enumPhasesStr = ','.join(enumPhases)
+        #enumPhasesStr = str.replace(','.join(enumPhases),'[','')
+        #enumPhasesStr = str.replace(enumPhasesStr,']','')
+        return enumPhasesStr
+    except KeyError:
+        return "unknown"
+
+def __getEnrollmentInfo(study):
+    try:
+        return study["protocolSection"]["designModule"]["enrollmentInfo"]["count"]
+    except KeyError:
+        return 0
+
+def __getFacility(loc):
+    try:
+        return loc["facility"]
+    except KeyError:
+        return np.nan
+
+def __getCity(loc):
+    try:
+        return loc["city"]
+    except KeyError:
+        return np.nan
+    
+def __getState(loc):
+    try:
+        return loc["state"]
+    except KeyError:
+        return np.nan
+
+
+def __getZip(loc):
+    try :
+        return loc["zip"]
+    except KeyError:
+        return np.nan
+ 
+def __getCountry(loc):
+    try:
+        return loc["country"]
+    except KeyError:
+        return np.nan
+
+def __getGeoPointLat(loc):
+    try:
+        return loc["geoPoint"]["lat"]
+    except KeyError:
+        return np.nan
+
+def __getGeoPointLon(loc):
+    try:
+        return loc["geoPoint"]["lon"]
+    except KeyError:
+        return(np.nan)
+
+def __buildTrialList(study):
+    trial_list = []
+    nct_id = __getNctId(study)
+    trial_list.append(nct_id)
+    trial_list.append( __getOrganization(study))
+    trial_list.append(__getTitle(study))
+    trial_list.append(__getFirstSumbitDate(study))
+    trial_list.append(__getCompletionDate(study))
+    trial_list.append(__getOverallStatus(study))
+    trial_list.append(__getMinimumAge(study))
+    trial_list.append(__getMaximumAge(study))
+    trial_list.append(__getSex(study))
+    trial_list.append(__getStudyType(study))
+    trial_list.append(__getPhases(study))
+    trial_list.append(__getEnrollmentInfo(study))
+    return trial_list 
+    #trial_list.append(__getEligibilityCriteria(study))
+
+def __buildLocsList(nct_id,loc):
+    locs_list = []
+    locs_list.append(nct_id)
+    locs_list.append(__getFacility(loc))
+    locs_list.append(__getCity(loc))
+    locs_list.append(__getState(loc))
+    locs_list.append(__getZip(loc))
+    locs_list.append(__getCountry(loc))
+    locs_list.append(__getGeoPointLat(loc))
+    locs_list.append(__getGeoPointLon(loc))
+    return locs_list
+
+def __buildLocsListError(study):
+    locs_list = []
+    try:
+        for official in study["protocolSection"]["contactsLocationsModule"]["overallOfficials"]:
+            locs_list.append(official["affiliation"])
+            [locs_list.append(np.nan) for _ in range(6)]    
+    except KeyError:
+        pass
+    return locs_list
+    
+    
+
+def __requestJSON():
+    as_trial_url = "https://clinicaltrials.gov/api/v2/studies"
+    as_trials_req = requests.get(
+        as_trial_url,
+        params={
+            "query.cond": "Angelman Syndrome",
+            "fields": "IdentificationModule,StatusModule,ContactsLocationsModule,EligibilityModule,DesignModule",
+            "pageSize": 1000,
+        },
+    )
+    return as_trials_req.json()
+
+def __BuildDataFrame(data, listColumns):
+    return pd.DataFrame(
+        data,
+        columns=listColumns,
+    )
 
 def as_trials():
     """
@@ -18,96 +191,35 @@ def as_trials():
     Parse out to get basic trial info and locations. Will be used to make a map
     of AS trials.
     """
-    as_trial_url = "https://clinicaltrials.gov/api/v2/studies"
-    as_trials_req = requests.get(
-        as_trial_url,
-        params={
-            "query.cond": "Angelman Syndrome",
-            "fields": "IdentificationModule,StatusModule,ContactsLocationsModule",
-            "pageSize": 1000,
-        },
-    )
-    as_trials_json = as_trials_req.json()
+    as_trials_json = __requestJSON()
 
+    #Only in Debug Mode
+    #with open(f"{wkdir}/../../data/all_cities.json", 'w') as fichier:
+    #    json.dump(as_trials_json, fichier, indent=4)
+    
     as_trials_list = []
     as_trials_locs_list = []
-    loc_type_list = ["facility", "city", "state", "zip", "country"]
     for study in as_trials_json["studies"]:
         # Make a df of
-        trial_list = []
-        nct_id = study["protocolSection"]["identificationModule"]["nctId"]
-        trial_list.append(nct_id)
-        trial_list.append(
-            study["protocolSection"]["identificationModule"]["organization"]["fullName"]
-        )
-        try:
-            trial_list.append(
-                study["protocolSection"]["identificationModule"]["officialTitle"]
-            )
-        except KeyError:
-            trial_list.append(
-                study["protocolSection"]["identificationModule"]["briefTitle"]
-            )
-        trial_list.append(
-            study["protocolSection"]["statusModule"]["studyFirstSubmitDate"]
-        )
-        try:
-            trial_list.append(
-                study["protocolSection"]["statusModule"]["completionDateStruct"]["date"]
-            )
-        except KeyError:
-            trial_list.append("unknown")
-        trial_list.append(study["protocolSection"]["statusModule"]["overallStatus"])
+        nct_id = __getNctId(study)
+        trial_list = __buildTrialList(study)
         as_trials_list.append(trial_list)
 
         # Make a separate df for trial locs since a give trial might have many locs
         try:
             for loc in study["protocolSection"]["contactsLocationsModule"]["locations"]:
-                locs_list = []
-                locs_list.append(nct_id)
-                for loc_type in loc_type_list:
-                    try:
-                        locs_list.append(loc[loc_type])
-                    except KeyError:
-                        locs_list.append(np.nan)
-                try:
-                    locs_list.append(loc["geoPoint"]["lat"])
-                except KeyError:
-                    locs_list.append(np.nan)
-                try:
-                    locs_list.append(loc["geoPoint"]["lon"])
-                except KeyError:
-                    locs_list.append(np.nan)
+                locs_list = __buildLocsList(nct_id,loc)
                 as_trials_locs_list.append(locs_list)
         except KeyError:
-            locs_list = []
-            try:
-                for official in study["protocolSection"]["contactsLocationsModule"][
-                    "overallOfficials"
-                ]:
-                    locs_list.append(official["affiliation"])
-                    [locs_list.append(np.nan) for _ in range(6)]
-            except KeyError:
-                continue
-
+            locs_list = __buildLocsListError(study)
+            
     # output dataframes for use in visualization
-    as_trials_df = pd.DataFrame(
-        as_trials_list,
-        columns=[
-            "NCT_ID",
-            "Sponsor",
-            "Study_Name",
-            "Start_Date",
-            "End_Date",
-            "Current_Status",
-        ],
-    )
+    as_trials_df = __BuildDataFrame(as_trials_list,
+                                    listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Minimum_Age", "Maximum_Age", "Sex","StudyType","Phases","EnrollmentInfo"])
     # as_trials_df.to_csv(f"{wkdir}/data/as_trials_df.csv", index=False)
 
-    as_trials_locs_df = pd.DataFrame(
-        as_trials_locs_list,
-        columns=["NCT_ID", "Facility", "City", "State", "Zip", "Country", "Lat", "Lon"],
-    )
+    as_trials_locs_df = __BuildDataFrame(as_trials_locs_list,
+                                         listColumns=["NCT_ID", "Facility", "City", "State", "Zip", "Country", "Lat", "Lon"])
     # as_trials_locs_df.to_csv(f"{wkdir}/data/as_trials_locs_df.csv", index=False)
 
     loc_type_list = ["City", "State", "Zip", "Country"]
