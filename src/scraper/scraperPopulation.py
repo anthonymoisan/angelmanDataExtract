@@ -94,7 +94,6 @@ def get_country_pops(auth_token, indicators, start_year, end_year, countries_lis
                 "iso3",
                 "timeLabel",
                 "sex",
-                "ageId",
                 "ageLabel",
                 "value",
             ],
@@ -152,12 +151,11 @@ def un_population(auth_token):
     # Rename columns for clarity
     pop_df.rename(
         columns={"location": "countryName", "iso3": "countryIso3_code",
-                 "timeLabel": "year", "ageID": "wppAgeIdCode", "ageLabel": "Age",
+                 "timeLabel": "dataYear", "ageLabel": "Age",
                  "value": "totalPopEstimate"}
     )
 
-    un_pop_final_df.loc[:, 'angels_color'] = np.log(un_pop_final_df['angelPopEstimate'])
-    return un_pop_final_df
+    return pop_df
 
 
 if __name__ == "__main__":
