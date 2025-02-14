@@ -175,3 +175,6 @@ src/old/
 
 # VS Code
 .vscode/
+
+# Data testing
+data/*.csv
