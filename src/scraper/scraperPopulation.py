@@ -87,14 +87,13 @@ def get_country_pops(auth_token, indicators, start_year, end_year, countries_lis
 
         # Keep all ages, 0-17, and 18+ age groups
         temp_filter_pop_df = temp_data_df.loc[
-            (temp_data_df["ageId"].isin([188, 7, 3, 25, 8])),
+            :,
             [
                 "locationId",
                 "location",
                 "iso3",
                 "timeLabel",
                 "sex",
-                "ageId",
                 "ageLabel",
                 "value",
             ],
@@ -108,7 +107,7 @@ def get_country_pops(auth_token, indicators, start_year, end_year, countries_lis
         if next_page is None:
             break
         else:
-            # time.sleep(2)
+            time.sleep(2)
             page_num += 1
 
     return pop_df
@@ -128,65 +127,35 @@ def un_population(auth_token):
     time.sleep(2)
 
     # Set values for calling data api
-    indicators = "70"
+    indicators = "47"
     start_year = datetime.now().year - 2
     end_year = datetime.now().year - 2
 
-    # Separate out countries into groups of 100
-    locations_1 = ",".join(countries_df.loc[countries_df.index[0:100], "id"])
-    locations_2 = ",".join(countries_df.loc[countries_df.index[100:200], "id"])
-    locations_3 = ",".join(countries_df.loc[countries_df.index[200:300], "id"])
+    # Separate out countries into groups of 100 and call data api for all countries
+    pop_dfs = []
+    for i in range(0, len(countries_df), 100):
+        locations = ",".join(countries_df.loc[countries_df.index[i:i+100], "id"])
+        print(f"--- Pop {i+100} ---")
+        pop_df = get_country_pops(auth_token, indicators, start_year, end_year, locations)
+        pop_dfs.append(pop_df)
+        time.sleep(2)
 
-    # Call data api for all countries and concatenate all results
-    print("--- Pop 100 ---")
-    pop_df_1 = get_country_pops(
-        auth_token, indicators, start_year, end_year, locations_1
-    )
-    time.sleep(2)
-    print("--- Pop 200 ---")
-    pop_df_2 = get_country_pops(
-        auth_token, indicators, start_year, end_year, locations_2
-    )
-    time.sleep(2)
-    print("--- Pop 300 ---")
-    pop_df_3 = get_country_pops(
-        auth_token, indicators, start_year, end_year, locations_3
-    )
-
-    pop_df = pd.concat([pop_df_1, pop_df_2, pop_df_3], axis=0, ignore_index=True)
+    # concatenate dataframes to make one for all countries
+    pop_df = pd.concat(pop_dfs, axis=0, ignore_index=True)
 
     # 1/15000 people are angels, so divide to get estimate
-    pop_df.loc[:, "wpp_angel_estimate"] = pop_df["value"] / 15000
+    pop_df.loc[:, "angelPopEstimate"] = pop_df["value"] / 15000
     pop_df["value"] = pop_df["value"].round().astype(int)
-    pop_df["wpp_angel_estimate"] = pop_df["wpp_angel_estimate"].round().astype(int)
+    pop_df["angelPopEstimate"] = pop_df["angelPopEstimate"].round().astype(int)
 
-    pop_total_df = (
-        pop_df.loc[
-            pop_df["ageLabel"] == "Total", pop_df.columns != "wpp_angel_estimate"
-        ]
-        .drop_duplicates()
-        .drop(columns="ageLabel")
-    )
-    pop_angel_df = pop_df.loc[:, ["iso3", "ageLabel", "wpp_angel_estimate"]]
-    pop_angel_wide_df = pop_angel_df.pivot_table(
-        values="wpp_angel_estimate", columns="ageLabel", index="iso3"
-    ).reset_index()
-
-    un_pop_final_df = pop_total_df.merge(
-        pop_angel_wide_df, how="left", on="iso3"
-    ).rename(
-        columns={
-            "value": "total_population",
-            "0-4": "angels_0-4",
-            "5-10": "angels_5-10",
-            "11-17": "angels_11-17",
-            "18+": "angels_18+",
-            "Total": "angels_Total",
-        }
+    # Rename columns for clarity
+    pop_df.rename(
+        columns={"location": "countryName", "iso3": "countryIso3_code",
+                 "timeLabel": "dataYear", "ageLabel": "Age",
+                 "value": "totalPopEstimate"}
     )
 
-    un_pop_final_df.loc[:, 'angels_color'] = np.log(un_pop_final_df['angels_Total'])
-    return un_pop_final_df
+    return pop_df
 
 
 if __name__ == "__main__":
@@ -194,7 +163,7 @@ if __name__ == "__main__":
     # Get working directory
     wkdir = os.path.dirname(__file__)
     config = ConfigParser()
-    filePath = f"{wkdir}/../../angelman_viz_keys/Config3.ini"
+    filePath = f"{wkdir}/../../angelman_viz_keys/Config2.ini"
     if config.read(filePath):
         auth_token = config['UnPopulation']['bearerToken']
         un_pop_final_df = un_population(auth_token)
