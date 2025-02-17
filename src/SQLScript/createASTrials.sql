@@ -11,6 +11,8 @@ CREATE TABLE T_ASTrials (
     StudyType VARCHAR(50),
     Phases VARCHAR(50),
     EnrollmentInfo INT,
+    EligibilityCriteria TEXT,
+    BriefSummary TEXT,
     Facility VARCHAR(255),
     Lat DECIMAL(9,6),
     Lon DECIMAL(9,6),

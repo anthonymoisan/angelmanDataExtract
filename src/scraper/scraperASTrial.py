@@ -60,6 +60,12 @@ def __getEligibilityCriteria(study):
     except KeyError:
         return "unknown"
 
+def __getBriefSummary(study):
+    try:
+        return study["protocolSection"]["descriptionModule"]["briefSummary"]
+    except KeyError:
+        return "unknown"
+
 def __getStudyType(study):
     try:
         return study["protocolSection"]["designModule"]["studyType"]
@@ -140,9 +146,10 @@ def __buildTrialList(study):
     trial_list.append(__getStudyType(study))
     trial_list.append(__getPhases(study))
     trial_list.append(__getEnrollmentInfo(study))
+    trial_list.append(__getEligibilityCriteria(study))
+    trial_list.append(__getBriefSummary(study))
     return trial_list 
-    #trial_list.append(__getEligibilityCriteria(study))
-
+    
 def __buildLocsList(nct_id,loc):
     locs_list = []
     locs_list.append(nct_id)
@@ -173,7 +180,7 @@ def __requestJSON():
         as_trial_url,
         params={
             "query.cond": "Angelman Syndrome",
-            "fields": "IdentificationModule,StatusModule,ContactsLocationsModule,EligibilityModule,DesignModule",
+            "fields": "IdentificationModule,StatusModule,ContactsLocationsModule,EligibilityModule,DesignModule,DescriptionModule",
             "pageSize": 1000,
         },
     )
@@ -215,7 +222,7 @@ def as_trials():
             
     # output dataframes for use in visualization
     as_trials_df = __BuildDataFrame(as_trials_list,
-                                    listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Minimum_Age", "Maximum_Age", "Sex","StudyType","Phases","EnrollmentInfo"])
+                                    listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Minimum_Age", "Maximum_Age", "Sex","StudyType","Phases","EnrollmentInfo","EligibilityCriteria","BriefSummary"])
     # as_trials_df.to_csv(f"{wkdir}/data/as_trials_df.csv", index=False)
 
     as_trials_locs_df = __BuildDataFrame(as_trials_locs_list,
