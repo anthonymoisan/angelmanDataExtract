@@ -33,6 +33,10 @@ def pubmed_details(query_key, web_env):
     details_list = []
     soup = BeautifulSoup(details_base.content, "lxml-xml")
 
+    #with open(f"{wkdir}/../../data/output.xml", "w", encoding="utf-8") as file:
+    #    file.write(soup.prettify())  # 'prettify()' rend le XML lisible
+
+
     pubs = soup.find_all("MedlineCitation")
     for pub in pubs:
         pmid = pub.find("PMID").text
@@ -50,18 +54,28 @@ def pubmed_details(query_key, web_env):
             institution = authors.find("Affiliation").text
         except AttributeError:
             institution = ""
+        
+        articleTitle = pub.find("ArticleTitle").text
+
+        try:
+            abstractText = pub.find("AbstractText").text
+        except AttributeError:
+            abstractText = ""
+        
         article_details_list = [
             pmid,
             journal_title,
             journal_abbreviation,
             pub_year,
             institution,
+            articleTitle,
+            abstractText
         ]
         details_list.append(article_details_list)
 
     pubmed_details_df = pd.DataFrame(
         details_list,
-        columns=["pmid", "journal", "journal_abbrv", "pub_year", "institution"],
+        columns=["pmid", "journal", "journal_abbrv", "pub_year", "institution","article_title", "abstract"],
     )
     return pubmed_details_df
 

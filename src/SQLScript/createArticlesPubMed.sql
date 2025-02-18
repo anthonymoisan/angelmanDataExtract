@@ -4,5 +4,7 @@ CREATE TABLE T_ArticlesPubMed (
     journal VARCHAR(255),
     journal_abbrv VARCHAR(255),
     pub_year INT,
-    institution TEXT
+    institution TEXT,
+    article_title TEXT,
+    abstract TEXT
 );

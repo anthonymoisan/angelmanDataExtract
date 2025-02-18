@@ -178,3 +178,4 @@ src/old/
 
 data/*.csv
 data/all_cities.json
+data/output.xml
