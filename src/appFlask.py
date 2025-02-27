@@ -9,7 +9,7 @@ API Rest with Flask
 import flask
 from flask import jsonify
 import scraper.scraperPubMed as scrPubMed
-import scraper.scraperASFClinicalTrial as scrASFClinicalTrial
+import scraper.scraperPatientGroupClinics as scrASFClinicalTrial
 import scraper.scraperASTrial as scrASTrial
 import scraper.scraperPopulation as scrPopulation
 from configparser import ConfigParser

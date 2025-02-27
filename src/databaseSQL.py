@@ -7,7 +7,7 @@ import time
 import scraper.scraperPubMed as scrPubMed
 import scraper.scraperASTrial as scrASTrialBis
 import scraper.scraperPopulation as scrPopulation
-import scraper.scraperASFClinicalTrial as scrASFClinicalTrial
+import scraper.scraperPatientGroupClinics as scrASFClinicalTrial
 import pandas as pd
 import numpy as np
 import json
