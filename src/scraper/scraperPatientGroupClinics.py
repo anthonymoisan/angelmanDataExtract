@@ -144,7 +144,7 @@ def __parse_trials(trials_json, loc_limiter=False, clinic=None):
     return (trials_df, trials_locs_df)
 
 
-def trials_asf_clinics(clinics_json_df, clinics_json):
+def trials_PatientGroupClinics(clinics_json_df, clinics_json):
     """
     Pull list of trials that occured at ASF clinics. This will be fed into a map so it can be overlaid with the clinics.
     """
@@ -297,6 +297,6 @@ if __name__ == "__main__":
     with open(f"{wkdir}/../../data/asf_clinics.json") as f:
         clinics_json = json.load(f)
     clinics_json_df = pd.read_json(f"{wkdir}/../../data/asf_clinics.json", orient="index")
-    asf_all_trials_raw_trial_df = trials_asf_clinics(clinics_json_df, clinics_json)
-    asf_all_trials_raw_trial_df.to_csv(f"{wkdir}/../../data/asf_clinics_raw_trial_data.csv", index=False)
+    PatientGroupClinics_df = trials_PatientGroupClinics(clinics_json_df, clinics_json)
+    PatientGroupClinics_df.to_csv(f"{wkdir}/../../data/PatientGroupClinics_data.csv", index=False)
     print("Execute time : ", round(time.time()-start, 2), "s")
