@@ -2,252 +2,274 @@
     "Vancouver": {
         "Hospitals": ["BC Children's Hospital"],
         "City": "Vancouver, BC, Canada",
-        "Lat": 49.24966,
-        "Lon": -123.11934,
+        "Lat_scrape": 49.24966,
+        "Lon_scrape": -123.11934,
         "Sponsor": "Angelman Syndrome Foundation"
     },
-    "Boston": {
-        "Hospitals": ["Boston Children's Hospital",  "Massachusetts General Hospital"],
+    "Boston Childrens": {
+        "Hospitals": ["Boston Children's Hospital"],
         "City": "Boston, MA, USA",
-        "Lat": 42.35843,
-        "Lon": -71.05977,
-        "Sponsor": "Angelman Syndrome Foundation"},
+        "Lat_scrape": 42.35843,
+        "Lon_scrape": -71.05977,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Mass General": {
+        "Hospitals": ["Massachusetts General Hospital"],
+        "City": "Boston, MA, USA",
+        "Lat_scrape": 42.35843,
+        "Lon_scrape": -71.05977,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
     "Boys Town": {
         "Hospitals": ["Boys Town National Research Hospital"],
         "City": "Boys Town, NE, USA",
-        "Lat": 41.26111,
-        "Lon": -96.13196,
+        "Lat_scrape": 41.26111,
+        "Lon_scrape": -96.13196,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Cedars-Sinai": {
+        "Hospitals": ["Cedars-Sinai Guerin Children's"],
+        "City": "Los Angeles, CA, USA",
+        "Lat_scrape": 34.05223,
+        "Lon_scrape": -118.24368,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Los Angeles": {
-        "Hospitals": ["Cedars-Sinai Guerin Children's", "Children's Hospital Los Angeles"],
+        "Hospitals": ["Children's Hospital Los Angeles"],
         "City": "Los Angeles, CA, USA",
-        "Lat": 34.05223,
-        "Lon": -118.24368,
+        "Lat_scrape": 34.05223,
+        "Lon_scrape": -118.24368,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Dallas":{
         "Hospitals": ["Children's Health Dallas"],
         "City": "Dallas, TX, USA",
-        "Lat": 32.78306,
-        "Lon": -96.80667,
+        "Lat_scrape": 32.78306,
+        "Lon_scrape": -96.80667,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Aurora": {
         "Hospitals": ["Children's Health Colorado"],
         "City": "Aurora, CO, USA",
-        "Lat":39.72943,
-        "Lon": -104.83192,
+        "Lat_scrape":39.72943,
+        "Lon_scrape": -104.83192,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Ottawa": {
         "Hospitals": ["Children's Hospital of Eastern Ontario"],
         "City": "Ottawa, ON, Canada",
-        "Lat": 45.41117,
-        "Lon": -75.69812,
+        "Lat_scrape": 45.41117,
+        "Lon_scrape": -75.69812,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Philadelphia": {
         "Hospitals": ["Children's Hospital of Philadelphia"],
         "City": "Philadelphia, PA, USA",
-        "Lat": 39.95233,
-        "Lon": -75.16379,
+        "Lat_scrape": 39.95233,
+        "Lon_scrape": -75.16379,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Kansas City": {
         "Hospitals": ["Children's Mercy Kansas City"],
         "City": "Kansas City, MO, USA",
-        "Lat": 39.09973,
-        "Lon": -94.57857,
+        "Lat_scrape": 39.09973,
+        "Lon_scrape": -94.57857,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Cincinatti": {
         "Hospitals": ["Cincinnati Children's Hospital"],
         "City": "Cincinatti, OH, USA",
-        "Lat": 39.12713,
-        "Lon": -84.51435,
+        "Lat_scrape": 39.12713,
+        "Lon_scrape": -84.51435,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Lewisburg": {
         "Hospitals": ["Geisinger Autism & Developmental Medicine Institute"],
         "City": "Lewisburg, PA, USA",
-        "Lat": 40.96453,
-        "Lon": -76.88441,
+        "Lat_scrape": 40.96453,
+        "Lon_scrape": -76.88441,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Baltimore": {
         "Hospitals": ["Kennedy Krieger Institute"],
         "City": "Baltimore, MD, USA",
-        "Lat": 39.29038,
-        "Lon": -76.61219,
+        "Lat_scrape": 39.29038,
+        "Lon_scrape": -76.61219,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Rochester": {
         "Hospitals": ["Mayo Clinic"],
         "City": "Rochester, MN, USA",
-        "Lat": 44.02163,
-        "Lon": -92.4699,
+        "Lat_scrape": 44.02163,
+        "Lon_scrape": -92.4699,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "St. Paul": {
         "Hospitals": ["Minnesota Epilepsy Group"],
         "City": "St. Paul, MN, USA",
-        "Lat": 44.94441,
-        "Lon": -93.09327,
+        "Lat_scrape": 44.94441,
+        "Lon_scrape": -93.09327,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Montreal": {
         "Hospitals": ["Montréal Children's Hospital"],
         "City": "Montréal, QC, Canada",
-        "Lat": 45.50884,
-        "Lon": -73.58781,
+        "Lat_scrape": 45.50884,
+        "Lon_scrape": -73.58781,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Miami": {
         "Hospitals": ["Nicklaus Children's Hospital"],
         "City": "Miami, FL, USA",
-        "Lat": 25.77427,
-        "Lon": -80.19366,
+        "Lat_scrape": 25.77427,
+        "Lon_scrape": -80.19366,
         "Sponsor": "Angelman Syndrome Foundation"
     },
-    "New York": {
-        "Hospitals": ["NYU Langone Health", "Weill Cornell Medicine"],
+    "NYU": {
+        "Hospitals": ["NYU Langone Health"],
         "City": "New York, NY, USA",
-        "Lat": 40.71427,
-        "Lon": -74.00597,
+        "Lat_scrape": 40.71427,
+        "Lon_scrape": -74.00597,
+        "Sponsor": "Angelman Syndrome Foundation"
+    },
+    "Weill Cornell": {
+        "Hospitals": ["Weill Cornell Medicine"],
+        "City": "New York, NY, USA",
+        "Lat_scrape": 40.71278,
+        "Lon_scrape": -74.00597,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "San Diego": {
         "Hospitals": ["Rady Children's Hospital"],
         "City": "San Diego, CA, USA",
-        "Lat": 32.71533,
-        "Lon": -117.15726,
+        "Lat_scrape": 32.71533,
+        "Lon_scrape": -117.15726,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Chicago": {
         "Hospitals": ["Rush University Medical Center"],
         "City": "Chicago, IL, USA",
-        "Lat": 41.85003,
-        "Lon": -87.65005,
+        "Lat_scrape": 41.85003,
+        "Lon_scrape": -87.65005,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Houston": {
         "Hospitals" : ["Texas Children's Hospital", "Baylor College of Medicine", "Baylor College of Medicine, Texas Children's Hospital"],
         "City": "Houston, TX, USA",
-        "Lat": 29.76328,
-        "Lon": -95.36327,
+        "Lat_scrape": 29.76328,
+        "Lon_scrape": -95.36327,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "San Francisco": {
         "Hospitals": ["UCSF Benioff Children's Hospital"],
         "City": "San Francisco, CA, USA",
-        "Lat": 37.77493,
-        "Lon": -122.41942,
+        "Lat_scrape": 37.77493,
+        "Lon_scrape": -122.41942,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Carrboro": {
         "Hospitals": ["UNC Carolina Institute for Developmental Disabilities", "University of North Carolina at Chapel Hill School of Medicine"],
         "City": "Carrboro, NC, USA",
-        "Lat": 35.91014,
-        "Lon": -79.07529,
+        "Lat_scrape": 35.91014,
+        "Lon_scrape": -79.07529,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Nashville": {
         "Hospitals": ["Vanderbilt University Medical Center"],
         "City": "Nashville, TN, USA",
-        "Lat": 36.16589,
-        "Lon": -86.78444,
+        "Lat_scrape": 36.16589,
+        "Lon_scrape": -86.78444,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Buenos Aires": {
         "Hospitals": ["ASF Clinic Buenos Aires"],
         "City": "San Isidro, Buenos Aires, Argentina",
-        "Lat": -34.4721,
-        "Lon": -58.52708,
+        "Lat_scrape": -34.4721,
+        "Lon_scrape": -58.52708,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Rotterdam": {
         "Hospitals": ["Erasmus Medical Center Sophia Children's Hospital", "Erasmus MC", "Sophia Kinderziekenhuis"],
         "City": "Rotterdam, ZH, The Netherlands",
-        "Lat": 51.9225,
-        "Lon": 4.47917,
+        "Lat_scrape": 51.9225,
+        "Lon_scrape": 4.47917,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Munich": {
         "Hospitals": ["Angelman Center Munich"],
         "City": "Munich, BY, Germany",
-        "Lat": 48.13743,
-        "Lon": 11.57549,
+        "Lat_scrape": 48.13743,
+        "Lon_scrape": 11.57549,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Aachen": {
         "Hospitals": ["University Hospital RWTH Aachen", "Angelman Center Aachen"],
         "City": "Aachen, NW, Germany",
-        "Lat": 50.77664,
-        "Lon": 6.08342,
+        "Lat_scrape": 50.77664,
+        "Lon_scrape": 6.08342,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Leipzig": {
         "Hospitals": ["Universitaetsklinikum Leipzig", "Angelman Center Leipzig"],
         "City": "Leipzig, SN, Germany",
-        "Lat": 51.33962,
-        "Lon": 12.37129,
+        "Lat_scrape": 51.33962,
+        "Lon_scrape": 12.37129,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Sabadell": {
         "Hospitals": ["Corporacio Sanitaria Parc Tauli", "Parc Taulí", "Corporacio Sanitaria Parc Tauli - Hospital de Sabadell"],
         "City": "Sabadell, Barcelona, Spain",
-        "Lat": 41.54329,
-        "Lon": 2.10942,
+        "Lat_scrape": 41.54329,
+        "Lon_scrape": 2.10942,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Budapest": {
         "Hospitals": ["Bethesda Children's Hospital, Budapest"],
         "City": "Budapest, Hungary",
-        "Lat": 47.49801,
-        "Lon": 19.03991,
+        "Lat_scrape": 47.49801,
+        "Lon_scrape": 19.03991,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Ramat Gan": {
         "Hospitals": ["Sheba Medical Center", "Edmond and Lily Safra Children's Hospital"],
         "City": "Sderot Gabriela, Ramat Gan, Israel",
-        "Lat": 32.08227,
-        "Lon": 34.81065,
+        "Lat_scrape": 32.08227,
+        "Lon_scrape": 34.81065,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Al Jadaf": {
         "Hospitals": ["Latifa Women and Children's Hospital", "Al Jalila Children's Hospital"],
         "City": "Al Jadaf, Dubai, UAE",
-        "Lat": 25.0657,
-        "Lon": 55.17128,
+        "Lat_scrape": 25.0657,
+        "Lon_scrape": 55.17128,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Brisbane": {
         "Hospitals": ["Queensland Children's Hospital"],
         "City": "South Brisbane, QLD, Australia",
-        "Lat": -27.48034,
-        "Lon": 153.02049,
+        "Lat_scrape": -27.48034,
+        "Lon_scrape": 153.02049,
         "Sponsor": "FAST Australia"
     },
     "Melbourne": {
         "Hospitals": ["Royal Children's Hospital"],
         "City": "Melbourne, VIC, Australia",
-        "Lat": -37.814,
-        "Lon": 144.96332,
+        "Lat_scrape": -37.814,
+        "Lon_scrape": 144.96332,
         "Sponsor": "FAST Australia"
     },
     "Sydney": {
         "Hospitals": ["Sydney Children's Hospital"],
         "City": "Randwick, NSW, Australia",
-        "Lat": -33.91439,
-        "Lon": 151.24895,
+        "Lat_scrape": -33.91439,
+        "Lon_scrape": 151.24895,
         "Sponsor": "FAST Australia"
     },
     "Manchester": {
         "Hospitals": ["St Mary’s Hospital", "St Mary's Hospital, Manchester", "Saint Mary's Hospital, Central Manchester NHS Foundation Trust", "St Mary's Hospital, Manchester Academic Health Science Centre"],
         "City": "Manchester, England, UK",
-        "Lat": 53.48076,
-        "Lon": -2.24263,
+        "Lat_scrape": 53.48076,
+        "Lon_scrape": -2.24263,
         "Sponsor": "AngelmanUK"
     }
 }
