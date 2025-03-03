@@ -146,7 +146,20 @@ def __parse_trials(trials_json, loc_limiter=False, clinic=None):
 
 def trials_PatientGroupClinics(clinics_json_df, clinics_json):
     """
-    Pull list of trials that occured at ASF clinics. This will be fed into a map so it can be overlaid with the clinics.
+    Pull list of trials that occured at clinics sponsored by different patient groups.
+    This will be fed into a map so it can be overlaid with the clinics. 
+
+    For the past few years, ASF has recruiting clinics that were specifically identified by
+    industry as being good partners for clinical trials. The PatientGroupClinics
+    builds on this idea in the form of a dashboard. 
+
+    1. Identify all clinics globally sponsored by AS patient groups
+    2. For each clinic, pull all trials that have occured there on specific treatments
+       These are not just AS trials, but all trials that may be similar in some way to 
+       potential future AS trials.
+        a. ASO trials (current generation gene targeting therapies)
+        b. Gene therapy trials (future generation gene targeting therapies)
+        c. We can add more trial types in the future if and when good ones are identified
     """
     clinics_json_df = clinics_json_df.explode("Hospitals").rename(
         columns={"Hospitals": "Facility"}
