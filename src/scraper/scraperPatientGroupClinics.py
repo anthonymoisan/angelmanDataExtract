@@ -165,7 +165,7 @@ def trials_PatientGroupClinics(clinics_json_df, clinics_json):
         columns={"Hospitals": "Facility"}
     )
 
-    as_trial_url = "https://clinicaltrials.gov/api/v2/studies"
+    trial_url = "https://clinicaltrials.gov/api/v2/studies"
 
     all_clinics = []
     asf_all_trials_merge_df = pd.DataFrame()
@@ -193,7 +193,7 @@ def trials_PatientGroupClinics(clinics_json_df, clinics_json):
             }
 
             asf_trials_req = requests.get(
-                as_trial_url,
+                trial_url,
                 params=query_params,
             )
             time.sleep(1)
@@ -235,7 +235,7 @@ def trials_PatientGroupClinics(clinics_json_df, clinics_json):
             while next_page_token:
                 print(f"Entered subloop for {next_page_token}")
                 asf_trials_req = requests.get(
-                    as_trial_url,
+                    trial_url,
                     params={
                         "filter.geo": clinic_geocode,
                         "query.intr": treatment,
