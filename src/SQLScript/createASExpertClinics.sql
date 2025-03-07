@@ -1,4 +1,4 @@
-CREATE TABLE T_ASFClinicalTrials (
+CREATE TABLE T_ASExpertClinicalTrials (
     NCT_ID VARCHAR(20) PRIMARY KEY,
     Sponsor VARCHAR(255),
     Study_Name TEXT,
@@ -7,6 +7,6 @@ CREATE TABLE T_ASFClinicalTrials (
     Current_Status VARCHAR(50),
     Treatment VARCHAR(50),
     Facility VARCHAR(255),
-    Lat DECIMAL(9,6),
-    Lon DECIMAL(9,6)
+    Lat_scrape DECIMAL(9,6),
+    Lon_scrape DECIMAL(9,6)
 );

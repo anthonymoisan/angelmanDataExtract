@@ -7,7 +7,7 @@ import time
 import scraper.scraperPubMed as scrPubMed
 import scraper.scraperASTrial as scrASTrialBis
 import scraper.scraperPopulation as scrPopulation
-import scraper.scraperPatientGroupClinics as scrASFClinicalTrial
+import scraper.scraperASExpertClinics as scrPatientGroupClinics
 import pandas as pd
 import numpy as np
 import json
@@ -230,7 +230,7 @@ def unPopulation():
     print("Execute time for UnPopulation : ", round(time.time()-start, 2), "s")
 
 
-def asfClinicalTrials():
+def PatientGroupClinics():
     """
     Method to scrap data from as clinical trials and ASF files
     """
@@ -238,26 +238,26 @@ def asfClinicalTrials():
     wkdir = os.path.dirname(__file__)
     # 0) Drop Table
     print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_ASFClinicalTrials"
+    sqlDrop = "DROP TABLE T_PatientGroupClinics"
     __execRequest(sqlDrop)
 
     # 1) Create Table
     print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createASFClinicalTrials.sql", "r", encoding="utf-8") as file:
+    with open(f"{wkdir}/SQLScript/createPatientGroupClinics.sql", "r", encoding="utf-8") as file:
         sql_commands = file.read()
     __execRequest(sql_commands)
     print("--- Scraper")
     # 2) Use scraper to obtain dataframe
-    with open(f"{wkdir}/../data/asf_clinics.json") as f:
+    with open(f"{wkdir}/../data/AS_expert_clinics.json") as f:
         clinics_json = json.load(f)
-    clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics.json", orient="index")
-    df = scrASFClinicalTrial.trials_asf_clinics(clinics_json_df, clinics_json)
+    clinics_json_df = pd.read_json(f"{wkdir}/../data/AS_expert_clinics.json", orient="index")
+    df = scrPatientGroupClinics.trials_PatientGroupClinics(clinics_json_df, clinics_json)
     df = df.replace([np.inf, -np.inf], np.nan)
     df.fillna("None", inplace=True)
 
     # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_ASFClinicalTrials")
-    print("Execute time for ASFClinicalTrials : ", round(time.time()-start, 2), "s")
+    __insertValue(df, "T_PatientGroupClinics")
+    print("Execute time for PatientGroupClinics : ", round(time.time()-start, 2), "s")
 
 
 if __name__ == "__main__":

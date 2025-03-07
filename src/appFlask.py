@@ -9,7 +9,7 @@ API Rest with Flask
 import flask
 from flask import jsonify
 import scraper.scraperPubMed as scrPubMed
-import scraper.scraperPatientGroupClinics as scrASFClinicalTrial
+import scraper.scraperASExpertClinics as scrASFClinicalTrial
 import scraper.scraperASTrial as scrASTrial
 import scraper.scraperPopulation as scrPopulation
 from configparser import ConfigParser
@@ -95,9 +95,9 @@ def api_ASFClinicaltrials_all():
     """
     start = time.time()
     wkdir = os.path.dirname(__file__)
-    with open(f"{wkdir}/../data/asf_clinics.json") as f:
+    with open(f"{wkdir}/../data/AS_expert_clinics.json") as f:
         clinics_json = json.load(f)
-    clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics.json", orient="index")
+    clinics_json_df = pd.read_json(f"{wkdir}/../data/AS_expert_clinics.json", orient="index")
     df = scrASFClinicalTrial.trials_asf_clinics(clinics_json_df, clinics_json)
     df.fillna("None", inplace=True)
     # The fonction jsonify from Flask convert a dictionnary Python

@@ -307,9 +307,9 @@ def trials_PatientGroupClinics(clinics_json_df, clinics_json):
 if __name__ == "__main__":
     start = time.time()
     wkdir = os.path.dirname(__file__)
-    with open(f"{wkdir}/../../data/asf_clinics.json") as f:
+    with open(f"{wkdir}/../../data/AS_expert_clinics.json") as f:
         clinics_json = json.load(f)
-    clinics_json_df = pd.read_json(f"{wkdir}/../../data/asf_clinics.json", orient="index")
+    clinics_json_df = pd.read_json(f"{wkdir}/../../data/AS_expert_clinics.json", orient="index")
     PatientGroupClinics_df = trials_PatientGroupClinics(clinics_json_df, clinics_json)
     PatientGroupClinics_df.to_csv(f"{wkdir}/../../data/PatientGroupClinics_data.csv", index=False)
     print("Execute time : ", round(time.time()-start, 2), "s")
