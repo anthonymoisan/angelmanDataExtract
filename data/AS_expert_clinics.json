@@ -271,5 +271,68 @@
         "Lat_scrape": 53.48076,
         "Lon_scrape": -2.24263,
         "Sponsor": "AngelmanUK"
+    },
+    "Necker":{
+        "Hospitals": ["Hôpital Necker-Enfants Malades APHP", "Necker Children's Hospital", "Groupe Hospitalier Pitie Salpetriere", "Aphp - Pitie Salpetriere", "Hopital La Pitie Salpetriere"],
+        "City": "Paris, Île-de-France, France",
+        "Lat_scrape": 48.85341,
+        "Lon_scrape": 2.3488,
+        "Sponsor": "National Health Ministry"
+    },
+    "Pitie Salpetriere": {
+        "Hospitals": ["Groupe Hospitalier Pitie Salpetriere", "Aphp - Pitie Salpetriere", "Hopital La Pitie Salpetriere"],
+        "City": "Paris, Île-de-France, France",
+        "Lat_scrape": 48.85341,
+        "Lon_scrape": 2.3488,
+        "Sponsor": "National Health Ministry"
+    },
+    "Marseille": {
+        "Hospitals": ["Hôpital de la Timone", "AP-HM"],
+        "City": "Marseille, Provence-Alpes-Côte d'Azur, France",
+        "Lat_scrape": 43.29551,
+        "Lon_scrape": 5.38958,
+        "Sponsor": "National Health Ministry"
+    },
+    "Strasbourg": {
+        "Hospitals": ["CHU de Strasbourg", "Les Hôpitaux Universitaires de Strasbourg"],
+        "City": "Strasbourg, Alsace, France",
+        "Lat_scrape": 48.58392,
+        "Lon_scrape": 7.74553,
+        "Sponsor": "National Health Ministry"
+    },
+    "Toulouse": {
+        "Hospitals": ["CHU Toulouse", "Hôpital des Enfants"],
+        "City": "Toulouse, Occitania, France",
+        "Lat_scrape": 43.60426,
+        "Lon_scrape": 1.44367,
+        "Sponsor": "National Health Ministry"
+    },
+    "Dijon": {
+        "Hospitals": ["CHU Dijon"],
+        "City": "Dijon, Bourgogne-Franche-Comté, France",
+        "Lat_scrape": 47.31667,
+        "Lon_scrape": 5.01667,
+        "Sponsor": "National Health Ministry"
+    },
+    "Bordeaux": {
+        "Hospitals": ["CHU Bordeaux", "Hôpital Pellegrin"],
+        "City": "Bordeaux, Nouvelle-Aquitaine, France",
+        "Lat_scrape": 44.84044,
+        "Lon_scrape": -0.5805,
+        "Sponsor": "National Health Ministry"
+    },
+    "Lyon": {
+        "Hospitals": ["CHU Lyon", "Hôpital Femme Mère Enfant", "Hôpital de la Croix-Rousse"],
+        "City": "Lyon, Auvergne-Rhône-Alpes, France",
+        "Lat_scrape": 45.74848,
+        "Lon_scrape": 4.84669,
+        "Sponsor": "National Health Ministry"
+    },
+    "Brest": {
+        "Hospitals": ["CHRU Brest", "Hôpital de la Cavale Blanche"],
+        "City": "Brest, Brittany, France",
+        "Lat_scrape": 48.3903,
+        "Lon_scrape": -4.48628,
+        "Sponsor": "National Health Ministry"
     }
 }
