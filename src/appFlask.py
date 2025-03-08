@@ -9,7 +9,7 @@ API Rest with Flask
 import flask
 from flask import jsonify
 import scraper.scraperPubMed as scrPubMed
-import scraper.scraperASExpertClinics as scrASFClinicalTrial
+import scraper.scraperASExpertClinics as scrASExpertClinics
 import scraper.scraperASTrial as scrASTrial
 import scraper.scraperPopulation as scrPopulation
 from configparser import ConfigParser
@@ -33,7 +33,7 @@ def home():
     <li>API in order for scraping data from PubMed : <a href="./api/v1/resources/articlesPubMed">./api/v1/resources/articlesPubMed</a></li>
     <li>API in order for scraping data from AS Trial : <a href="./api/v1/resources/ASTrials">./api/v1/resources/ASTrials</a></li>
     <li>API in order for scraping data from UN Population : <a href="./api/v1/resources/UnPopulation">./api/v1/resources/UnPopulation</a></li>
-    <li>API in order for scraping data from ASF Clinical Trials : <a href="./api/v1/resources/ASFClinicalTrials">./api/v1/resources/ASFClinicalTrials</a></li>
+    <li>API in order for scraping data from AS Expert Clinics : <a href="./api/v1/resources/ASExpertClinics">./api/v1/resources/ASExpertClinics</a></li>
     </ul>
     '''
 
@@ -88,22 +88,23 @@ def api_UnPopulation_all():
     return jsonify(dict_df)
 
 
-@appFlask.route('/api/v1/resources/ASFClinicalTrials', methods=['GET'])
-def api_ASFClinicaltrials_all():
+@appFlask.route('/api/v1/resources/ASExpertClinics', methods=['GET'])
+def api_ASExpertClinics_all():
     """
-    API to expose the results from ASF clinical trials but we execute the scraper to obtain the results
+    API to expose the results from clinical trials at hospitals with AS expertise 
+    but we execute the scraper to obtain the results
     """
     start = time.time()
     wkdir = os.path.dirname(__file__)
     with open(f"{wkdir}/../data/AS_expert_clinics.json") as f:
         clinics_json = json.load(f)
     clinics_json_df = pd.read_json(f"{wkdir}/../data/AS_expert_clinics.json", orient="index")
-    df = scrASFClinicalTrial.trials_asf_clinics(clinics_json_df, clinics_json)
+    df = scrASExpertClinics.trials_ASExpertClinics(clinics_json_df, clinics_json)
     df.fillna("None", inplace=True)
     # The fonction jsonify from Flask convert a dictionnary Python
     # in JSON format. We need to convert the dataframe Panda in a dictionnary    
     dict_df = df.to_dict(orient='records')
-    print("Execute time for ASFClinicalTrials : ", round(time.time()-start, 2), "s") 
+    print("Execute time for ASExpertClinics : ", round(time.time()-start, 2), "s") 
     return jsonify(dict_df)
 
 

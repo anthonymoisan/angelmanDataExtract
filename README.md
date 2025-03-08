@@ -19,7 +19,8 @@ You could find at https://www.fastfrance.org/angelman-bi-dashboard/ the final re
 
 ## The scrapers
 - scraperPubMed in interaction with PubMed (https://eutils.ncbi.nlm.nih.gov) in order to show number of scientific publications per year
-- scraperASTrial and scraperASFClinicalTrial in interaction with ClinicalTrials (https://clinicaltrials.gov)  in order to show the clinical trials for this disease and the number of trials hosted by ASF clinics
+- scraperASTrial and scraperASExpertClinics in interaction with ClinicalTrials (https://clinicaltrials.gov)  in order to show the clinical trials for this disease and the number of trials hosted by hospitals that patient groups have identified as having
+high expertise in AS
 - scraperPopution in interaction with UnPopulation (https://population.un.org) in order to have statistics about country in the world
 For each scraper, you could execute with a main and have the results.csv in the repository data
 

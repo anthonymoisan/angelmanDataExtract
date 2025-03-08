@@ -144,14 +144,14 @@ def __parse_trials(trials_json, loc_limiter=False, clinic=None):
     return (trials_df, trials_locs_df)
 
 
-def trials_PatientGroupClinics(clinics_json_df, clinics_json):
+def trials_ASExpertClinics(clinics_json_df, clinics_json):
     """
     Pull list of trials that occured at clinics sponsored by different patient groups.
     This will be fed into a map so it can be overlaid with the clinics. 
 
     For the past few years, ASF has recruiting clinics that were specifically identified by
-    industry as being good partners for clinical trials. The PatientGroupClinics
-    builds on this idea in the form of a dashboard. 
+    industry as being good partners for clinical trials. The ASExpertClinics
+    builds on this idea by expanding it globally and putting it in the form of a dashboard. 
 
     1. Identify all clinics globally sponsored by AS patient groups
     2. For each clinic, pull all trials that have occured there on specific treatments
@@ -168,7 +168,7 @@ def trials_PatientGroupClinics(clinics_json_df, clinics_json):
     trial_url = "https://clinicaltrials.gov/api/v2/studies"
 
     all_clinics = []
-    asf_all_trials_merge_df = pd.DataFrame()
+    asexpert_clinics_all_trials_merge_df = pd.DataFrame()
     for _, clinic in clinics_json.items():
         all_clinics = [*all_clinics, *clinic["Hospitals"]]
     interventions = {
@@ -192,49 +192,49 @@ def trials_PatientGroupClinics(clinics_json_df, clinics_json):
                 "pageSize": 1000,
             }
 
-            asf_trials_req = requests.get(
+            asexpert_trials_req = requests.get(
                 trial_url,
                 params=query_params,
             )
             time.sleep(1)
 
-            asf_trials_json = asf_trials_req.json()
+            asexpert_trials_json = asexpert_trials_req.json()
 
             # Get next page token from json response if it exists
             try:
-                next_page_token = asf_trials_json["nextPageToken"]
+                next_page_token = asexpert_trials_json["nextPageToken"]
                 print(f"Next page token: {next_page_token}")
             except KeyError:
                 next_page_token = None
 
-            trial_df_tuple = __parse_trials(asf_trials_json)
+            trial_df_tuple = __parse_trials(asexpert_trials_json)
 
-            asf_trials_df = trial_df_tuple[0]
-            asf_trials_df["Treatment"] = intervention
+            asexpert_trials_df = trial_df_tuple[0]
+            asexpert_trials_df["Treatment"] = intervention
             try:
-                asf_trials_locs_df = trial_df_tuple[1]
-                asf_trials_locs_df = asf_trials_locs_df.loc[
-                    (asf_trials_locs_df["Lat"] == clinic["Lat"])
-                    & (asf_trials_locs_df["Lon"] == clinic["Lon"])
+                asexpert_trials_locs_df = trial_df_tuple[1]
+                asexpert_trials_locs_df = asexpert_trials_locs_df.loc[
+                    (asexpert_trials_locs_df["Lat"] == clinic["Lat"])
+                    & (asexpert_trials_locs_df["Lon"] == clinic["Lon"])
                 ]
-                asf_trials_locs_df = __filter_and_replace_fuzzy_match(
-                    asf_trials_locs_df, "Facility", clinic["Hospitals"], threshold=70
+                asexpert_trials_locs_df = __filter_and_replace_fuzzy_match(
+                    asexpert_trials_locs_df, "Facility", clinic["Hospitals"], threshold=70
                 )
-                asf_trials_locs_df.loc[:, ["Hover_City"]] = clinic["City"]
+                asexpert_trials_locs_df.loc[:, ["Hover_City"]] = clinic["City"]
             except:
-                print("ASF Trials Locs clinic filter failed")
-                asf_trials_locs_df = trial_df_tuple[1]
+                print("AS Expert Clinics Trials Locs clinic filter failed")
+                asexpert_trials_locs_df = trial_df_tuple[1]
 
-            asf_trials_merge = asf_trials_df.merge(
-                asf_trials_locs_df, how="inner", on="NCT_ID"
+            asexpert_trials_merge = asexpert_trials_df.merge(
+                asexpert_trials_locs_df, how="inner", on="NCT_ID"
             )
-            asf_all_trials_merge_df = pd.concat(
-                [asf_all_trials_merge_df, asf_trials_merge], axis=0
+            asexpert_all_trials_merge_df = pd.concat(
+                [asexpert_all_trials_merge_df, asexpert_trials_merge], axis=0
             )
 
             while next_page_token:
                 print(f"Entered subloop for {next_page_token}")
-                asf_trials_req = requests.get(
+                asexpert_trials_req = requests.get(
                     trial_url,
                     params={
                         "filter.geo": clinic_geocode,
@@ -245,63 +245,63 @@ def trials_PatientGroupClinics(clinics_json_df, clinics_json):
                     },
                 )
                 time.sleep(1)
-                asf_trials_json = asf_trials_req.json()
+                asexpert_trials_json = asexpert_trials_req.json()
 
                 # Get next page token from json response if it exists
                 try:
-                    next_page_token = asf_trials_json["nextPageToken"]
+                    next_page_token = asexpert_trials_json["nextPageToken"]
                 except KeyError:
                     next_page_token = None
 
-                trial_df_tuple = __parse_trials(asf_trials_json)
-                asf_trials_df = trial_df_tuple[0]
-                asf_trials_df["Treatment"] = intervention
+                trial_df_tuple = __parse_trials(asexpert_trials_json)
+                asexpert_trials_df = trial_df_tuple[0]
+                asexpert_trials_df["Treatment"] = intervention
                 try:
-                    asf_trials_locs_df = trial_df_tuple[1]
-                    asf_trials_locs_df = asf_trials_locs_df.loc[
-                        (asf_trials_locs_df["Lat"] == clinic["Lat"])
-                        & (asf_trials_locs_df["Lon"] == clinic["Lon"])
+                    asexpert_trials_locs_df = trial_df_tuple[1]
+                    asexpert_trials_locs_df = asexpert_trials_locs_df.loc[
+                        (asexpert_trials_locs_df["Lat"] == clinic["Lat"])
+                        & (asexpert_trials_locs_df["Lon"] == clinic["Lon"])
                     ]
-                    asf_trials_locs_df = __filter_and_replace_fuzzy_match(
-                        asf_trials_locs_df,
+                    asexpert_trials_locs_df = __filter_and_replace_fuzzy_match(
+                        asexpert_trials_locs_df,
                         "Facility",
                         clinic["Hospitals"],
                         threshold=70,
                     )
-                    asf_trials_locs_df.loc[:, ["Hover_City"]] = clinic["City"]
+                    asexpert_trials_locs_df.loc[:, ["Hover_City"]] = clinic["City"]
                 except:
-                    print("ASF Trials Locs clinic filter failed")
-                    asf_trials_locs_df = trial_df_tuple[1]
+                    print("AS Expert Clinics Trials Locs clinic filter failed")
+                    asexpert_trials_locs_df = trial_df_tuple[1]
 
-                asf_trials_merge = asf_trials_df.merge(
-                    asf_trials_locs_df, how="inner", on="NCT_ID"
+                asexpert_trials_merge = asexpert_trials_df.merge(
+                    asexpert_trials_locs_df, how="inner", on="NCT_ID"
                 )
-                asf_all_trials_merge_df = pd.concat(
-                    [asf_all_trials_merge_df, asf_trials_merge], axis=0
+                asexpert_all_trials_merge_df = pd.concat(
+                    [asexpert_all_trials_merge_df, asexpert_trials_merge], axis=0
                 )
-    asf_all_trials_merge_df.drop(
+    asexpert_all_trials_merge_df.drop(
         columns=["Hover_City", "City", "State", "Zip", "Country"], inplace=True
     )
 
-    # pivot_asf_trials_locs = pd.pivot_table(
-    #   asf_all_trials_merge_df,
+    # pivot_asexpert_trials_locs = pd.pivot_table(
+    #   asexpert_all_trials_merge_df,
     #    values="NCT_ID",
     #    aggfunc=pd.Series.nunique,
     #    index=["Facility", "Lat", "Lon"],
     #    columns=["Treatment"],
     #    fill_value=0,
     # )
-    # pivot_asf_trials_locs.reset_index(inplace=True)
-    # final_asf_trials_locs = (
+    # pivot_asexpert_trials_locs.reset_index(inplace=True)
+    # final_asexpert_trials_locs = (
     #    clinics_json_df.merge(
-    #        pivot_asf_trials_locs, how="left", on=["Lat", "Lon", "Facility"]
+    #        pivot_asexpert_trials_locs, how="left", on=["Lat", "Lon", "Facility"]
     #    )
     #    .drop_duplicates()
     #    .fillna(value=0)
     #    .astype({"ASO": "int", "gene_therapy": "int"})
     #    .rename(columns={"Facility": "Institution"})
     # )
-    return asf_all_trials_merge_df
+    return asexpert_all_trials_merge_df
 
 
 if __name__ == "__main__":
@@ -310,6 +310,6 @@ if __name__ == "__main__":
     with open(f"{wkdir}/../../data/AS_expert_clinics.json") as f:
         clinics_json = json.load(f)
     clinics_json_df = pd.read_json(f"{wkdir}/../../data/AS_expert_clinics.json", orient="index")
-    PatientGroupClinics_df = trials_PatientGroupClinics(clinics_json_df, clinics_json)
-    PatientGroupClinics_df.to_csv(f"{wkdir}/../../data/PatientGroupClinics_data.csv", index=False)
+    ASExpertClinics_df = trials_ASExpertClinics(clinics_json_df, clinics_json)
+    ASExpertClinics_df.to_csv(f"{wkdir}/../../data/ASExpertClinics_data.csv", index=False)
     print("Execute time : ", round(time.time()-start, 2), "s")
