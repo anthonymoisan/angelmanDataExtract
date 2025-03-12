@@ -178,7 +178,7 @@ def trials_ASExpertClinics(clinics_json_df, clinics_json):
 
     for i, intervention in enumerate(interventions.keys()):
         for key, clinic in clinics_json.items():
-            clinic_geocode = f'distance({clinic["Lat"]},{clinic["Lon"]},5mi)'
+            clinic_geocode = f'distance({clinic["Lat_scrape"]},{clinic["Lon_scrape"]},5mi)'
             next_page_token = None
             treatment = (
                 'EXPANSION[Concept]"'
@@ -214,8 +214,8 @@ def trials_ASExpertClinics(clinics_json_df, clinics_json):
             try:
                 asexpert_trials_locs_df = trial_df_tuple[1]
                 asexpert_trials_locs_df = asexpert_trials_locs_df.loc[
-                    (asexpert_trials_locs_df["Lat"] == clinic["Lat"])
-                    & (asexpert_trials_locs_df["Lon"] == clinic["Lon"])
+                    (asexpert_trials_locs_df["Lat_scrape"] == clinic["Lat"])
+                    & (asexpert_trials_locs_df["Lon_scrape"] == clinic["Lon"])
                 ]
                 asexpert_trials_locs_df = __filter_and_replace_fuzzy_match(
                     asexpert_trials_locs_df, "Facility", clinic["Hospitals"], threshold=70
@@ -259,8 +259,8 @@ def trials_ASExpertClinics(clinics_json_df, clinics_json):
                 try:
                     asexpert_trials_locs_df = trial_df_tuple[1]
                     asexpert_trials_locs_df = asexpert_trials_locs_df.loc[
-                        (asexpert_trials_locs_df["Lat"] == clinic["Lat"])
-                        & (asexpert_trials_locs_df["Lon"] == clinic["Lon"])
+                        (asexpert_trials_locs_df["Lat_scrape"] == clinic["Lat"])
+                        & (asexpert_trials_locs_df["Lon_scrape"] == clinic["Lon"])
                     ]
                     asexpert_trials_locs_df = __filter_and_replace_fuzzy_match(
                         asexpert_trials_locs_df,
