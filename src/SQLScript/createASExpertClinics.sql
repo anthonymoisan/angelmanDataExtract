@@ -8,5 +8,7 @@ CREATE TABLE T_ASExpertClinicalTrials (
     Treatment VARCHAR(50),
     Facility VARCHAR(255),
     Lat_scrape DECIMAL(9,6),
-    Lon_scrape DECIMAL(9,6)
+    Lon_scrape DECIMAL(9,6),
+    Lat_map DECIMAL(19,14),
+    Lon_map DECIMAL(19,14)
 );
