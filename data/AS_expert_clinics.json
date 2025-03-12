@@ -4,6 +4,8 @@
         "City": "Vancouver, BC, Canada",
         "Lat_scrape": 49.24966,
         "Lon_scrape": -123.11934,
+        "Lat_map": 49.24432108295614,
+        "Lon_map": -123.1243715519641,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Boston Childrens": {
@@ -11,6 +13,8 @@
         "City": "Boston, MA, USA",
         "Lat_scrape": 42.35843,
         "Lon_scrape": -71.05977,
+        "Lat_map": 42.33752473070475, 
+        "Lon_map": -71.10545989737273,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Mass General": {
@@ -18,6 +22,8 @@
         "City": "Boston, MA, USA",
         "Lat_scrape": 42.35843,
         "Lon_scrape": -71.05977,
+        "Lat_map": 42.36255122688891, 
+        "Lon_map": -71.06837790674592,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Boys Town": {
@@ -25,6 +31,8 @@
         "City": "Boys Town, NE, USA",
         "Lat_scrape": 41.26111,
         "Lon_scrape": -96.13196,
+        "Lat_map": 41.249750104118924, 
+        "Lon_map": -96.13334908843063,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Cedars-Sinai": {
@@ -32,6 +40,8 @@
         "City": "Los Angeles, CA, USA",
         "Lat_scrape": 34.05223,
         "Lon_scrape": -118.24368,
+        "Lat_map": 34.07403361320543, 
+        "Lon_map": -118.38089581027701,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Los Angeles": {
@@ -39,6 +49,8 @@
         "City": "Los Angeles, CA, USA",
         "Lat_scrape": 34.05223,
         "Lon_scrape": -118.24368,
+        "Lat_map": 34.097533351246774, 
+        "Lon_map": -118.29110926179014,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Dallas":{
@@ -46,6 +58,8 @@
         "City": "Dallas, TX, USA",
         "Lat_scrape": 32.78306,
         "Lon_scrape": -96.80667,
+        "Lat_map": 32.809335429671656, 
+        "Lon_map": -96.83685610179596,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Aurora": {
@@ -53,6 +67,8 @@
         "City": "Aurora, CO, USA",
         "Lat_scrape":39.72943,
         "Lon_scrape": -104.83192,
+        "Lat_map": 39.742117814908866, 
+        "Lon_map": -104.8346610345408,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Ottawa": {
@@ -60,6 +76,8 @@
         "City": "Ottawa, ON, Canada",
         "Lat_scrape": 45.41117,
         "Lon_scrape": -75.69812,
+        "Lat_map": 45.40088317314533, 
+        "Lon_map": -75.65135661889259,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Philadelphia": {
@@ -67,6 +85,8 @@
         "City": "Philadelphia, PA, USA",
         "Lat_scrape": 39.95233,
         "Lon_scrape": -75.16379,
+        "Lat_map": 39.94852892289775, 
+        "Lon_map": -75.19482433226545,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Kansas City": {
@@ -74,6 +94,8 @@
         "City": "Kansas City, MO, USA",
         "Lat_scrape": 39.09973,
         "Lon_scrape": -94.57857,
+        "Lat_map": 39.08377097736965, 
+        "Lon_map": -94.57745211976885,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Cincinatti": {
@@ -81,6 +103,8 @@
         "City": "Cincinatti, OH, USA",
         "Lat_scrape": 39.12713,
         "Lon_scrape": -84.51435,
+        "Lat_map": 39.14147572401176, 
+        "Lon_map": -84.50082787033254,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Lewisburg": {
@@ -88,6 +112,8 @@
         "City": "Lewisburg, PA, USA",
         "Lat_scrape": 40.96453,
         "Lon_scrape": -76.88441,
+        "Lat_map": 40.984847669718334, 
+        "Lon_map": -76.88550410158827,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Baltimore": {
@@ -95,6 +121,8 @@
         "City": "Baltimore, MD, USA",
         "Lat_scrape": 39.29038,
         "Lon_scrape": -76.61219,
+        "Lat_map": 39.29865979185424, 
+        "Lon_map": -76.59401028044887,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Rochester": {
@@ -102,6 +130,8 @@
         "City": "Rochester, MN, USA",
         "Lat_scrape": 44.02163,
         "Lon_scrape": -92.4699,
+        "Lat_map": 44.02256773275068, 
+        "Lon_map": -92.46687996299657,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "St. Paul": {
@@ -109,6 +139,8 @@
         "City": "St. Paul, MN, USA",
         "Lat_scrape": 44.94441,
         "Lon_scrape": -93.09327,
+        "Lat_map": 45.022927137498456, 
+        "Lon_map": -93.17628228637311,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Montreal": {
@@ -116,6 +148,8 @@
         "City": "Montréal, QC, Canada",
         "Lat_scrape": 45.50884,
         "Lon_scrape": -73.58781,
+        "Lat_map": 45.47235785143103, 
+        "Lon_map": -73.60170814772455,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Miami": {
@@ -123,6 +157,8 @@
         "City": "Miami, FL, USA",
         "Lat_scrape": 25.77427,
         "Lon_scrape": -80.19366,
+        "Lat_map": 25.741150501875037, 
+        "Lon_map": -80.29449190236173,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "NYU": {
@@ -130,6 +166,8 @@
         "City": "New York, NY, USA",
         "Lat_scrape": 40.71427,
         "Lon_scrape": -74.00597,
+        "Lat_map": 40.745599238478185, 
+        "Lon_map": -73.97690984942459,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Weill Cornell": {
@@ -137,6 +175,8 @@
         "City": "New York, NY, USA",
         "Lat_scrape": 40.71278,
         "Lon_scrape": -74.00597,
+        "Lat_map": 40.76569643212164, 
+        "Lon_map": -73.95414109461967,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "San Diego": {
@@ -144,6 +184,8 @@
         "City": "San Diego, CA, USA",
         "Lat_scrape": 32.71533,
         "Lon_scrape": -117.15726,
+        "Lat_map": 32.798125869638746, 
+        "Lon_map": -117.1515023962391,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Chicago": {
@@ -151,6 +193,8 @@
         "City": "Chicago, IL, USA",
         "Lat_scrape": 41.85003,
         "Lon_scrape": -87.65005,
+        "Lat_map": 41.8746052472991, 
+        "Lon_map": -87.66903721856139,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Houston": {
@@ -158,6 +202,8 @@
         "City": "Houston, TX, USA",
         "Lat_scrape": 29.76328,
         "Lon_scrape": -95.36327,
+        "Lat_map": 29.706966643885686, 
+        "Lon_map": -95.40223447360883,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "San Francisco": {
@@ -165,6 +211,8 @@
         "City": "San Francisco, CA, USA",
         "Lat_scrape": 37.77493,
         "Lon_scrape": -122.41942,
+        "Lat_map": 37.76667185961364, 
+        "Lon_map": -122.38980648067091,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Carrboro": {
@@ -172,6 +220,8 @@
         "City": "Carrboro, NC, USA",
         "Lat_scrape": 35.91014,
         "Lon_scrape": -79.07529,
+        "Lat_map": 35.89137965259167, 
+        "Lon_map": -79.08043034638246,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Nashville": {
@@ -179,6 +229,8 @@
         "City": "Nashville, TN, USA",
         "Lat_scrape": 36.16589,
         "Lon_scrape": -86.78444,
+        "Lat_map": 36.13932428817348, 
+        "Lon_map": -86.80225050644961,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Buenos Aires": {
@@ -186,6 +238,8 @@
         "City": "San Isidro, Buenos Aires, Argentina",
         "Lat_scrape": -34.4721,
         "Lon_scrape": -58.52708,
+        "Lat_map": -34.49072414917635, 
+        "Lon_map": -58.547497519172055,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Rotterdam": {
@@ -193,6 +247,8 @@
         "City": "Rotterdam, ZH, The Netherlands",
         "Lat_scrape": 51.9225,
         "Lon_scrape": 4.47917,
+        "Lat_map": 51.91086846874625, 
+        "Lon_map": 4.46806980663092,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Munich": {
@@ -200,6 +256,8 @@
         "City": "Munich, BY, Germany",
         "Lat_scrape": 48.13743,
         "Lon_scrape": 11.57549,
+        "Lat_map": 48.130119997504735, 
+        "Lon_map": 11.558847050578093,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Aachen": {
@@ -207,6 +265,8 @@
         "City": "Aachen, NW, Germany",
         "Lat_scrape": 50.77664,
         "Lon_scrape": 6.08342,
+        "Lat_map": 50.7752986419728, 
+        "Lon_map": 6.042846135395438,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Leipzig": {
@@ -214,6 +274,8 @@
         "City": "Leipzig, SN, Germany",
         "Lat_scrape": 51.33962,
         "Lon_scrape": 12.37129,
+        "Lat_map": 51.33070993183043, 
+        "Lon_map": 12.386044998659626,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Sabadell": {
@@ -221,6 +283,8 @@
         "City": "Sabadell, Barcelona, Spain",
         "Lat_scrape": 41.54329,
         "Lon_scrape": 2.10942,
+        "Lat_map": 41.557174688085766, 
+        "Lon_map": 2.1102353520609243,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Budapest": {
@@ -228,6 +292,8 @@
         "City": "Budapest, Hungary",
         "Lat_scrape": 47.49801,
         "Lon_scrape": 19.03991,
+        "Lat_map": 47.51776995035384, 
+        "Lon_map": 19.08752034339447,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Ramat Gan": {
@@ -235,6 +301,8 @@
         "City": "Sderot Gabriela, Ramat Gan, Israel",
         "Lat_scrape": 32.08227,
         "Lon_scrape": 34.81065,
+        "Lat_map": 32.04811850649993, 
+        "Lon_map": 34.84383374549798,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Al Jadaf": {
@@ -242,6 +310,8 @@
         "City": "Al Jadaf, Dubai, UAE",
         "Lat_scrape": 25.0657,
         "Lon_scrape": 55.17128,
+        "Lat_map": 25.225549669485453, 
+        "Lon_map": 55.31822252438179,
         "Sponsor": "Angelman Syndrome Foundation"
     },
     "Brisbane": {
@@ -249,6 +319,8 @@
         "City": "South Brisbane, QLD, Australia",
         "Lat_scrape": -27.48034,
         "Lon_scrape": 153.02049,
+        "Lat_map": -27.484080248188945, 
+        "Lon_map": 153.02659400140126,
         "Sponsor": "FAST Australia"
     },
     "Melbourne": {
@@ -256,6 +328,8 @@
         "City": "Melbourne, VIC, Australia",
         "Lat_scrape": -37.814,
         "Lon_scrape": 144.96332,
+        "Lat_map": -37.7933393952675, 
+        "Lon_map": 144.94940637544553,
         "Sponsor": "FAST Australia"
     },
     "Sydney": {
@@ -263,6 +337,8 @@
         "City": "Randwick, NSW, Australia",
         "Lat_scrape": -33.91439,
         "Lon_scrape": 151.24895,
+        "Lat_map": -33.91721269609628, 
+        "Lon_map": 151.23835089799545,
         "Sponsor": "FAST Australia"
     },
     "Manchester": {
@@ -270,13 +346,17 @@
         "City": "Manchester, England, UK",
         "Lat_scrape": 53.48076,
         "Lon_scrape": -2.24263,
+        "Lat_map": 53.46093709602949, 
+        "Lon_map": -2.2252012416795375,
         "Sponsor": "AngelmanUK"
     },
     "Necker":{
-        "Hospitals": ["Hôpital Necker-Enfants Malades APHP", "Necker Children's Hospital", "Groupe Hospitalier Pitie Salpetriere", "Aphp - Pitie Salpetriere", "Hopital La Pitie Salpetriere"],
+        "Hospitals": ["Hôpital Necker-Enfants Malades APHP", "Necker Children's Hospital"],
         "City": "Paris, Île-de-France, France",
         "Lat_scrape": 48.85341,
         "Lon_scrape": 2.3488,
+        "Lat_map": 48.84639246496053, 
+        "Lon_map": 2.315947354325983,
         "Sponsor": "National Health Ministry"
     },
     "Pitie Salpetriere": {
@@ -284,6 +364,8 @@
         "City": "Paris, Île-de-France, France",
         "Lat_scrape": 48.85341,
         "Lon_scrape": 2.3488,
+        "Lat_map": 48.83704173774976, 
+        "Lon_map": 2.3651365621745843,
         "Sponsor": "National Health Ministry"
     },
     "Marseille": {
@@ -291,6 +373,8 @@
         "City": "Marseille, Provence-Alpes-Côte d'Azur, France",
         "Lat_scrape": 43.29551,
         "Lon_scrape": 5.38958,
+        "Lat_map": 43.290507140553295, 
+        "Lon_map": 5.401919205155078,
         "Sponsor": "National Health Ministry"
     },
     "Strasbourg": {
@@ -298,6 +382,8 @@
         "City": "Strasbourg, Alsace, France",
         "Lat_scrape": 48.58392,
         "Lon_scrape": 7.74553,
+        "Lat_map": 48.575564916322406, 
+        "Lon_map": 7.744043215274328,
         "Sponsor": "National Health Ministry"
     },
     "Toulouse": {
@@ -305,6 +391,8 @@
         "City": "Toulouse, Occitania, France",
         "Lat_scrape": 43.60426,
         "Lon_scrape": 1.44367,
+        "Lat_map": 43.599474323178164, 
+        "Lon_map": 1.4364363675149534,
         "Sponsor": "National Health Ministry"
     },
     "Dijon": {
@@ -312,6 +400,8 @@
         "City": "Dijon, Bourgogne-Franche-Comté, France",
         "Lat_scrape": 47.31667,
         "Lon_scrape": 5.01667,
+        "Lat_map": 47.32126501163833, 
+        "Lon_map": 5.068922801842331,
         "Sponsor": "National Health Ministry"
     },
     "Bordeaux": {
@@ -319,6 +409,8 @@
         "City": "Bordeaux, Nouvelle-Aquitaine, France",
         "Lat_scrape": 44.84044,
         "Lon_scrape": -0.5805,
+        "Lat_map": 44.82922445528902, 
+        "Lon_map": -0.6053489871866882,
         "Sponsor": "National Health Ministry"
     },
     "Lyon": {
@@ -326,6 +418,8 @@
         "City": "Lyon, Auvergne-Rhône-Alpes, France",
         "Lat_scrape": 45.74848,
         "Lon_scrape": 4.84669,
+        "Lat_map": 45.78171273853479, 
+        "Lon_map": 4.830153082160854,
         "Sponsor": "National Health Ministry"
     },
     "Brest": {
@@ -333,6 +427,8 @@
         "City": "Brest, Brittany, France",
         "Lat_scrape": 48.3903,
         "Lon_scrape": -4.48628,
+        "Lat_map": 48.39277119919438, 
+        "Lon_map": -4.486921488399541,
         "Sponsor": "National Health Ministry"
     }
 }
