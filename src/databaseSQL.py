@@ -254,8 +254,8 @@ def clinicalTrials():
     df.fillna("None", inplace=True)
 
     # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_ASFClinicalTrials")
-    print("Execute time for ASFClinicalTrials : ", round(time.time()-start, 2), "s")
+    __insertValue(df, "T_ClinicalTrials")
+    print("Execute time for ClinicalTrials : ", round(time.time()-start, 2), "s")
 
 
 if __name__ == "__main__":
