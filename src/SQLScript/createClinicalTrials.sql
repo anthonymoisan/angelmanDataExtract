@@ -1,4 +1,4 @@
-CREATE TABLE T_ASFClinicalTrials (
+CREATE TABLE T_ClinicalTrials (
     NCT_ID VARCHAR(20) PRIMARY KEY,
     Sponsor VARCHAR(255),
     Study_Name TEXT,

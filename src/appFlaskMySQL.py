@@ -62,7 +62,7 @@ def home():
     <li>API in order for scraping data from PubMed : <a href="./api/v1/resources/articlesPubMed">./api/v1/resources/articlesPubMed</a></li>
     <li>API in order for scraping data from AS Trial : <a href="./api/v1/resources/ASTrials">./api/v1/resources/ASTrials</a></li>
     <li>API in order for scraping data from UN Population : <a href="./api/v1/resources/UnPopulation">./api/v1/resources/UnPopulation</a></li>
-    <li>API in order for scraping data from ASF Clinical Trials : <a href="./api/v1/resources/ASFClinicalTrials">./api/v1/resources/ASFClinicalTrials</a></li>
+    <li>API in order for scraping data from Clinical Trials : <a href="./api/v1/resources/ClinicalTrials">./api/v1/resources/ClinicalTrials</a></li>
     </ul>
     '''
 
@@ -145,10 +145,10 @@ def api_UnPopulation_all():
         return jsonify({"error": str(e)}), 500
 
 
-@appFlaskMySQL.route('/api/v1/resources/ASFClinicalTrials', methods=['GET'])
-def api_ASFClinicaltrials_all():
+@appFlaskMySQL.route('/api/v1/resources/ClinicalTrials', methods=['GET'])
+def api_Clinicaltrials_all():
     """
-    API to expose the results from ASF clinical trials with the specific table from the database
+    API to expose the results from clinical trials with the specific table from the database
     """
     start = time.time()
     try:
@@ -162,11 +162,11 @@ def api_ASFClinicaltrials_all():
             ) as tunnel:
                     local_port = tunnel.local_bind_port
                     DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@127.0.0.1:{local_port}/{DB_NAME}"
-                    return __readTable(DATABASE_URL, "T_ASFClinicalTrials")
+                    return __readTable(DATABASE_URL, "T_ClinicalTrials")
         else:
             DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-            return __readTable(DATABASE_URL, "T_ASFClinicalTrials")
-        print("Execute time for ASFClinicalTrials : ", round(time.time()-start, 2), "s") 
+            return __readTable(DATABASE_URL, "T_ClinicalTrials")
+        print("Execute time for ClinicalTrials : ", round(time.time()-start, 2), "s") 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
