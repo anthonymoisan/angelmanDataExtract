@@ -7,7 +7,7 @@ import time
 import scraper.scraperPubMed as scrPubMed
 import scraper.scraperASTrial as scrASTrialBis
 import scraper.scraperPopulation as scrPopulation
-import scraper.scraperASFClinicalTrial as scrASFClinicalTrial
+import scraper.scraperClinicalTrial as scrClinicalTrial
 import pandas as pd
 import numpy as np
 import json
@@ -230,7 +230,7 @@ def unPopulation():
     print("Execute time for UnPopulation : ", round(time.time()-start, 2), "s")
 
 
-def asfClinicalTrials():
+def clinicalTrials():
     """
     Method to scrap data from as clinical trials and ASF files
     """
@@ -238,20 +238,18 @@ def asfClinicalTrials():
     wkdir = os.path.dirname(__file__)
     # 0) Drop Table
     print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_ASFClinicalTrials"
+    sqlDrop = "DROP TABLE T_ClinicalTrials"
     __execRequest(sqlDrop)
 
     # 1) Create Table
     print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createASFClinicalTrials.sql", "r", encoding="utf-8") as file:
+    with open(f"{wkdir}/SQLScript/createClinicalTrials.sql", "r", encoding="utf-8") as file:
         sql_commands = file.read()
     __execRequest(sql_commands)
     print("--- Scraper")
     # 2) Use scraper to obtain dataframe
-    with open(f"{wkdir}/../data/asf_clinics.json") as f:
-        clinics_json = json.load(f)
-    clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics.json", orient="index")
-    df = scrASFClinicalTrial.trials_asf_clinics(clinics_json_df, clinics_json)
+    clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics2.json", orient="index")
+    df = scrClinicalTrial.trials_clinics_LonLat(clinics_json_df)
     df = df.replace([np.inf, -np.inf], np.nan)
     df.fillna("None", inplace=True)
 
@@ -265,11 +263,11 @@ if __name__ == "__main__":
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
-    articlesPubMed()
+    #articlesPubMed()
     print("\n")
-    asTrials()
+    #asTrials()
     print("\n")
-    unPopulation()
+    #unPopulation()
     print("\n")
-    asfClinicalTrials()
+    clinicalTrials()
     print("\nExecute time : ", round(time.time()-start, 2), "s")
