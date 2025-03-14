@@ -263,11 +263,11 @@ if __name__ == "__main__":
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
-    #articlesPubMed()
+    articlesPubMed()
     print("\n")
-    #asTrials()
+    asTrials()
     print("\n")
-    #unPopulation()
+    unPopulation()
     print("\n")
     clinicalTrials()
     print("\nExecute time : ", round(time.time()-start, 2), "s")
