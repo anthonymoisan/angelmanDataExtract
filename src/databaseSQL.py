@@ -5,7 +5,7 @@ import os
 from configparser import ConfigParser
 import time
 import scraper.scraperPubMed as scrPubMed
-import scraper.scraperASTrial as scrASTrialBis
+import scraper.scraperASTrial as scrASTrial
 import scraper.scraperPopulation as scrPopulation
 import scraper.scraperClinicalTrial as scrClinicalTrial
 import pandas as pd
@@ -161,7 +161,7 @@ def asTrials():
 
     print("--- Scraper")
     # 2) Use scraper to obtain dataframe
-    df = scrASTrialBis.as_trials()
+    df = scrASTrial.as_trials()
     df = df.replace([np.inf, -np.inf], np.nan)
     df.fillna("None", inplace=True)
 
