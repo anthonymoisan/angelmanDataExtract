@@ -11,6 +11,7 @@ from thefuzz import process
 import os
 import time
 import json
+import re
 
 def __getNctId(study):
     return study["protocolSection"]["identificationModule"]["nctId"]
@@ -53,6 +54,68 @@ def __getSex(study):
         return study["protocolSection"]["eligibilityModule"]["sex"]
     except KeyError:
         return "unknown"
+
+
+def __is_word_in_text(word, text):
+    """
+    Check if a word is in a text.
+
+    Parameters
+    ----------
+    word : str
+    text : str
+
+    Returns
+    -------
+    bool : True if word is in text, otherwise False.
+
+    Examples
+    --------
+    >>> is_word_in_text("Python", "python is awesome.")
+    True
+
+    >>> is_word_in_text("Python", "camelCase is pythonic.")
+    False
+
+    >>> is_word_in_text("Python", "At the end is Python")
+    True
+    """
+    pattern = r'(^|[^\w]){}([^\w]|$)'.format(word)
+    pattern = re.compile(pattern, re.IGNORECASE)
+    matches = re.search(pattern, text)
+    return bool(matches)
+
+### Only Eligibility Inclusion Criteria in the eligibility free text
+###
+def __splitEligibility(textEligibility):
+    posInclusionCriteria = textEligibility.find("inclusion criteria:")
+    posExclusionCriteria = textEligibility.find("exclusion criteria:")
+    textExclusionCriteria = textEligibility[posInclusionCriteria:(posExclusionCriteria-1)]
+    return(textExclusionCriteria)
+
+
+def __getGenotype(textEligibilityCriteria, studyType):
+    if(studyType == "OBSERVATIONAL"):
+        # return All genotype
+        isDeletion = True
+        isMutation = True
+        isUPD = True
+        isID = True
+    else :    
+        #Interventional clinical trials
+        textEligibilityLower = textEligibilityCriteria.lower()
+        #print(textEligibilityLower)
+        textInclusionCriteria = __splitEligibility(textEligibilityLower)
+        #print(textInclusionCriteria)
+        isDeletion = __is_word_in_text('deletion', textInclusionCriteria)
+        isMutation = __is_word_in_text('mutation', textInclusionCriteria)
+        isUPD = (__is_word_in_text('upd', textInclusionCriteria) or __is_word_in_text('disomie', textInclusionCriteria))
+        isID = (__is_word_in_text('icd', textInclusionCriteria) or __is_word_in_text('imprinting defect', textInclusionCriteria))
+        
+        if(( not isDeletion) and (not isMutation) and (not isUPD) and (not isID)):
+            # reset at all genotype for instance with the following keyword : confirmed molecular diagnosis of as
+            isDeletion = isMutation = isID = isUPD = True
+    return (isDeletion, isMutation, isUPD, isID)
 
 def __getEligibilityCriteria(study):
     try:
@@ -143,10 +206,17 @@ def __buildTrialList(study):
     trial_list.append(__getMinimumAge(study))
     trial_list.append(__getMaximumAge(study))
     trial_list.append(__getSex(study))
-    trial_list.append(__getStudyType(study))
+    studyType = __getStudyType(study)
+    trial_list.append(studyType)
     trial_list.append(__getPhases(study))
     trial_list.append(__getEnrollmentInfo(study))
-    trial_list.append(__getEligibilityCriteria(study))
+    eligibilityCriteria = __getEligibilityCriteria(study)
+    (isDeletion,isMutation,isUPD, isID) = __getGenotype(eligibilityCriteria,studyType)
+    trial_list.append(isDeletion)
+    trial_list.append(isMutation)
+    trial_list.append(isUPD)
+    trial_list.append(isID)
+    trial_list.append(eligibilityCriteria)
     trial_list.append(__getBriefSummary(study))
     return trial_list 
     
@@ -222,7 +292,7 @@ def as_trials():
             
     # output dataframes for use in visualization
     as_trials_df = __BuildDataFrame(as_trials_list,
-                                    listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Minimum_Age", "Maximum_Age", "Sex","StudyType","Phases","EnrollmentInfo","EligibilityCriteria","BriefSummary"])
+                                    listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Minimum_Age", "Maximum_Age", "Sex","StudyType","Phases","EnrollmentInfo", "IsDeletion", "IsMutation", "IsUPD", "IsID","EligibilityCriteria","BriefSummary"])
     # as_trials_df.to_csv(f"{wkdir}/data/as_trials_df.csv", index=False)
 
     as_trials_locs_df = __BuildDataFrame(as_trials_locs_list,

@@ -5,9 +5,9 @@ import os
 from configparser import ConfigParser
 import time
 import scraper.scraperPubMed as scrPubMed
-import scraper.scraperASTrial as scrASTrialBis
+import scraper.scraperASTrial as scrASTrial
 import scraper.scraperPopulation as scrPopulation
-import scraper.scraperASExpertClinics as scrASExpertClinics
+import scraper.scraperClinicalTrial as scrClinicalTrial
 import pandas as pd
 import numpy as np
 import json
@@ -161,7 +161,7 @@ def asTrials():
 
     print("--- Scraper")
     # 2) Use scraper to obtain dataframe
-    df = scrASTrialBis.as_trials()
+    df = scrASTrial.as_trials()
     df = df.replace([np.inf, -np.inf], np.nan)
     df.fillna("None", inplace=True)
 
@@ -230,7 +230,7 @@ def unPopulation():
     print("Execute time for UnPopulation : ", round(time.time()-start, 2), "s")
 
 
-def ASExpertClinics():
+def clinicalTrials():
     """
     Method to scrap data from as clinical trials at hospitals with AS expertise
     """
@@ -238,26 +238,24 @@ def ASExpertClinics():
     wkdir = os.path.dirname(__file__)
     # 0) Drop Table
     print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_ASExpertClinics"
+    sqlDrop = "DROP TABLE T_ClinicalTrials"
     __execRequest(sqlDrop)
 
     # 1) Create Table
     print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createASExpertClinics.sql", "r", encoding="utf-8") as file:
+    with open(f"{wkdir}/SQLScript/createClinicalTrials.sql", "r", encoding="utf-8") as file:
         sql_commands = file.read()
     __execRequest(sql_commands)
     print("--- Scraper")
     # 2) Use scraper to obtain dataframe
-    with open(f"{wkdir}/../data/AS_expert_clinics.json") as f:
-        clinics_json = json.load(f)
-    clinics_json_df = pd.read_json(f"{wkdir}/../data/AS_expert_clinics.json", orient="index")
-    df = scrASExpertClinics.trials_ASExpertClinics(clinics_json_df, clinics_json)
+    clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics2.json", orient="index")
+    df = scrClinicalTrial.trials_clinics_LonLat(clinics_json_df)
     df = df.replace([np.inf, -np.inf], np.nan)
     df.fillna("None", inplace=True)
 
     # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_ASExpertClinics")
-    print("Execute time for ASExpertClinics : ", round(time.time()-start, 2), "s")
+    __insertValue(df, "T_ClinicalTrials")
+    print("Execute time for ClinicalTrials : ", round(time.time()-start, 2), "s")
 
 
 if __name__ == "__main__":
@@ -271,5 +269,5 @@ if __name__ == "__main__":
     print("\n")
     unPopulation()
     print("\n")
-    ASExpertClinics()
+    clinicalTrials()
     print("\nExecute time : ", round(time.time()-start, 2), "s")

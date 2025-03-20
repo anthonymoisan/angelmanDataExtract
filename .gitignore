@@ -179,3 +179,10 @@ src/old/
 data/*.csv
 data/all_cities.json
 data/output.xml
+data/DataTimone_GeneTherapy.json
+data/DataTimone.json
+data/test.json
+data/asf_clinics_france.json
+doc/~$AngelmanBIDashboard.pptx
+doc/AngelmanBIDashboard.pptx
+src/scraper/scraperOtherASTrial.py
