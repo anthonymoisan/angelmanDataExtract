@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:src/SQLScript/createASExpertClinics.sql
-CREATE TABLE T_ASExpertClinicalTrials (
-========
 CREATE TABLE T_ClinicalTrials (
->>>>>>>> main:src/SQLScript/createClinicalTrials.sql
     NCT_ID VARCHAR(20) PRIMARY KEY,
     Sponsor VARCHAR(255),
     Study_Name TEXT,
