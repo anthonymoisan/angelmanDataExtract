@@ -203,7 +203,7 @@ def trials_clinics_LonLat(clinics_json_df):
 if __name__ == "__main__":
     start = time.time()
     wkdir = os.path.dirname(__file__)
-    clinics_json_df = pd.read_json(f"{wkdir}/../../data/asf_clinics2.json", orient="index")
-    asf_all_trials_raw_trial_df = trials_clinics_LonLat(clinics_json_df)
-    asf_all_trials_raw_trial_df.to_csv(f"{wkdir}/../../data/asf_clinics_raw_trial_data2.csv", index=False)
+    clinics_json_df = pd.read_json(f"{wkdir}/../../data/as_clinics.json", orient="index")
+    clinics_trials_df = trials_clinics_LonLat(clinics_json_df)
+    clinics_trials_df.to_csv(f"{wkdir}/../../data/clinics_trials.csv", index=False)
     print("Execute time : ", round(time.time()-start, 2), "s")

@@ -248,7 +248,7 @@ def clinicalTrials():
     __execRequest(sql_commands)
     print("--- Scraper")
     # 2) Use scraper to obtain dataframe
-    clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics2.json", orient="index")
+    clinics_json_df = pd.read_json(f"{wkdir}/../data/AS_clinics.json", orient="index")
     df = scrClinicalTrial.trials_clinics_LonLat(clinics_json_df)
     df = df.replace([np.inf, -np.inf], np.nan)
     df.fillna("None", inplace=True)

@@ -95,7 +95,7 @@ def api_Clinicaltrials_all():
     """
     start = time.time()
     wkdir = os.path.dirname(__file__)
-    clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics2.json", orient="index")
+    clinics_json_df = pd.read_json(f"{wkdir}/../data/AS_clinics.json", orient="index")
     df = scrClinicalTrial.trials_clinics_LonLat(clinics_json_df)
     df.fillna("None", inplace=True)
     # The fonction jsonify from Flask convert a dictionnary Python
