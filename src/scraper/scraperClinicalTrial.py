@@ -123,7 +123,7 @@ def __filter_and_replace_fuzzy_match(clinicListNames, locationName, threshold=70
 def __buid_ClinicalsTrials(clinic, queryCondition, TypeTherapy):
     #For ASO or GeneTherapy (queryCondition), find clinical trials
     try:
-        clinic_geocode = f'distance({clinic["Lat"]},{clinic["Lon"]},1mi)'
+        clinic_geocode = f'distance({clinic["Lat_scrape"]},{clinic["Lon_scrape"]},1mi)'
         as_trials_req = __requestJSON2(clinic_geocode, queryCondition)
 
         as_trials_list = []
@@ -162,7 +162,7 @@ def __concatDataFrame(df1, df2, clinic):
         print(clinic)
         # return clinic alone without clinic trials
         #return pd.DataFrame()
-        return pd.DataFrame({"NCT_ID":[None], "Sponsor":[None], "Study_Name":[None],"Start_Date":[None], "End_Date":[None], "Current_Status":[None], "Treatment":[None], "Facility":[clinic.name], "Lat":[clinic["Lat"]], "Lon":[clinic["Lon"]]})
+        return pd.DataFrame({"NCT_ID":[None], "Sponsor":[None], "Study_Name":[None],"Start_Date":[None], "End_Date":[None], "Current_Status":[None], "Treatment":[None], "Facility":[clinic.name], "Lat_scrape":[clinic["Lat_scrape"]], "Lon_scrape":[clinic["Lon_scrape"]], "Lat_map":[clinic["Lat_map"]], "Lon_map":[clinic["Lon_map"]]})
     if df1.empty and not df2.empty:
         return df2
     if not df1.empty and df2.empty:
@@ -182,7 +182,7 @@ def trials_clinics_LonLat(clinics_json_df):
                                                     "ASO")
         
         df_trialsASO = __BuildDataFrame(as_trials_list_ASO,
-                                        listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Treatment", "Facility", "Lat", "Lon"])
+                                        listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Treatment", "Facility", "Lat_scrape", "Lon_scrape", "Lat_map", "Lon_map"])
         
         #print(df_trialsASO)
         
@@ -191,7 +191,7 @@ def trials_clinics_LonLat(clinics_json_df):
                                                             "gene_therapy")
         
         df_trialsGeneTherapy =  __BuildDataFrame(as_trials_list_GeneTherapy,
-                                                 listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Treatment", "Facility", "Lat", "Lon"])
+                                                 listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Treatment", "Facility", "Lat_scrape", "Lon_scrape", "Lat_map", "Lon_map"])
         
         #print(df_trialsGeneTherapy)
         
@@ -203,7 +203,7 @@ def trials_clinics_LonLat(clinics_json_df):
 if __name__ == "__main__":
     start = time.time()
     wkdir = os.path.dirname(__file__)
-    clinics_json_df = pd.read_json(f"{wkdir}/../../data/as_clinics.json", orient="index")
+    clinics_json_df = pd.read_json(f"{wkdir}/../../data/AS_clinics.json", orient="index")
     clinics_trials_df = trials_clinics_LonLat(clinics_json_df)
     clinics_trials_df.to_csv(f"{wkdir}/../../data/clinics_trials.csv", index=False)
     print("Execute time : ", round(time.time()-start, 2), "s")
