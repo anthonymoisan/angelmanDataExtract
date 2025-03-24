@@ -101,6 +101,7 @@ def __getGenotype(textEligibilityCriteria, studyType):
         isMutation = True
         isUPD = True
         isID = True
+        isMosaic = True
     else :    
         #Interventional clinical trials
         textEligibilityLower = textEligibilityCriteria.lower()
@@ -111,11 +112,12 @@ def __getGenotype(textEligibilityCriteria, studyType):
         isMutation = __is_word_in_text('mutation', textInclusionCriteria)
         isUPD = (__is_word_in_text('upd', textInclusionCriteria) or __is_word_in_text('disomie', textInclusionCriteria))
         isID = (__is_word_in_text('icd', textInclusionCriteria) or __is_word_in_text('imprinting defect', textInclusionCriteria))
+        isMosaic = __is_word_in_text('mosaic', textInclusionCriteria)
         
-        if(( not isDeletion) and (not isMutation) and (not isUPD) and (not isID)):
+        if(( not isDeletion) and (not isMutation) and (not isUPD) and (not isID) and (not(isMosaic))):
             # reset at all genotype for instance with the following keyword : confirmed molecular diagnosis of as
-            isDeletion = isMutation = isID = isUPD = True
-    return (isDeletion, isMutation, isUPD, isID)
+            isDeletion = isMutation = isID = isUPD = isMosaic = True
+    return (isDeletion, isMutation, isUPD, isID, isMosaic)
 
 def __getEligibilityCriteria(study):
     try:
@@ -211,11 +213,12 @@ def __buildTrialList(study):
     trial_list.append(__getPhases(study))
     trial_list.append(__getEnrollmentInfo(study))
     eligibilityCriteria = __getEligibilityCriteria(study)
-    (isDeletion,isMutation,isUPD, isID) = __getGenotype(eligibilityCriteria,studyType)
+    (isDeletion,isMutation,isUPD, isID, isMosaic) = __getGenotype(eligibilityCriteria,studyType)
     trial_list.append(isDeletion)
     trial_list.append(isMutation)
     trial_list.append(isUPD)
     trial_list.append(isID)
+    trial_list.append(isMosaic)
     trial_list.append(eligibilityCriteria)
     trial_list.append(__getBriefSummary(study))
     return trial_list 
@@ -292,7 +295,7 @@ def as_trials():
             
     # output dataframes for use in visualization
     as_trials_df = __BuildDataFrame(as_trials_list,
-                                    listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Minimum_Age", "Maximum_Age", "Sex","StudyType","Phases","EnrollmentInfo", "IsDeletion", "IsMutation", "IsUPD", "IsID","EligibilityCriteria","BriefSummary"])
+                                    listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Minimum_Age", "Maximum_Age", "Sex","StudyType","Phases","EnrollmentInfo", "IsDeletion", "IsMutation", "IsUPD", "IsID","IsMosaic","EligibilityCriteria","BriefSummary"])
     # as_trials_df.to_csv(f"{wkdir}/data/as_trials_df.csv", index=False)
 
     as_trials_locs_df = __BuildDataFrame(as_trials_locs_list,

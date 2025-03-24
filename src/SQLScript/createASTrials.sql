@@ -15,6 +15,7 @@ CREATE TABLE T_ASTrials (
     IsMutation BOOLEAN,
     IsUPD BOOLEAN,
     IsID BOOLEAN,
+    IsMosaic BOOLEAN,
     EligibilityCriteria TEXT,
     BriefSummary TEXT,
     Facility VARCHAR(255),
