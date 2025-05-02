@@ -4,13 +4,12 @@ import sshtunnel
 import os
 from configparser import ConfigParser
 import time
-import scraper.scraperPubMed as scrPubMed
-import scraper.scraperASTrial as scrASTrial
-import scraper.scraperPopulation as scrPopulation
-import scraper.scraperClinicalTrial as scrClinicalTrial
 import pandas as pd
 import numpy as np
 import json
+import exportBI.exportFASTFrance as expFASTFrance
+import smtplib
+from email.message import EmailMessage
 
 # Very important parameter to execute locally or remotely (production)
 LOCAL_CONNEXION = True
@@ -35,7 +34,7 @@ sshtunnel.SSH_TIMEOUT = 100.0
 sshtunnel.TUNNEL_TIMEOUT = 100.0
 
 
-def __tryExecuteRequest(DATABASE_URL, request):
+def __tryExecuteRequest(DATABASE_URL, request, returnValue):
     """
     Try execute a request SQL with the SQL request
 
@@ -53,6 +52,11 @@ def __tryExecuteRequest(DATABASE_URL, request):
 
             # Execute the request SQL
             result = connection.execute(text(request))
+            if(returnValue):
+                data = result.fetchall()
+                if data and len(data[0]) == 1:
+                    return data[0][0]
+                return data
     except Exception as e:
         print("Connexion error :", e)
     finally:
@@ -60,7 +64,7 @@ def __tryExecuteRequest(DATABASE_URL, request):
         print("Connexion closed.")
 
 
-def __execRequest(request):
+def __execRequest(request,returnValue = False):
     """
     Execute a request SQL with the parameter request in local or remotely 
 
@@ -81,12 +85,18 @@ def __execRequest(request):
             local_port = tunnel.local_bind_port
             DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@127.0.0.1: {local_port}/{DB_NAME}"
 
-            __tryExecuteRequest(DATABASE_URL, request)
+            if returnValue :
+                return __tryExecuteRequest(DATABASE_URL, request, returnValue)
+            else:
+                __tryExecuteRequest(DATABASE_URL, request,returnValue)
     else:
         # Remote connexion
         DATABASE_URL = f"""mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"""
 
-        __tryExecuteRequest(DATABASE_URL, request)
+        if returnValue :
+            return __tryExecuteRequest(DATABASE_URL, request, returnValue)
+        else:
+            __tryExecuteRequest(DATABASE_URL, request,returnValue)
 
 
 def __tryInsertValue(DATABASE_URL, tableName, df):
@@ -141,132 +151,165 @@ def __insertValue(df, tableName):
 
         __tryInsertValue(DATABASE_URL, tableName, df)
 
+def sendEmailAlert(T_TableName, numberOfPreviousRecords, numberOfCurrentRecords):
+    msg = EmailMessage()
+    msg["Subject"] = "Alert about the Table " + T_TableName
+    msg["From"] = "fastfrancecontact@gmail.com"
+    msg["To"] = "anthonymoisan@yahoo.fr"
+    msg.set_content("Hi,\n\nWe decide to keep the previous database.\n Current Version lines : " +str(numberOfCurrentRecords)+"\n Previous Version Lines : "+str(numberOfPreviousRecords)+"")
 
-def asTrials():
-    """
-    Method to scrap data from as clinical trials
-    """
-    start = time.time()
+    # Paramètres de connexion Gmail
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    username = "fastfrancecontact"
+    # Get working directory
     wkdir = os.path.dirname(__file__)
-    # 0) Drop Table
-    print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_ASTrials"
-    __execRequest(sqlDrop)
-
-    # 1) Create Table
-    print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createASTrials.sql", "r", encoding="utf-8") as file:
-        sql_commands = file.read()
-    __execRequest(sql_commands)
-
-    print("--- Scraper")
-    # 2) Use scraper to obtain dataframe
-    df = scrASTrial.as_trials()
-    df = df.replace([np.inf, -np.inf], np.nan)
-    df.fillna("None", inplace=True)
-
-    # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_ASTrials")
-    print("Execute time for ASTrials : ", round(time.time()-start, 2), "s")
-
-
-def articlesPubMed():
-    """
-    Method to scrap data from as Pub Med
-    """
-    start = time.time()
-    wkdir = os.path.dirname(__file__)
-    # 0) Drop Table
-    print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_ArticlesPubMed"
-    __execRequest(sqlDrop)
-
-    # 1) Create Table
-    print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createArticlesPubMed.sql", "r", encoding="utf-8") as file:
-        sql_commands = file.read()
-    __execRequest(sql_commands)
-
-    print("--- Scraper")
-    # 2) Use scraper to obtain dataframe
-    df = scrPubMed.pubmed_by_year(1965)
-    df = df.replace([np.inf, -np.inf], np.nan)
-    df.fillna("None", inplace=True)
-
-    # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_ArticlesPubMed")
-    print("Execute time for articlesPubMed : ", round(time.time()-start, 2), "s")
-
-
-def unPopulation():
-    """
-    Method to scrap data from Un Population
-    """
-    start = time.time()
-    wkdir = os.path.dirname(__file__)
-    # 0) Drop Table
-    print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_UnPopulation"
-    __execRequest(sqlDrop)
-
-    # 1) Create Table
-    print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createUnPopulation.sql", "r", encoding="utf-8") as file:
-        sql_commands = file.read()
-    __execRequest(sql_commands)
-
-    print("--- Scraper")
-    # 2) Use scraper to obtain dataframe
     config = ConfigParser()
-    filePath = f"{wkdir}/../angelman_viz_keys/Config3.ini"
+    filePath = f"{wkdir}/../angelman_viz_keys/Config4.ini"
     if config.read(filePath):
-        auth_token = config['UnPopulation']['bearerToken']
-    df = scrPopulation.un_population(auth_token)
-    df = df.replace([np.inf, -np.inf], np.nan)
-    df.fillna("None", inplace=True)
+        password = config['Gmail']['PASSWORD']
+        # Send email
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()  
+                server.login(username, password)
+                server.send_message(msg)
+                print("Email sent with success !")
+        except Exception as e:
+            print("Failure to send the email :", e)
 
-    # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_UnPopulation")
-    print("Execute time for UnPopulation : ", round(time.time()-start, 2), "s")
-
-
-def clinicalTrials():
+def export_mapFrance_French():
     """
-    Method to scrap data from as clinical trials and ASF files
+    Method to read map France in French
     """
     start = time.time()
     wkdir = os.path.dirname(__file__)
+    # 0) Preprocess
+    print("--- Read Data")
+    # 1) Use reader to obtain dataframe
+    df = expFASTFrance.readDataMapFASTFrance()
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df.fillna("None", inplace=True)
+    numberofCurrentRecords = df.shape[0]
+
+    # 2) Count the number 
+    sqlCount = "SELECT count(*) from T_MapFrance_French"
+    numberOfPreviousRecords = __execRequest(sqlCount, returnValue=True)
+    
+    if numberofCurrentRecords < 90/100*numberOfPreviousRecords:
+        print("--- Preprocess KO")
+        print("Failure with the previous data. We keep the previous database") 
+        sendEmailAlert("T_MapFrance_French", numberOfPreviousRecords, numberofCurrentRecords )
+    else:
+        print("--- Preprocess OK")
+        # 0) Drop Table
+        print("--- Drop Table")
+        sqlDrop = "DROP TABLE T_MapFrance_French"
+        __execRequest(sqlDrop)
+
+        # 1) Create Table
+        print("--- Create Table")
+        with open(f"{wkdir}/SQLScript/createMapFrance_French.sql", "r", encoding="utf-8") as file:
+            sql_commands = file.read()
+        __execRequest(sql_commands)
+
+        # 2) Insert value in Table from dataframe
+        __insertValue(df, "T_MapFrance_French")
+        print("Execute time for T_MapFrance_French : ", round(time.time()-start, 2), "s")
+
+def export_RegionsDepartements_French():
+    """
+    Method to read RegionsDepartements in French
+    """
+    start = time.time()
+    wkdir = os.path.dirname(__file__)
+    
     # 0) Drop Table
     print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_ClinicalTrials"
+    sqlDrop = "DROP TABLE T_RegionDepartement_French"
     __execRequest(sqlDrop)
 
     # 1) Create Table
     print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createClinicalTrials.sql", "r", encoding="utf-8") as file:
+    with open(f"{wkdir}/SQLScript/createRegionDepartement_French.sql", "r", encoding="utf-8") as file:
         sql_commands = file.read()
     __execRequest(sql_commands)
-    print("--- Scraper")
-    # 2) Use scraper to obtain dataframe
-    clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics2.json", orient="index")
-    df = scrClinicalTrial.trials_clinics_LonLat(clinics_json_df)
+
+    # 2) Use reader to obtain dataframe
+    df = expFASTFrance.readDataRegionsDepartements('RegionDep')
     df = df.replace([np.inf, -np.inf], np.nan)
     df.fillna("None", inplace=True)
-
+    
     # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_ClinicalTrials")
-    print("Execute time for ClinicalTrials : ", round(time.time()-start, 2), "s")
+    __insertValue(df, "T_RegionDepartement_French")
+    print("Execute time for T_RegionDepartement_French : ", round(time.time()-start, 2), "s")
+
+def export_RegionsPrefectures_French():
+    """
+    Method to read RegionsPrefectures in French
+    """
+    start = time.time()
+    wkdir = os.path.dirname(__file__)
+    
+    # 0) Drop Table
+    print("--- Drop Table")
+    sqlDrop = "DROP TABLE T_RegionPrefecture_French"
+    __execRequest(sqlDrop)
+
+    # 1) Create Table
+    print("--- Create Table")
+    with open(f"{wkdir}/SQLScript/createPrefectureRegion_French.sql", "r", encoding="utf-8") as file:
+        sql_commands = file.read()
+    __execRequest(sql_commands)
+
+    # 2) Use reader to obtain dataframe
+    df = expFASTFrance.readDataRegionsDepartements('Region')
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df.fillna("None", inplace=True)
+    
+    # 3) Insert value in Table from dataframe
+    __insertValue(df, "T_RegionPrefecture_French")
+    print("Execute time for T_RegionPrefecture_French : ", round(time.time()-start, 2), "s")
+
+def export_DifficultiesSA_French():
+    """
+    Method to read DifficultiesSA in French
+    """
+    start = time.time()
+    wkdir = os.path.dirname(__file__)
+    
+    # 0) Drop Table
+    print("--- Drop Table")
+    sqlDrop = "DROP TABLE T_DifficultiesSA_French"
+    __execRequest(sqlDrop)
+
+    # 1) Create Table
+    print("--- Create Table")
+    with open(f"{wkdir}/SQLScript/createDifficultiesSA_French.sql", "r", encoding="utf-8") as file:
+        sql_commands = file.read()
+    __execRequest(sql_commands)
+
+    # 2) Use reader to obtain dataframe
+    df = expFASTFrance.readDataDifficultiesSA()
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df.fillna("None", inplace=True)
+    
+    # 3) Insert value in Table from dataframe
+    __insertValue(df, "T_DifficultiesSA_French")
+    print("Execute time for T_DifficultiesSA_French : ", round(time.time()-start, 2), "s")
+
 
 if __name__ == "__main__":
     """
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
-    articlesPubMed()
+    export_mapFrance_French()
     print("\n")
-    asTrials()
+    export_RegionsDepartements_French()
     print("\n")
-    unPopulation()
+    export_RegionsPrefectures_French()
     print("\n")
-    #clinicalTrials()
+    export_DifficultiesSA_French()
+    print("\n")
     print("\nExecute time : ", round(time.time()-start, 2), "s")

@@ -51,6 +51,29 @@ def __readTable(DATABASE_URL, tableName):
     finally:
         engine.dispose()
 
+def __api_Table(tableName):
+    """
+    API to expose the results with the specific table from the database
+    """
+    start = time.time()
+    try:
+        if(LOCAL_CONNEXION):
+            # Create SSH tunnel
+            with SSHTunnelForwarder(
+                (SSH_HOST),
+                ssh_username=SSH_USERNAME,
+                ssh_password=SSH_PASSWORD,
+                remote_bind_address=(DB_HOST, 3306)
+            ) as tunnel:
+                    local_port = tunnel.local_bind_port
+                    DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@127.0.0.1:{local_port}/{DB_NAME}"
+                    return __readTable(DATABASE_URL, tableName)
+        else:
+            DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+            return __readTable(DATABASE_URL, tableName)
+        print("Execute time for "+ tableName +" : ", round(time.time()-start, 2), "s") 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @appFlaskMySQL.route('/', methods=['GET'])
 def home():
@@ -63,6 +86,11 @@ def home():
     <li>API in order for scraping data from AS Trial : <a href="./api/v1/resources/ASTrials">./api/v1/resources/ASTrials</a></li>
     <li>API in order for scraping data from UN Population : <a href="./api/v1/resources/UnPopulation">./api/v1/resources/UnPopulation</a></li>
     <li>API in order for scraping data from Clinical Trials : <a href="./api/v1/resources/ClinicalTrials">./api/v1/resources/ClinicalTrials</a></li>
+    <li>API in order for reading data from MapFrance_French : <a href="./api/v2/resources/MapFrance_French">./api/v2/resources/MapFrance_French</a></li>
+    <li>API in order for reading data from DifficultiesSA_French : <a href="./api/v2/resources/DifficultiesSA_French">./api/v2/resources/DifficultiesSA_French</a></li>
+    <li>API in order for reading data from RegionDepartement_French : <a href="./api/v2/resources/RegionDepartement_French">./api/v2/resources/RegionDepartement_French</a></li>
+    <li>API in order for reading data from RegionPrefecture_French : <a href="./api/v2/resources/RegionPrefecture_French">./api/v2/resources/RegionPrefecture_French</a></li>
+    
     </ul>
     '''
 
@@ -72,103 +100,56 @@ def api_ASTrials_all():
     """
     API to expose the results from AS trials with the specific table from the database
     """
-    start = time.time()
-    try:
-        if(LOCAL_CONNEXION):
-            # Create SSH tunnel
-            with SSHTunnelForwarder(
-                (SSH_HOST),
-                ssh_username=SSH_USERNAME,
-                ssh_password=SSH_PASSWORD,
-                remote_bind_address=(DB_HOST, 3306)
-            ) as tunnel:
-                    local_port = tunnel.local_bind_port
-                    DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@127.0.0.1:{local_port}/{DB_NAME}"
-                    return __readTable(DATABASE_URL, "T_ASTrials")
-        else:
-            DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-            return __readTable(DATABASE_URL, "T_ASTrials")
-        print("Execute time for ASTrials : ", round(time.time()-start, 2), "s")
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+    return __api_Table("T_ASTrials")
 
 @appFlaskMySQL.route('/api/v1/resources/articlesPubMed', methods=['GET'])
 def api_articles_all():
     """
     API to expose the results from Pub Med articles with the specific table from the database
     """
-    start = time.time()
-    try:
-        if(LOCAL_CONNEXION):
-            # Create SSH tunnel
-            with SSHTunnelForwarder(
-                (SSH_HOST),
-                ssh_username=SSH_USERNAME,
-                ssh_password=SSH_PASSWORD,
-                remote_bind_address=(DB_HOST, 3306)
-            ) as tunnel:
-                    local_port = tunnel.local_bind_port
-                    DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@127.0.0.1:{local_port}/{DB_NAME}"
-                    return __readTable(DATABASE_URL, "T_ArticlesPubMed")
-        else:
-            DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-            return __readTable(DATABASE_URL, "T_ArticlesPubMed")
-        print("Execute time for articlesPubMed : ", round(time.time()-start, 2), "s")
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
+    return __api_Table("T_ArticlesPubMed")
+    
 @appFlaskMySQL.route('/api/v1/resources/UnPopulation', methods=['GET'])
 def api_UnPopulation_all():
     """
     API to expose the results from Un Population with the specific table from the database
     """
-    start = time.time()
-    try:
-        if(LOCAL_CONNEXION):
-            # Create SSH tunnel
-            with SSHTunnelForwarder(
-                (SSH_HOST),
-                ssh_username=SSH_USERNAME,
-                ssh_password=SSH_PASSWORD,
-                remote_bind_address=(DB_HOST, 3306)
-            ) as tunnel:
-                    local_port = tunnel.local_bind_port
-                    DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@127.0.0.1:{local_port}/{DB_NAME}"
-                    return __readTable(DATABASE_URL, "T_UnPopulation")
-        else:
-            DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-            return __readTable(DATABASE_URL, "T_UnPopulation")
-            print("Execute time for UnPopulation : ", round(time.time()-start, 2), "s")
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
+    return __api_Table("T_UnPopulation")
+    
 @appFlaskMySQL.route('/api/v1/resources/ClinicalTrials', methods=['GET'])
 def api_Clinicaltrials_all():
     """
     API to expose the results from clinical trials with the specific table from the database
     """
-    start = time.time()
-    try:
-        if(LOCAL_CONNEXION):
-            # Create SSH tunnel
-            with SSHTunnelForwarder(
-                (SSH_HOST),
-                ssh_username=SSH_USERNAME,
-                ssh_password=SSH_PASSWORD,
-                remote_bind_address=(DB_HOST, 3306)
-            ) as tunnel:
-                    local_port = tunnel.local_bind_port
-                    DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@127.0.0.1:{local_port}/{DB_NAME}"
-                    return __readTable(DATABASE_URL, "T_ClinicalTrials")
-        else:
-            DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-            return __readTable(DATABASE_URL, "T_ClinicalTrials")
-        print("Execute time for ClinicalTrials : ", round(time.time()-start, 2), "s") 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return __api_Table("T_ClinicalTrials")
+    
+@appFlaskMySQL.route('/api/v2/resources/MapFrance_French', methods=['GET'])
+def api_MapFrance_French():
+    """
+    API to expose the results from MapFrance in French with the specific table from the database
+    """
+    return __api_Table("T_MapFrance_French")
+
+@appFlaskMySQL.route('/api/v2/resources/DifficultiesSA_French', methods=['GET'])
+def api_DifficultiesSA_French():
+    """
+    API to expose the results from Difficulties SA in French with the specific table from the database
+    """
+    return __api_Table('T_DifficultiesSA_French')
+
+@appFlaskMySQL.route('/api/v2/resources/RegionDepartement_French', methods=['GET'])
+def api_RegionDepartement_French():
+    """
+    API to expose the results from Region Departement in French with the specific table from the database
+    """
+    return __api_Table('T_RegionDepartement_French')
+
+@appFlaskMySQL.route('/api/v2/resources/RegionPrefecture_French', methods=['GET'])
+def api_RegionPrefecture_French():
+    """
+    API to expose the results from Region Prefecture in French with the specific table from the database
+    """
+    return __api_Table('T_RegionPrefecture_French')
 
 
 if __name__ == '__main__':
