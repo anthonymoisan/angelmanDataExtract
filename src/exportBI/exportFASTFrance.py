@@ -155,9 +155,6 @@ class T_ReaderAbstract(ABC):
     def readData(self):
         pass
 
-    def returnDataframe(self):
-        return self.df
-
 class T_DifficultiesSA(T_ReaderAbstract):
 
     def readData(self):
@@ -207,7 +204,7 @@ class T_Capabilities(T_ReaderAbstract):
 
 if __name__ == "__main__":
     start = time.time()
-    '''
+    
     reader = T_DifficultiesSA()
     df = reader.readData()
     reader = T_MapFASTFrance()
@@ -220,7 +217,6 @@ if __name__ == "__main__":
     df = reader.readData()
     reader = T_Regions()
     df = reader.readData()
-    '''
     reader = T_Capabilities()
     df = reader.readData()
     print(df.head())

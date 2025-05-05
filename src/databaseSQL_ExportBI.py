@@ -289,9 +289,8 @@ if __name__ == "__main__":
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
-    export_mapLatam_English()
-    print("\n")
-    '''
+    
+    
     export_DifficultiesSA_English()
     print("\n")
     export_capabilities_English()
@@ -308,5 +307,7 @@ if __name__ == "__main__":
 
     export_mapLatam_Spanish()
     print("\n")
-    '''
+    export_mapLatam_English()
+    print("\n")
+    
     print("\nExecute time : ", round(time.time()-start, 2), "s")
