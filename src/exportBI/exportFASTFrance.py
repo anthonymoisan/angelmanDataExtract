@@ -3,8 +3,10 @@ import pandas as pd
 import time
 import os
 from configparser import ConfigParser
+from datetime import datetime
+from abc import ABC, abstractmethod
 
-def __get_google_sheet_data(spreadsheet_id,sheet_name, api_key):
+def _get_google_sheet_data(spreadsheet_id,sheet_name, api_key):
     # Construct the URL for the Google Sheets API
     url = f'https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{sheet_name}!A1:Z?alt=json&key={api_key}'
 
@@ -24,8 +26,8 @@ def __get_google_sheet_data(spreadsheet_id,sheet_name, api_key):
         # Handle any errors that occur during the request
         print(f"An error occurred: {e}")
         return None
-    
-def __buildDataframeMapFASTFrance():
+
+def _buildDataframeMapFASTFrance():
     # Get working directory
     wkdir = os.path.dirname(__file__)
     config = ConfigParser()
@@ -34,19 +36,19 @@ def __buildDataframeMapFASTFrance():
         spreadsheet_id = config['France']['SHEET_ID_MAP_FAST_FRANCE']
         api_key = config['APIGoogleSheets']['KEY']
         sheet_name = 'Sheet1'
-        sheet_data = __get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
+        sheet_data = _get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
         df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
-        df.drop(columns=['Subscriber', 'Id', 'Opens','Clicks', 'Sent', 'Subscribed', 'Location', 'Name', 'Last name', 'InteretEssaiClinique', 'Prenom Enfant', 'Nom Enfant' ],inplace=True)
-        df.rename(columns={"Année de naissance" : "annee", "Zip" : "code_Departement", "Génotype" : "genotype", "DifficultesSA" : "difficultesSA", "Sexe" : "sexe"},inplace=True)
+        df.drop(columns=['Subscriber', 'Opens','Clicks', 'Sent', 'Subscribed', 'Location', 'Name', 'Last name', 'InteretEssaiClinique', 'Prenom Enfant', 'Nom Enfant' ],inplace=True)
+        df.rename(columns={"Id" : "id", "Année de naissance" : "annee", "Zip" : "code_Departement", "Génotype" : "genotype", "DifficultesSA" : "difficultesSA", "Sexe" : "sexe"},inplace=True)
         return df
 
-def __transformersMapFASTFrance(df):
+def _transformersMapFASTFrance(df):
     df["sexe"] = df["sexe"].replace("Homme", "H")
     df["sexe"] = df["sexe"].replace("Femme", "F")
 
-def __buildDataframeRegionsDepartements(sheet_name):
+def _buildDataframeRegionsDepartements(sheet_name):
     # Get working directory
     wkdir = os.path.dirname(__file__)
     config = ConfigParser()
@@ -54,14 +56,14 @@ def __buildDataframeRegionsDepartements(sheet_name):
     if config.read(filePath):
         spreadsheet_id = config['France']['SHEET_ID_REGIONPREFECTURE']
         api_key = config['APIGoogleSheets']['KEY']
-        sheet_data = __get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
+        sheet_data = _get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
         df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
         df.rename(columns={"Région" : "region", "Préfecture" : "prefecture"},inplace=True)
         return df
     
-def __buildDataframeDifficultiesSA():
+def _buildDataframeDifficultiesSA():
     # Get working directory
     wkdir = os.path.dirname(__file__)
     config = ConfigParser()
@@ -70,28 +72,124 @@ def __buildDataframeDifficultiesSA():
         spreadsheet_id = config['France']['SHEET_ID_DIFFICCULTES']
         api_key = config['APIGoogleSheets']['KEY']
         sheet_name = "Feuil1"
-        sheet_data = __get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
+        sheet_data = _get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
         df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
         df.rename(columns={"DifficultesSA" : "difficultiesSA"},inplace=True)
         return df
 
-def readDataMapFASTFrance():
-    df = __buildDataframeMapFASTFrance()
-    __transformersMapFASTFrance(df)
-    return df
+def _transformersDifficultiesSA_EN(df):
+    df["difficultiesSA"] = df["difficultiesSA"].replace("Motricité fine","Fine motor")
+    df["difficultiesSA"] = df["difficultiesSA"].replace("Motricité globale","Gross motor")
+    df["difficultiesSA"] = df["difficultiesSA"].replace("Sommeil","Sleep")
+    df["difficultiesSA"] = df["difficultiesSA"].replace("Epilepsie","Seizure")
+    df["difficultiesSA"] = df["difficultiesSA"].replace("Comportement","Behavior")
+    df["difficultiesSA"] = df["difficultiesSA"].replace("Aucune","None")
 
-def readDataRegionsDepartements(sheet_name):
-    return __buildDataframeRegionsDepartements(sheet_name)
-    
-def readDataDifficultiesSA():
-    return __buildDataframeDifficultiesSA()
+def _defineAge(year_birth):
+    year_current = datetime.now().year
+    return year_current - int(year_birth)
+
+def _transformersMapFASTFrance_EN(df):   
+    df["sexe"] = df["sexe"].replace("Homme", "M")
+    df["sexe"] = df["sexe"].replace("Femme", "F")
+    df["genotype"] = df["genotype"].replace("Délétion","Deletion")
+    df["genotype"] = df["genotype"].replace("Disomie uniparentale","UPD")
+    df["genotype"] = df["genotype"].replace("Ne sait pas","I don't know")
+    df["genotype"] = df["genotype"].replace("Défaut d'empreinte","ICD")
+    df["genotype"] = df["genotype"].replace("Forme mosaïque","Mosaic")
+    year_current = datetime.now().year
+    df["age"] = year_current - pd.to_numeric(df["annee"])
+    # Serie groupAge
+    df["groupAge"] = pd.cut(
+        df["age"],
+        bins=[0, 4, 8, 12, 17, 1000],
+        labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
+        right=True
+    )  
+
+def _transformDifficultiesSA(texte):
+    # Dictionnaire de remplacements
+    remplacements = {
+        "Motricité fine" :"Fine motor",
+        "Motricité globale" : "Gross motor",
+        "Sommeil":"Sleep",
+        "Epilepsie":"Seizure",
+        "Comportement":"Behavior",
+        "Aucune":"None"
+    }
+
+    # Fonction de nettoyage par mot
+    mots = [mot.strip() for mot in texte.split(',')]
+    mots_remplaces = [remplacements.get(mot, mot) for mot in mots]
+    return ', '.join(mots_remplaces)
+
+class T_ReaderAbstract(ABC):
+
+    def __init__(self):
+        self.df = pd.DataFrame()
+
+    @abstractmethod
+    def readData(self):
+        pass
+
+    def returnDataframe(self):
+        return self.df
+
+class T_DifficultiesSA(T_ReaderAbstract):
+
+    def readData(self):
+        self.df = _buildDataframeDifficultiesSA()
+        return self.df
+
+class T_DifficultiesSA_EN(T_ReaderAbstract):
+
+    def readData(self):
+        self.df = _buildDataframeDifficultiesSA()
+        _transformersDifficultiesSA_EN(self.df)
+        return self.df
+
+class T_MapFASTFrance(T_ReaderAbstract):
+
+    def readData(self):
+        self.df = _buildDataframeMapFASTFrance()
+        _transformersMapFASTFrance(self.df)
+        return self.df
+
+class T_MapFASTFrance_EN(T_ReaderAbstract):
+
+    def readData(self):
+        self.df = df = _buildDataframeMapFASTFrance()
+        _transformersMapFASTFrance_EN(self.df)
+        self.df['difficultesSA'] = self.df['difficultesSA'].apply(_transformDifficultiesSA)
+        return self.df
+
+class T_RegionsDepartements(T_ReaderAbstract):
+
+    def readData(self):
+        self.df = df = _buildDataframeRegionsDepartements("RegionDep")
+        return self.df
+
+class T_Regions(T_ReaderAbstract):
+
+    def readData(self):
+        self.df = df = _buildDataframeRegionsDepartements("Region")
+        return self.df
+   
 
 if __name__ == "__main__":
     start = time.time()
-    df = readDataMapFASTFrance()
-    df = readDataRegionsDepartements('RegionDep')
-    df = readDataRegionsDepartements('Region')
-    df = readDataDifficultiesSA()
+    reader = T_DifficultiesSA()
+    df = reader.readData()
+    reader = T_MapFASTFrance()
+    df = reader.readData()
+    reader = T_MapFASTFrance_EN()
+    df = reader.readData()
+    reader = T_DifficultiesSA_EN()
+    df = reader.readData()
+    reader = T_RegionsDepartements()
+    df = reader.readData()
+    reader = T_Regions()
+    df = reader.readData()
     print(df.head())

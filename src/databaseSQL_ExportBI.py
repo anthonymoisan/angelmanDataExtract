@@ -178,126 +178,118 @@ def sendEmailAlert(T_TableName, numberOfPreviousRecords, numberOfCurrentRecords)
         except Exception as e:
             print("Failure to send the email :", e)
 
-def export_mapFrance_French():
+def _export_Table(tableName,scriptCreate, reader):
     """
-    Method to read map France in French
+    Method to read a tableName, create the table and read the data
     """
-    start = time.time()
-    wkdir = os.path.dirname(__file__)
-    # 0) Preprocess
-    print("--- Read Data")
-    # 1) Use reader to obtain dataframe
-    df = expFASTFrance.readDataMapFASTFrance()
-    df = df.replace([np.inf, -np.inf], np.nan)
-    df.fillna("None", inplace=True)
-    numberofCurrentRecords = df.shape[0]
-
-    # 2) Count the number 
-    sqlCount = "SELECT count(*) from T_MapFrance_French"
-    numberOfPreviousRecords = __execRequest(sqlCount, returnValue=True)
-    
-    if numberofCurrentRecords < 90/100*numberOfPreviousRecords:
-        print("--- Preprocess KO")
-        print("Failure with the previous data. We keep the previous database") 
-        sendEmailAlert("T_MapFrance_French", numberOfPreviousRecords, numberofCurrentRecords )
-    else:
-        print("--- Preprocess OK")
+    try:
+        start = time.time()
+        wkdir = os.path.dirname(__file__)
+        
         # 0) Drop Table
         print("--- Drop Table")
-        sqlDrop = "DROP TABLE T_MapFrance_French"
+        sqlDrop = "DROP TABLE "+ tableName
         __execRequest(sqlDrop)
 
         # 1) Create Table
         print("--- Create Table")
-        with open(f"{wkdir}/SQLScript/createMapFrance_French.sql", "r", encoding="utf-8") as file:
+        with open(f"{wkdir}/SQLScript/"+scriptCreate, "r", encoding="utf-8") as file:
             sql_commands = file.read()
         __execRequest(sql_commands)
 
-        # 2) Insert value in Table from dataframe
-        __insertValue(df, "T_MapFrance_French")
-        print("Execute time for T_MapFrance_French : ", round(time.time()-start, 2), "s")
+        # 2) Use reader to obtain dataframe
+        df = reader.readData()
+        df = df.replace([np.inf, -np.inf], np.nan)
+        df.fillna("None", inplace=True)
+        
+        # 3) Insert value in Table from dataframe
+        __insertValue(df, tableName)
+        print("Execute time for "+tableName+ " : ", round(time.time()-start, 2), "s")
+    except Exception as e:
+        print("an error occures in export_Table "+ tableName+ " : ", e)
+
+def _export_mapFrance(tableName,scriptCreate, reader):
+    """
+    Method to read map France 
+    """
+    try:
+        start = time.time()
+        wkdir = os.path.dirname(__file__)
+        # 0) Preprocess
+        print("--- Read Data")
+        # 1) Use reader to obtain dataframe
+        df = reader.readData()
+        df = df.replace([np.inf, -np.inf], np.nan)
+        df = df.astype({col: 'object' for col in df.select_dtypes(include='category').columns})
+        df.fillna("None", inplace=True)
+        numberofCurrentRecords = df.shape[0]
+
+        # 2) Count the number 
+        try:
+            sqlCheck = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = " + "'"+ tableName +"'"
+            
+            result = __execRequest(sqlCheck, returnValue=True)
+
+            if result:
+                sqlCount = "SELECT count(*) FROM " + tableName
+                numberOfPreviousRecords = __execRequest(sqlCount, returnValue=True)
+            else:
+                numberOfPreviousRecords = 0
+        except Exception as e:
+            print("An error occurred while checking or counting table:", e)
+
+        
+        if numberofCurrentRecords < 90/100*numberOfPreviousRecords:
+            print("--- Preprocess KO")
+            print("Failure with the previous data. We keep the previous database") 
+            sendEmailAlert(tableName, numberOfPreviousRecords, numberofCurrentRecords )
+        else:
+            print("--- Preprocess OK")
+            # 0) Drop Table
+            print("--- Drop Table")
+            sqlDrop = "DROP TABLE " + tableName
+            __execRequest(sqlDrop)
+
+            # 1) Create Table
+            print("--- Create Table")
+            with open(f"{wkdir}/SQLScript/" + scriptCreate, "r", encoding="utf-8") as file:
+                sql_commands = file.read()
+            __execRequest(sql_commands)
+
+            # 2) Insert value in Table from dataframe
+            __insertValue(df, tableName)
+            print("Execute time for " + tableName +" : ", round(time.time()-start, 2), "s")
+    except Exception as e:
+        print("an error occures in _export_mapFrance " + tableName+ " : ", e)
 
 def export_RegionsDepartements_French():
     """
     Method to read RegionsDepartements in French
     """
-    start = time.time()
-    wkdir = os.path.dirname(__file__)
-    
-    # 0) Drop Table
-    print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_RegionDepartement_French"
-    __execRequest(sqlDrop)
-
-    # 1) Create Table
-    print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createRegionDepartement_French.sql", "r", encoding="utf-8") as file:
-        sql_commands = file.read()
-    __execRequest(sql_commands)
-
-    # 2) Use reader to obtain dataframe
-    df = expFASTFrance.readDataRegionsDepartements('RegionDep')
-    df = df.replace([np.inf, -np.inf], np.nan)
-    df.fillna("None", inplace=True)
-    
-    # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_RegionDepartement_French")
-    print("Execute time for T_RegionDepartement_French : ", round(time.time()-start, 2), "s")
+    reader = expFASTFrance.T_RegionsDepartements()
+    _export_Table("T_RegionDepartement_French","createRegionDepartement_French.sql", reader)
 
 def export_RegionsPrefectures_French():
     """
     Method to read RegionsPrefectures in French
     """
-    start = time.time()
-    wkdir = os.path.dirname(__file__)
-    
-    # 0) Drop Table
-    print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_RegionPrefecture_French"
-    __execRequest(sqlDrop)
-
-    # 1) Create Table
-    print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createPrefectureRegion_French.sql", "r", encoding="utf-8") as file:
-        sql_commands = file.read()
-    __execRequest(sql_commands)
-
-    # 2) Use reader to obtain dataframe
-    df = expFASTFrance.readDataRegionsDepartements('Region')
-    df = df.replace([np.inf, -np.inf], np.nan)
-    df.fillna("None", inplace=True)
-    
-    # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_RegionPrefecture_French")
-    print("Execute time for T_RegionPrefecture_French : ", round(time.time()-start, 2), "s")
+    reader = expFASTFrance.T_Regions()
+    _export_Table("T_RegionPrefecture_French","createPrefectureRegion_French.sql", reader)
 
 def export_DifficultiesSA_French():
     """
     Method to read DifficultiesSA in French
     """
-    start = time.time()
-    wkdir = os.path.dirname(__file__)
-    
-    # 0) Drop Table
-    print("--- Drop Table")
-    sqlDrop = "DROP TABLE T_DifficultiesSA_French"
-    __execRequest(sqlDrop)
+    reader = expFASTFrance.T_DifficultiesSA()
+    _export_Table("T_DifficultiesSA_French","createDifficultiesSA_French.sql", reader)
 
-    # 1) Create Table
-    print("--- Create Table")
-    with open(f"{wkdir}/SQLScript/createDifficultiesSA_French.sql", "r", encoding="utf-8") as file:
-        sql_commands = file.read()
-    __execRequest(sql_commands)
+def export_mapFrance_French():
+    reader = expFASTFrance.T_MapFASTFrance()
+    _export_mapFrance("T_MapFrance_French","createMapFrance_French.sql", reader)
 
-    # 2) Use reader to obtain dataframe
-    df = expFASTFrance.readDataDifficultiesSA()
-    df = df.replace([np.inf, -np.inf], np.nan)
-    df.fillna("None", inplace=True)
-    
-    # 3) Insert value in Table from dataframe
-    __insertValue(df, "T_DifficultiesSA_French")
-    print("Execute time for T_DifficultiesSA_French : ", round(time.time()-start, 2), "s")
-
+def export_mapFrance_English():
+    reader = expFASTFrance.T_MapFASTFrance_EN()
+    _export_mapFrance("T_MapFrance_English","createMapFrance_English.sql", reader)
 
 if __name__ == "__main__":
     """
@@ -306,10 +298,14 @@ if __name__ == "__main__":
     start = time.time()
     export_mapFrance_French()
     print("\n")
+    export_mapFrance_English()
+    print("\n")
+    '''
     export_RegionsDepartements_French()
     print("\n")
     export_RegionsPrefectures_French()
     print("\n")
     export_DifficultiesSA_French()
-    print("\n")
+    
+    '''
     print("\nExecute time : ", round(time.time()-start, 2), "s")
