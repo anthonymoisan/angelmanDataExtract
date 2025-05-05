@@ -81,12 +81,17 @@ def home():
     Explain the endpoints of the API
     """
     return '''<h1>APIs</h1>
+    API Steve
     <ul>    
     <li>API in order for scraping data from PubMed : <a href="./api/v1/resources/articlesPubMed">./api/v1/resources/articlesPubMed</a></li>
     <li>API in order for scraping data from AS Trial : <a href="./api/v1/resources/ASTrials">./api/v1/resources/ASTrials</a></li>
     <li>API in order for scraping data from UN Population : <a href="./api/v1/resources/UnPopulation">./api/v1/resources/UnPopulation</a></li>
     <li>API in order for scraping data from Clinical Trials : <a href="./api/v1/resources/ClinicalTrials">./api/v1/resources/ClinicalTrials</a></li>
+    </ul>
     
+    API Map FAST France
+    
+    <ul>
     <li>API in order for reading data from MapFrance_French : <a href="./api/v2/resources/FAST_France/MapFrance_French">./api/v2/resources/FAST_France/MapFrance_French</a></li>
     <li>API in order for reading data from DifficultiesSA_French : <a href="./api/v2/resources/FAST_France/DifficultiesSA_French">./api/v2/resources/FAST_France/DifficultiesSA_French</a></li>
     <li>API in order for reading data from RegionDepartement_French : <a href="./api/v2/resources/FAST_France/RegionDepartement_French">./api/v2/resources/FAST_France/RegionDepartement_French</a></li>
@@ -94,6 +99,12 @@ def home():
     <li>API in order for reading data from DifficultiesSA_English : <a href="./api/v2/resources/FAST_France/DifficultiesSA_English">./api/v2/resources/FAST_France/DifficultiesSA_English</a></li>
     <li>API in order for reading data from MapFrance_English : <a href="./api/v2/resources/FAST_France/MapFrance_English">./api/v2/resources/FAST_France_MapFrance/English</a></li>
     <li>API in order for reading data from Capabilitie : <a href="./api/v2/resources/FAST_France/Capabilities_English">./api/v2/resources/FAST_France_Capabilities/English</a></li>
+    </ul>
+
+    API FAST Latam
+    <ul>
+    <li>API in order for reading data from MapLatam_Spanish : <a href="./api/v2/resources/FAST_Latam/MapLatam_Spanish">./api/v2/resources/FAST_Latam/MapLatam_Spanish</a></li>
+    <li>API in order for reading data from MapLatam_English : <a href="./api/v2/resources/FAST_Latam/MapLatam_English">./api/v2/resources/FAST_Latam/MapLatam_English</a></li>
     </ul>
     '''
 
@@ -174,6 +185,20 @@ def api_Capabilities_English():
     API to expose the results from Capabilities in English with the specific table from the database
     """
     return __api_Table('T_FAST_France_Capabilitie')
+
+@appFlaskMySQL.route('/api/v2/resources/FAST_Latam/MapLatam_Spanish', methods=['GET'])
+def api_MapLatam_Spanish():
+    """
+    API to expose the results from MapLatam in Spanish with the specific table from the database
+    """
+    return __api_Table('T_FAST_Latam_MapLatam_Spanish')
+
+@appFlaskMySQL.route('/api/v2/resources/FAST_Latam/MapLatam_English', methods=['GET'])
+def api_MapLatam_English():
+    """
+    API to expose the results from MapLatam in English with the specific table from the database
+    """
+    return __api_Table('T_FAST_Latam_MapLatam_English')
 
 
 if __name__ == '__main__':

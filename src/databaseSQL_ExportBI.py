@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import json
 import exportBI.exportFASTFrance as expFASTFrance
+import exportBI.exportFASTLatam as expFASTLatam
 import smtplib
 from email.message import EmailMessage
 
@@ -224,7 +225,7 @@ def _export_Table(tableName,scriptCreate, reader):
 
             # 1) Create Table
             print("--- Create Table")
-            with open(f"{wkdir}/SQLScript/FAST France/" + scriptCreate, "r", encoding="utf-8") as file:
+            with open(f"{wkdir}/SQLScript/" + scriptCreate, "r", encoding="utf-8") as file:
                 sql_commands = file.read()
             __execRequest(sql_commands)
 
@@ -239,47 +240,58 @@ def export_RegionsDepartements_French():
     Method to read RegionsDepartements in French
     """
     reader = expFASTFrance.T_RegionsDepartements()
-    _export_Table("T_FAST_France_RegionDepartement_French","createRegionDepartement_French.sql", reader)
+    _export_Table("T_FAST_France_RegionDepartement_French","FAST France/createRegionDepartement_French.sql", reader)
 
 def export_RegionsPrefectures_French():
     """
     Method to read RegionsPrefectures in French
     """
     reader = expFASTFrance.T_Regions()
-    _export_Table("T_FAST_France_RegionPrefecture_French","createPrefectureRegion_French.sql", reader)
+    _export_Table("T_FAST_France_RegionPrefecture_French","FAST France/createPrefectureRegion_French.sql", reader)
 
 def export_DifficultiesSA_French():
     """
     Method to read DifficultiesSA in French
     """
     reader = expFASTFrance.T_DifficultiesSA()
-    _export_Table("T_FAST_France_DifficultiesSA_French","createDifficultiesSA_French.sql", reader)
+    _export_Table("T_FAST_France_DifficultiesSA_French","FAST France/createDifficultiesSA_French.sql", reader)
 
 def export_DifficultiesSA_English():
     """
     Method to read DifficultiesSA in English
     """
     reader = expFASTFrance.T_DifficultiesSA_EN()
-    _export_Table("T_FAST_France_DifficultiesSA_English","createDifficultiesSA_English.sql", reader)
-
+    _export_Table("T_FAST_France_DifficultiesSA_English","FAST France/createDifficultiesSA_English.sql", reader)
 
 def export_mapFrance_French():
     reader = expFASTFrance.T_MapFASTFrance()
-    _export_Table("T_FAST_France_MapFrance_French","createMapFrance_French.sql", reader)
+    _export_Table("T_FAST_France_MapFrance_French","FAST France/createMapFrance_French.sql", reader)
 
 def export_mapFrance_English():
     reader = expFASTFrance.T_MapFASTFrance_EN()
-    _export_Table("T_FAST_France_MapFrance_English","createMapFrance_English.sql", reader)
+    _export_Table("T_FAST_France_MapFrance_English","FAST France/createMapFrance_English.sql", reader)
 
 def export_capabilities_English():
     reader = expFASTFrance.T_Capabilities()
-    _export_Table("T_FAST_France_Capabilitie","createCapabilities.sql", reader)
+    _export_Table("T_FAST_France_Capabilitie","FAST France/createCapabilities.sql", reader)
+
+def export_mapLatam_Spanish():
+    reader = expFASTLatam.T_MapFASTLatam()
+    _export_Table("T_FAST_Latam_MapLatam_Spanish","FAST Latam/createMapFASTLatam_Spanish.sql", reader)
+
+def export_mapLatam_English():
+    reader = expFASTLatam.T_MapFASTLatam_EN()
+    _export_Table("T_FAST_Latam_MapLatam_English","FAST Latam/createMapFASTLatam_English.sql", reader)
+
 
 if __name__ == "__main__":
     """
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
+    export_mapLatam_English()
+    print("\n")
+    '''
     export_DifficultiesSA_English()
     print("\n")
     export_capabilities_English()
@@ -293,4 +305,8 @@ if __name__ == "__main__":
     export_RegionsPrefectures_French()
     print("\n")
     export_DifficultiesSA_French()
+
+    export_mapLatam_Spanish()
+    print("\n")
+    '''
     print("\nExecute time : ", round(time.time()-start, 2), "s")
