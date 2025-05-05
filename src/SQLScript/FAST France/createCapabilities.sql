@@ -1,4 +1,4 @@
-CREATE TABLE T_Capabilitie (
+CREATE TABLE T_FAST_France_Capabilitie (
     id INT PRIMARY KEY AUTO_INCREMENT,
     populations VARCHAR(50) NOT NULL,
     therapy VARCHAR(50) NOT NULL,

@@ -86,13 +86,14 @@ def home():
     <li>API in order for scraping data from AS Trial : <a href="./api/v1/resources/ASTrials">./api/v1/resources/ASTrials</a></li>
     <li>API in order for scraping data from UN Population : <a href="./api/v1/resources/UnPopulation">./api/v1/resources/UnPopulation</a></li>
     <li>API in order for scraping data from Clinical Trials : <a href="./api/v1/resources/ClinicalTrials">./api/v1/resources/ClinicalTrials</a></li>
-    <li>API in order for reading data from MapFrance_French : <a href="./api/v2/resources/MapFrance_French">./api/v2/resources/MapFrance_French</a></li>
-    <li>API in order for reading data from DifficultiesSA_French : <a href="./api/v2/resources/DifficultiesSA_French">./api/v2/resources/DifficultiesSA_French</a></li>
-    <li>API in order for reading data from RegionDepartement_French : <a href="./api/v2/resources/RegionDepartement_French">./api/v2/resources/RegionDepartement_French</a></li>
-    <li>API in order for reading data from RegionPrefecture_French : <a href="./api/v2/resources/RegionPrefecture_French">./api/v2/resources/RegionPrefecture_French</a></li>
-    <li>API in order for reading data from DifficultiesSA_English : <a href="./api/v2/resources/DifficultiesSA_English">./api/v2/resources/DifficultiesSA_English</a></li>
-    <li>API in order for reading data from MapFrance_English : <a href="./api/v2/resources/MapFrance_English">./api/v2/resources/MapFrance_English</a></li>
-    <li>API in order for reading data from Capabilitie : <a href="./api/v2/resources/Capabilities_English">./api/v2/resources/Capabilities_English</a></li>
+    
+    <li>API in order for reading data from MapFrance_French : <a href="./api/v2/resources/FAST_France/MapFrance_French">./api/v2/resources/FAST_France/MapFrance_French</a></li>
+    <li>API in order for reading data from DifficultiesSA_French : <a href="./api/v2/resources/FAST_France/DifficultiesSA_French">./api/v2/resources/FAST_France/DifficultiesSA_French</a></li>
+    <li>API in order for reading data from RegionDepartement_French : <a href="./api/v2/resources/FAST_France/RegionDepartement_French">./api/v2/resources/FAST_France/RegionDepartement_French</a></li>
+    <li>API in order for reading data from RegionPrefecture_French : <a href="./api/v2/resources/FAST_France/RegionPrefecture_French">./api/v2/resources/FAST_France/RegionPrefecture_French</a></li>
+    <li>API in order for reading data from DifficultiesSA_English : <a href="./api/v2/resources/FAST_France/DifficultiesSA_English">./api/v2/resources/FAST_France/DifficultiesSA_English</a></li>
+    <li>API in order for reading data from MapFrance_English : <a href="./api/v2/resources/FAST_France/MapFrance_English">./api/v2/resources/FAST_France_MapFrance/English</a></li>
+    <li>API in order for reading data from Capabilitie : <a href="./api/v2/resources/FAST_France/Capabilities_English">./api/v2/resources/FAST_France_Capabilities/English</a></li>
     </ul>
     '''
 
@@ -125,54 +126,54 @@ def api_Clinicaltrials_all():
     """
     return __api_Table("T_ClinicalTrials")
     
-@appFlaskMySQL.route('/api/v2/resources/MapFrance_French', methods=['GET'])
+@appFlaskMySQL.route('/api/v2/resources/FAST_France/MapFrance_French', methods=['GET'])
 def api_MapFrance_French():
     """
     API to expose the results from MapFrance in French with the specific table from the database
     """
-    return __api_Table("T_MapFrance_French")
+    return __api_Table("T_FAST_France_MapFrance_French")
 
-@appFlaskMySQL.route('/api/v2/resources/DifficultiesSA_French', methods=['GET'])
+@appFlaskMySQL.route('/api/v2/resources/FAST_France/DifficultiesSA_French', methods=['GET'])
 def api_DifficultiesSA_French():
     """
     API to expose the results from Difficulties SA in French with the specific table from the database
     """
-    return __api_Table('T_DifficultiesSA_French')
+    return __api_Table('T_FAST_France_DifficultiesSA_French')
 
-@appFlaskMySQL.route('/api/v2/resources/RegionDepartement_French', methods=['GET'])
+@appFlaskMySQL.route('/api/v2/resources/FAST_France/RegionDepartement_French', methods=['GET'])
 def api_RegionDepartement_French():
     """
     API to expose the results from Region Departement in French with the specific table from the database
     """
-    return __api_Table('T_RegionDepartement_French')
+    return __api_Table('T_FAST_France_RegionDepartement_French')
 
-@appFlaskMySQL.route('/api/v2/resources/RegionPrefecture_French', methods=['GET'])
+@appFlaskMySQL.route('/api/v2/resources/FAST_France/RegionPrefecture_French', methods=['GET'])
 def api_RegionPrefecture_French():
     """
     API to expose the results from Region Prefecture in French with the specific table from the database
     """
-    return __api_Table('T_RegionPrefecture_French')
+    return __api_Table('T_FAST_France_RegionPrefecture_French')
 
-@appFlaskMySQL.route('/api/v2/resources/MapFrance_English', methods=['GET'])
+@appFlaskMySQL.route('/api/v2/resources/FAST_France/MapFrance_English', methods=['GET'])
 def api_MapFrance_English():
     """
     API to expose the results from MapFrance in English with the specific table from the database
     """
-    return __api_Table('T_MapFrance_English')
+    return __api_Table('T_FAST_France_MapFrance_English')
 
-@appFlaskMySQL.route('/api/v2/resources/DifficultiesSA_English', methods=['GET'])
+@appFlaskMySQL.route('/api/v2/resources/FAST_France/DifficultiesSA_English', methods=['GET'])
 def api_DifficultiesSA_English():
     """
     API to expose the results from DifficultiesSA in English with the specific table from the database
     """
-    return __api_Table('T_DifficultiesSA_English')
+    return __api_Table('T_FAST_France_DifficultiesSA_English')
 
-@appFlaskMySQL.route('/api/v2/resources/Capabilities_English', methods=['GET'])
+@appFlaskMySQL.route('/api/v2/resources/FAST_France/Capabilities_English', methods=['GET'])
 def api_Capabilities_English():
     """
     API to expose the results from Capabilities in English with the specific table from the database
     """
-    return __api_Table('T_Capabilitie')
+    return __api_Table('T_FAST_France_Capabilitie')
 
 
 if __name__ == '__main__':

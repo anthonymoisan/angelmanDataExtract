@@ -224,7 +224,7 @@ def _export_Table(tableName,scriptCreate, reader):
 
             # 1) Create Table
             print("--- Create Table")
-            with open(f"{wkdir}/SQLScript/" + scriptCreate, "r", encoding="utf-8") as file:
+            with open(f"{wkdir}/SQLScript/FAST France/" + scriptCreate, "r", encoding="utf-8") as file:
                 sql_commands = file.read()
             __execRequest(sql_commands)
 
@@ -239,41 +239,41 @@ def export_RegionsDepartements_French():
     Method to read RegionsDepartements in French
     """
     reader = expFASTFrance.T_RegionsDepartements()
-    _export_Table("T_RegionDepartement_French","createRegionDepartement_French.sql", reader)
+    _export_Table("T_FAST_France_RegionDepartement_French","createRegionDepartement_French.sql", reader)
 
 def export_RegionsPrefectures_French():
     """
     Method to read RegionsPrefectures in French
     """
     reader = expFASTFrance.T_Regions()
-    _export_Table("T_RegionPrefecture_French","createPrefectureRegion_French.sql", reader)
+    _export_Table("T_FAST_France_RegionPrefecture_French","createPrefectureRegion_French.sql", reader)
 
 def export_DifficultiesSA_French():
     """
     Method to read DifficultiesSA in French
     """
     reader = expFASTFrance.T_DifficultiesSA()
-    _export_Table("T_DifficultiesSA_French","createDifficultiesSA_French.sql", reader)
+    _export_Table("T_FAST_France_DifficultiesSA_French","createDifficultiesSA_French.sql", reader)
 
 def export_DifficultiesSA_English():
     """
     Method to read DifficultiesSA in English
     """
     reader = expFASTFrance.T_DifficultiesSA_EN()
-    _export_Table("T_DifficultiesSA_English","createDifficultiesSA_English.sql", reader)
+    _export_Table("T_FAST_France_DifficultiesSA_English","createDifficultiesSA_English.sql", reader)
 
 
 def export_mapFrance_French():
     reader = expFASTFrance.T_MapFASTFrance()
-    _export_Table("T_MapFrance_French","createMapFrance_French.sql", reader)
+    _export_Table("T_FAST_France_MapFrance_French","createMapFrance_French.sql", reader)
 
 def export_mapFrance_English():
     reader = expFASTFrance.T_MapFASTFrance_EN()
-    _export_Table("T_MapFrance_English","createMapFrance_English.sql", reader)
+    _export_Table("T_FAST_France_MapFrance_English","createMapFrance_English.sql", reader)
 
 def export_capabilities_English():
     reader = expFASTFrance.T_Capabilities()
-    _export_Table("T_Capabilitie","createCapabilities.sql", reader)
+    _export_Table("T_FAST_France_Capabilitie","createCapabilities.sql", reader)
 
 if __name__ == "__main__":
     """
@@ -282,18 +282,15 @@ if __name__ == "__main__":
     start = time.time()
     export_DifficultiesSA_English()
     print("\n")
-    #export_capabilities_English()
+    export_capabilities_English()
     print("\n")
-    #export_mapFrance_French()
+    export_mapFrance_French()
     print("\n")
-    #export_mapFrance_English()
+    export_mapFrance_English()
     print("\n")
-    '''
     export_RegionsDepartements_French()
     print("\n")
     export_RegionsPrefectures_French()
     print("\n")
     export_DifficultiesSA_French()
-    
-    '''
     print("\nExecute time : ", round(time.time()-start, 2), "s")
