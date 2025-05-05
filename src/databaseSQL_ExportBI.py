@@ -178,37 +178,8 @@ def sendEmailAlert(T_TableName, numberOfPreviousRecords, numberOfCurrentRecords)
         except Exception as e:
             print("Failure to send the email :", e)
 
+
 def _export_Table(tableName,scriptCreate, reader):
-    """
-    Method to read a tableName, create the table and read the data
-    """
-    try:
-        start = time.time()
-        wkdir = os.path.dirname(__file__)
-        
-        # 0) Drop Table
-        print("--- Drop Table")
-        sqlDrop = "DROP TABLE "+ tableName
-        __execRequest(sqlDrop)
-
-        # 1) Create Table
-        print("--- Create Table")
-        with open(f"{wkdir}/SQLScript/"+scriptCreate, "r", encoding="utf-8") as file:
-            sql_commands = file.read()
-        __execRequest(sql_commands)
-
-        # 2) Use reader to obtain dataframe
-        df = reader.readData()
-        df = df.replace([np.inf, -np.inf], np.nan)
-        df.fillna("None", inplace=True)
-        
-        # 3) Insert value in Table from dataframe
-        __insertValue(df, tableName)
-        print("Execute time for "+tableName+ " : ", round(time.time()-start, 2), "s")
-    except Exception as e:
-        print("an error occures in export_Table "+ tableName+ " : ", e)
-
-def _export_mapFrance(tableName,scriptCreate, reader):
     """
     Method to read map France 
     """
@@ -246,9 +217,10 @@ def _export_mapFrance(tableName,scriptCreate, reader):
         else:
             print("--- Preprocess OK")
             # 0) Drop Table
-            print("--- Drop Table")
-            sqlDrop = "DROP TABLE " + tableName
-            __execRequest(sqlDrop)
+            if(numberOfPreviousRecords > 0):
+                print("--- Drop Table")
+                sqlDrop = "DROP TABLE " + tableName
+                __execRequest(sqlDrop)
 
             # 1) Create Table
             print("--- Create Table")
@@ -283,22 +255,38 @@ def export_DifficultiesSA_French():
     reader = expFASTFrance.T_DifficultiesSA()
     _export_Table("T_DifficultiesSA_French","createDifficultiesSA_French.sql", reader)
 
+def export_DifficultiesSA_English():
+    """
+    Method to read DifficultiesSA in English
+    """
+    reader = expFASTFrance.T_DifficultiesSA_EN()
+    _export_Table("T_DifficultiesSA_English","createDifficultiesSA_English.sql", reader)
+
+
 def export_mapFrance_French():
     reader = expFASTFrance.T_MapFASTFrance()
-    _export_mapFrance("T_MapFrance_French","createMapFrance_French.sql", reader)
+    _export_Table("T_MapFrance_French","createMapFrance_French.sql", reader)
 
 def export_mapFrance_English():
     reader = expFASTFrance.T_MapFASTFrance_EN()
-    _export_mapFrance("T_MapFrance_English","createMapFrance_English.sql", reader)
+    _export_Table("T_MapFrance_English","createMapFrance_English.sql", reader)
+
+def export_capabilities_English():
+    reader = expFASTFrance.T_Capabilities()
+    _export_Table("T_Capabilitie","createCapabilities.sql", reader)
 
 if __name__ == "__main__":
     """
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
-    export_mapFrance_French()
+    export_DifficultiesSA_English()
     print("\n")
-    export_mapFrance_English()
+    #export_capabilities_English()
+    print("\n")
+    #export_mapFrance_French()
+    print("\n")
+    #export_mapFrance_English()
     print("\n")
     '''
     export_RegionsDepartements_French()

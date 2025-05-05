@@ -90,7 +90,9 @@ def home():
     <li>API in order for reading data from DifficultiesSA_French : <a href="./api/v2/resources/DifficultiesSA_French">./api/v2/resources/DifficultiesSA_French</a></li>
     <li>API in order for reading data from RegionDepartement_French : <a href="./api/v2/resources/RegionDepartement_French">./api/v2/resources/RegionDepartement_French</a></li>
     <li>API in order for reading data from RegionPrefecture_French : <a href="./api/v2/resources/RegionPrefecture_French">./api/v2/resources/RegionPrefecture_French</a></li>
-    
+    <li>API in order for reading data from DifficultiesSA_English : <a href="./api/v2/resources/DifficultiesSA_English">./api/v2/resources/DifficultiesSA_English</a></li>
+    <li>API in order for reading data from MapFrance_English : <a href="./api/v2/resources/MapFrance_English">./api/v2/resources/MapFrance_English</a></li>
+    <li>API in order for reading data from Capabilitie : <a href="./api/v2/resources/Capabilities_English">./api/v2/resources/Capabilities_English</a></li>
     </ul>
     '''
 
@@ -150,6 +152,27 @@ def api_RegionPrefecture_French():
     API to expose the results from Region Prefecture in French with the specific table from the database
     """
     return __api_Table('T_RegionPrefecture_French')
+
+@appFlaskMySQL.route('/api/v2/resources/MapFrance_English', methods=['GET'])
+def api_MapFrance_English():
+    """
+    API to expose the results from MapFrance in English with the specific table from the database
+    """
+    return __api_Table('T_MapFrance_English')
+
+@appFlaskMySQL.route('/api/v2/resources/DifficultiesSA_English', methods=['GET'])
+def api_DifficultiesSA_English():
+    """
+    API to expose the results from DifficultiesSA in English with the specific table from the database
+    """
+    return __api_Table('T_DifficultiesSA_English')
+
+@appFlaskMySQL.route('/api/v2/resources/Capabilities_English', methods=['GET'])
+def api_Capabilities_English():
+    """
+    API to expose the results from Capabilities in English with the specific table from the database
+    """
+    return __api_Table('T_Capabilitie')
 
 
 if __name__ == '__main__':

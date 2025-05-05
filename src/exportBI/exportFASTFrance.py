@@ -47,6 +47,7 @@ def _buildDataframeMapFASTFrance():
 def _transformersMapFASTFrance(df):
     df["sexe"] = df["sexe"].replace("Homme", "H")
     df["sexe"] = df["sexe"].replace("Femme", "F")
+    return df
 
 def _buildDataframeRegionsDepartements(sheet_name):
     # Get working directory
@@ -78,6 +79,28 @@ def _buildDataframeDifficultiesSA():
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
         df.rename(columns={"DifficultesSA" : "difficultiesSA"},inplace=True)
         return df
+    
+def _buildDataframeCapabilities():
+    # Get working directory
+    wkdir = os.path.dirname(__file__)
+    config = ConfigParser()
+    filePath = f"{wkdir}/../../angelman_viz_keys/Config4.ini"
+    if config.read(filePath):
+        spreadsheet_id = config['France']['SHEET_ID_GLOBAL_CAPACITIES']
+        api_key = config['APIGoogleSheets']['KEY']
+        sheet_name = "Capabilies"
+        sheet_data = _get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
+        df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
+        df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
+        df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
+        df.rename(columns={"Population" : "populations", "Therapy" : "therapy", "Phase" : "phase", "Capability to realize the phase" : "CapabilityBool", "Hospital" : "hospital", "Contact" : "contact", "Address" : "addressLocation", "Longitude" : "longitude", "Lattitude" : "lattitude", "URL" : "urlWebSite"},inplace=True)
+        return df
+
+def _transformersCapabilities(df):
+    df["populations"] = df["populations"].replace("- kids < 18 ans","- Kids < 18 ans")
+    df = df[df["CapabilityBool"] == "Oui"]
+    df = df.drop(columns='CapabilityBool')
+    return df
 
 def _transformersDifficultiesSA_EN(df):
     df["difficultiesSA"] = df["difficultiesSA"].replace("Motricité fine","Fine motor")
@@ -86,10 +109,7 @@ def _transformersDifficultiesSA_EN(df):
     df["difficultiesSA"] = df["difficultiesSA"].replace("Epilepsie","Seizure")
     df["difficultiesSA"] = df["difficultiesSA"].replace("Comportement","Behavior")
     df["difficultiesSA"] = df["difficultiesSA"].replace("Aucune","None")
-
-def _defineAge(year_birth):
-    year_current = datetime.now().year
-    return year_current - int(year_birth)
+    return df
 
 def _transformersMapFASTFrance_EN(df):   
     df["sexe"] = df["sexe"].replace("Homme", "M")
@@ -108,6 +128,7 @@ def _transformersMapFASTFrance_EN(df):
         labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
         right=True
     )  
+    return df
 
 def _transformDifficultiesSA(texte):
     # Dictionnaire de remplacements
@@ -147,39 +168,46 @@ class T_DifficultiesSA_EN(T_ReaderAbstract):
 
     def readData(self):
         self.df = _buildDataframeDifficultiesSA()
-        _transformersDifficultiesSA_EN(self.df)
+        self.df = _transformersDifficultiesSA_EN(self.df)
         return self.df
 
 class T_MapFASTFrance(T_ReaderAbstract):
 
     def readData(self):
         self.df = _buildDataframeMapFASTFrance()
-        _transformersMapFASTFrance(self.df)
+        self.df = _transformersMapFASTFrance(self.df)
         return self.df
 
 class T_MapFASTFrance_EN(T_ReaderAbstract):
 
     def readData(self):
-        self.df = df = _buildDataframeMapFASTFrance()
-        _transformersMapFASTFrance_EN(self.df)
+        self.df = _buildDataframeMapFASTFrance()
+        self.df = _transformersMapFASTFrance_EN(self.df)
         self.df['difficultesSA'] = self.df['difficultesSA'].apply(_transformDifficultiesSA)
         return self.df
 
 class T_RegionsDepartements(T_ReaderAbstract):
 
     def readData(self):
-        self.df = df = _buildDataframeRegionsDepartements("RegionDep")
+        self.df = _buildDataframeRegionsDepartements("RegionDep")
         return self.df
 
 class T_Regions(T_ReaderAbstract):
 
     def readData(self):
-        self.df = df = _buildDataframeRegionsDepartements("Region")
+        self.df = _buildDataframeRegionsDepartements("Region")
         return self.df
-   
+
+class T_Capabilities(T_ReaderAbstract):
+
+    def readData(self):
+        self.df = _buildDataframeCapabilities()
+        self.df = _transformersCapabilities(self.df)
+        return self.df
 
 if __name__ == "__main__":
     start = time.time()
+    '''
     reader = T_DifficultiesSA()
     df = reader.readData()
     reader = T_MapFASTFrance()
@@ -192,4 +220,8 @@ if __name__ == "__main__":
     df = reader.readData()
     reader = T_Regions()
     df = reader.readData()
+    '''
+    reader = T_Capabilities()
+    df = reader.readData()
     print(df.head())
+    print(df.shape)
