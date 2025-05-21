@@ -40,7 +40,7 @@ def _buildDataframeMapFASTFrance():
         df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
-        df.drop(columns=['Subscriber', 'Opens','Clicks', 'Sent', 'Subscribed', 'Location', 'Name', 'Last name', 'InteretEssaiClinique', 'Prenom Enfant', 'Nom Enfant' ],inplace=True)
+        df = df[['Id', 'Année de naissance', 'Zip', 'Génotype', 'DifficultesSA', 'Sexe' ]]
         df.rename(columns={"Id" : "id", "Année de naissance" : "annee", "Zip" : "code_Departement", "Génotype" : "genotype", "DifficultesSA" : "difficultesSA", "Sexe" : "sexe"},inplace=True)
         return df
 
@@ -205,10 +205,11 @@ class T_Capabilities(T_ReaderAbstract):
 if __name__ == "__main__":
     start = time.time()
     
-    reader = T_DifficultiesSA()
-    df = reader.readData()
+    #reader = T_DifficultiesSA()
+    #df = reader.readData()
     reader = T_MapFASTFrance()
     df = reader.readData()
+    '''
     reader = T_MapFASTFrance_EN()
     df = reader.readData()
     reader = T_DifficultiesSA_EN()
@@ -219,5 +220,6 @@ if __name__ == "__main__":
     df = reader.readData()
     reader = T_Capabilities()
     df = reader.readData()
+    '''
     print(df.head())
     print(df.shape)
