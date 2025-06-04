@@ -40,7 +40,7 @@ def _buildDataframeMapFASTLatam():
         df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
-        df = df[['Fecha de nacimiento', 'Sexo', 'País', 'Ciudad', 'Provincia', 'Genotipo' ]]
+        df = df[['Fecha de nacimiento', 'Sexo', 'País', 'Ciudad', 'Genotipo' ]]
         return df
 
 def _transformersMapFASTLatam(df):
@@ -83,12 +83,12 @@ def _transformersMapFASTLatam(df):
     df['Edad'] = df['Edad'].replace(125,0)
     df['Edad'] = df['Edad'].fillna(0)
     df.drop(columns=["Fecha de nacimiento" ],inplace=True)
-    df.rename(columns={"index" : "indexation", "Sexo" : "sexo", "País" : "pais", "Ciudad" : "ciudad", "Genotipo" : "genotipo", "Provincia" : 'provincia', "Edad": "edad"},inplace=True)
+    df.rename(columns={"index" : "indexation", "Sexo" : "sexo", "País" : "pais", "Ciudad" : "ciudad", "Genotipo" : "genotipo", "Edad": "edad"},inplace=True)
 
     return df
 
 def _transformersMapFASTLatam_EN(df):
-    df.rename(columns={"sexo" : "gender", "pais" : "country", "ciudad" : "city", "genotipo" : "genotype", 'provincia' : "state", "edad": "age"},inplace=True)
+    df.rename(columns={"sexo" : "gender", "pais" : "country", "ciudad" : "city", "genotipo" : "genotype", "edad": "age"},inplace=True)
     df["genotype"] = df["genotype"].replace("Deleción","Deletion")
     df["genotype"] = df["genotype"].replace("Mutación","Mutation")
     df["genotype"] = df["genotype"].replace("Clínico","Clinical")
