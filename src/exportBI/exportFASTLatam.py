@@ -41,6 +41,7 @@ def _buildDataframeMapFASTLatam():
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
         df = df[['Fecha de nacimiento', 'Sexo', 'País', 'Ciudad', 'Genotipo' ]]
+        df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
         return df
 
 def _transformersMapFASTLatam(df):
