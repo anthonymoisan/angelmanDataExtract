@@ -41,33 +41,10 @@ def _buildDataframeMapFASTLatam():
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
         df = df[['Fecha de nacimiento', 'Sexo', 'País', 'Ciudad', 'Genotipo' ]]
-        df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+        df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
         return df
 
 def _transformersMapFASTLatam(df):
-    df["Genotipo"] = df["Genotipo"].str.strip()
-    df["Genotipo"] = df["Genotipo"].replace("Defecto de centro de imprinting","Defecto en centro de impronta")
-    df["Genotipo"] = df["Genotipo"].replace("Deleción / No sabe","")
-    df["Genotipo"] = df["Genotipo"].replace("Disomía uniparental UPD 15q","Disomía uniparental")
-    df["Genotipo"] = df["Genotipo"].replace("Duplicación 15q","Disomía uniparental")
-    df["Genotipo"] = df["Genotipo"].replace("Disomía uniparental UPD","Disomía uniparental")
-    df["Genotipo"] = df["Genotipo"].replace("Esperando resultados","")
-    df["Genotipo"] = df["Genotipo"].replace("Metilacion alterado. DUP o impronta","")
-    df["Genotipo"] = df["Genotipo"].replace("Mutación o Defecto en centro de impresión???","")
-    df["Genotipo"] = df["Genotipo"].replace("Mutación UBE3A o Deleción?","")
-    df["Genotipo"] = df["Genotipo"].replace("No reconocido DF o UPD","")
-    df["Genotipo"] = df["Genotipo"].replace("No se determina si es DUP o imprinting","")
-    df["Genotipo"] = df["Genotipo"].replace("Pro Novo","")
-    df["Genotipo"] = df["Genotipo"].replace("Requiere EXOMA","")
-    df["Genotipo"] = df["Genotipo"].replace("UPD","Disomía uniparental")
-    df["Genotipo"] = df["Genotipo"].replace("Variante patógena UBE3A","Mutación")
-    df["Genotipo"] = df["Genotipo"].replace("Mutación UBE3A","Mutación")
-    df["Genotipo"] = df["Genotipo"].replace("Variante patégena UBE3A","Mutación")
-    df["Genotipo"] = df["Genotipo"].replace("Defecto en centro de impronta ICD","Defecto en centro de impronta")
-    df["Genotipo"] = df["Genotipo"].replace("UPD/ICD","")
-    df["Genotipo"] = df["Genotipo"].replace("No determina Mutación o Deleción","")
-    df["Genotipo"] = df["Genotipo"].replace("","No sabe")
-
     #Add an index column
     df.index.name = 'index'
     df = df.reset_index()
@@ -80,9 +57,9 @@ def _transformersMapFASTLatam(df):
     )
 
     #Edad atypic
-    df['Edad'] = df['Edad'].replace(-889,0)
-    df['Edad'] = df['Edad'].replace(125,0)
+    df['Edad'] = pd.to_numeric(df['Edad'], errors='coerce')
     df['Edad'] = df['Edad'].fillna(0)
+    
     df.drop(columns=["Fecha de nacimiento" ],inplace=True)
     df.rename(columns={"index" : "indexation", "Sexo" : "sexo", "País" : "pais", "Ciudad" : "ciudad", "Genotipo" : "genotipo", "Edad": "edad"},inplace=True)
 
@@ -91,11 +68,12 @@ def _transformersMapFASTLatam(df):
 def _transformersMapFASTLatam_EN(df):
     df.rename(columns={"sexo" : "gender", "pais" : "country", "ciudad" : "city", "genotipo" : "genotype", "edad": "age"},inplace=True)
     df["genotype"] = df["genotype"].replace("Deleción","Deletion")
-    df["genotype"] = df["genotype"].replace("Mutación","Mutation")
-    df["genotype"] = df["genotype"].replace("Clínico","Clinical")
-    df["genotype"] = df["genotype"].replace("No sabe","I don't know")
-    df["genotype"] = df["genotype"].replace("Defecto en centro de impronta","ICD")
-    df["genotype"] = df["genotype"].replace("Disomía uniparental","UPD")
+    df["genotype"] = df["genotype"].replace("Mutación UBE3A","Mutation")
+    df["genotype"] = df["genotype"].replace("Sospecha clinica","Clinical")
+    df["genotype"] = df["genotype"].replace("Diagnóstico Clínico","Clinical")
+    df["genotype"] = df["genotype"].replace("Lo perdio","I don't know")
+    df["genotype"] = df["genotype"].replace("Defecto en centro de impronta ICD","ICD")
+    df["genotype"] = df["genotype"].replace("Disomía uniparental UPD","UPD")
     df["gender"] = df["gender"].replace("Hombre","M")
     df["gender"] = df["gender"].replace("Mujer","F")
     df["groupAge"] = pd.cut(
