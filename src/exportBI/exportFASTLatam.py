@@ -84,6 +84,29 @@ def _transformersMapFASTLatam_EN(df):
     )  
     return df
 
+def _buildDataframeCapabilities():
+    # Get working directory
+    wkdir = os.path.dirname(__file__)
+    config = ConfigParser()
+    filePath = f"{wkdir}/../../angelman_viz_keys/Config4.ini"
+    if config.read(filePath):
+        spreadsheet_id = config['Latam']['SHEET_ID_GLOBAL_CAPACITIES']
+        api_key = config['APIGoogleSheets']['KEY']
+        sheet_name = "Responses-New"
+        sheet_data = _get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
+        df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
+        df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
+        df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
+        df.columns = df.columns.str.strip()
+        for col in df.columns:
+            if df[col].dtype == "object":
+                df[col] = df[col].str.strip()
+
+        df.rename(columns={"Population" : "populations", "Condition" : "condition", "Therapy" : "therapy", "Hospital" : "hospital", "Contact PI or Research department" : "contact", "Contact e-mail" : "email", "Contact e-mail 2" : "email2", "Address (City)" : "addressLocation", "Country" : "country", "URL" : "urlWebSite", "Longitude" : "longitude", "Lattitude" : "lattitude"},inplace=True)
+        df = df[['populations', 'condition', 'therapy', 'hospital', 'contact', 'email', 'email2', 'addressLocation', 'country', 'urlWebSite', 'longitude', 'lattitude' ]]
+        return df
+
+
 class T_ReaderAbstract(ABC):
 
     def __init__(self):
@@ -107,12 +130,21 @@ class T_MapFASTLatam_EN(T_ReaderAbstract):
         self.df = _transformersMapFASTLatam(self.df)
         self.df = _transformersMapFASTLatam_EN(self.df)
         return self.df
-    
+
+class T_Capabilities(T_ReaderAbstract):
+
+    def readData(self):
+        self.df = _buildDataframeCapabilities()
+        return self.df
+
+
 if __name__ == "__main__":
   
     reader = T_MapFASTLatam()
     df = reader.readData()
     reader = T_MapFASTLatam_EN()
+    df = reader.readData()
+    reader = T_Capabilities()
     df = reader.readData()
     print(df.head())
     print(df.shape)

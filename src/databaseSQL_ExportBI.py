@@ -283,13 +283,16 @@ def export_mapLatam_English():
     reader = expFASTLatam.T_MapFASTLatam_EN()
     _export_Table("T_FAST_Latam_MapLatam_English","FAST Latam/createMapFASTLatam_English.sql", reader)
 
+def export_capabilities_Latam_English():
+    reader = expFASTLatam.T_Capabilities()
+    _export_Table("T_FAST_Latam_Capabilitie","FAST Latam/createCapabilities.sql", reader)
+
 
 if __name__ == "__main__":
     """
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
-    
     
     export_DifficultiesSA_English()
     print("\n")
@@ -309,5 +312,7 @@ if __name__ == "__main__":
     print("\n")
     export_mapLatam_English()
     print("\n")
-    
+    export_capabilities_Latam_English()
+    print("\n")
+
     print("\nExecute time : ", round(time.time()-start, 2), "s")
