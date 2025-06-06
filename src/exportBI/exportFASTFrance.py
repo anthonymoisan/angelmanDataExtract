@@ -128,6 +128,8 @@ def _transformersMapFASTFrance_EN(df):
         labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
         right=True
     )  
+    df = df[~df["code_Departement"].isin(["971", "972", "973", "974", "975", "976", "Algerie", "Belgique", "Canada", "Suisse", "Tunisie"])]
+
     return df
 
 def _transformDifficultiesSA(texte):
@@ -205,11 +207,10 @@ class T_Capabilities(T_ReaderAbstract):
 if __name__ == "__main__":
     start = time.time()
     
-    #reader = T_DifficultiesSA()
-    #df = reader.readData()
+    reader = T_DifficultiesSA()
+    df = reader.readData()
     reader = T_MapFASTFrance()
     df = reader.readData()
-    '''
     reader = T_MapFASTFrance_EN()
     df = reader.readData()
     reader = T_DifficultiesSA_EN()
@@ -220,6 +221,5 @@ if __name__ == "__main__":
     df = reader.readData()
     reader = T_Capabilities()
     df = reader.readData()
-    '''
     print(df.head())
     print(df.shape)

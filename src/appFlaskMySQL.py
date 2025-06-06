@@ -107,6 +107,9 @@ def home():
     <li>API in order for reading data from MapLatam_English : <a href="./api/v2/resources/FAST_Latam/MapLatam_English">./api/v2/resources/FAST_Latam/MapLatam_English</a></li>
     <li>API in order for reading data from Capabilitie : <a href="./api/v2/resources/FAST_Latam/Capabilities_English">./api/v2/resources/FAST_Latam_Capabilities_English</a></li>
     </ul>
+
+    API MAP Global
+    API in order for reading data from MapLatam_Spanish : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
     '''
 
 
@@ -207,6 +210,13 @@ def api_Capabilities_Latam_English():
     API to expose the results from Capabilities in English with the specific table from the database
     """
     return __api_Table('T_FAST_Latam_Capabilitie')
+
+@appFlaskMySQL.route('/api/v3/resources/Map_Global', methods=['GET'])
+def api_MapGlobal():
+    """
+    API to expose the results from Map Global in English with the specific table from the database
+    """
+    return __api_Table('T_MapGlobal')
 
 
 if __name__ == '__main__':
