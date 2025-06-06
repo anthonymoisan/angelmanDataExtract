@@ -27,7 +27,7 @@ def _buildDataFrameMapMapGlobal():
 def _transformersMapFASTFrance(df):
     df = df.rename(columns={"sexe": "gender"})
     df["country"] = "France"
-    df = df[~df["code_Departement"].isin(["971", "972", "973", "974", "975", "976", "Algerie", "Belgique", "Canada", "Suisse", "Tunisie"])]
+    df = df[~df["code_Departement"].isin(["971", "972", "973", "974", "975", "976", "Maroc", "Algerie", "Belgique", "Canada", "Suisse", "Tunisie"])]
     df = df.drop(columns={'code_Departement','difficultesSA', 'annee'})
     df["linkDashboard"] = "https://app.powerbi.com/groups/e021dfb0-ec0b-4e9b-aeee-89cd478700fc/reports/a3f644fe-4767-4ab6-a596-9a0ed63c8f9e/fdaf46ffd7a806123186?experience=power-bi"
     return df

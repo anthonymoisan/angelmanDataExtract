@@ -128,7 +128,7 @@ def _transformersMapFASTFrance_EN(df):
         labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
         right=True
     )  
-    df = df[~df["code_Departement"].isin(["971", "972", "973", "974", "975", "976", "Algerie", "Belgique", "Canada", "Suisse", "Tunisie"])]
+    df = df[~df["code_Departement"].isin(["971", "972", "973", "974", "975", "976", "Maroc", "Algerie", "Belgique", "Canada", "Suisse", "Tunisie"])]
 
     return df
 
