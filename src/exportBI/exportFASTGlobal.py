@@ -22,6 +22,8 @@ def _buildDataFrameMapMapGlobal():
     df_FAST_Latam = readTable("T_FAST_Latam_MapLatam_English")
     df_FAST_Latam =  _transformersMapFASTLatam(df_FAST_Latam)
     df_total = pd.concat([df_FAST_France, df_FAST_Latam], ignore_index=True)
+    df_total = df_total[df_total["genotype"].isin(["Deletion", "Clinical", "Mutation", "UPD", "ICD", "I don't know", "Mosaic"])]
+    df_total = df_total[df_total["gender"].isin(["M", "F"])] 
     return df_total
 
 def _transformersMapFASTFrance(df):
