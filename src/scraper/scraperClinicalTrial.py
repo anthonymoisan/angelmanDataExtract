@@ -21,6 +21,7 @@ def __requestJSON2(clinic_geocode, queryCondition):
         "countTotal" : "true",
         "pageSize": 1000,
     }
+    print(query_params)
         
     as_trial_url = "https://clinicaltrials.gov/api/v2/studies"
     
@@ -28,6 +29,7 @@ def __requestJSON2(clinic_geocode, queryCondition):
         as_trial_url,
         params=query_params,
     )
+    print(as_trials_req.json())
     return as_trials_req.json()
 
 def __getNctId(study):
@@ -79,10 +81,9 @@ def __buildTrialList(study, TypeTherapy):
     return trial_list     
 
 def __BuildDataFrame(data, listColumns):
-    return pd.DataFrame(
-        data,
-        columns=listColumns,
-    ) if data != None else None
+    if data is None:
+        return pd.DataFrame(columns=listColumns)  # Return an empty DataFrame with the correct columns
+    return pd.DataFrame(data, columns=listColumns)
 
 def __getFacility(loc):
     try:
@@ -124,6 +125,7 @@ def __buid_ClinicalsTrials(clinic, queryCondition, TypeTherapy):
     #For ASO or GeneTherapy (queryCondition), find clinical trials
     try:
         clinic_geocode = f'distance({clinic["Lat_scrape"]},{clinic["Lon_scrape"]},1mi)'
+        print(clinic_geocode)
         as_trials_req = __requestJSON2(clinic_geocode, queryCondition)
 
         as_trials_list = []
@@ -135,8 +137,8 @@ def __buid_ClinicalsTrials(clinic, queryCondition, TypeTherapy):
                 latitude = __getGeoPointLat(loc)
                 longitude = __getGeoPointLon(loc)
                 #Equality of 2 decimal with an error of 1e-6
-                testValLatEquality = (abs(latitude-clinic["Lat"])<1e-6)
-                testValLonEquality = (abs(longitude-clinic["Lon"])<1e-6)
+                testValLatEquality = (abs(latitude-clinic["Lat_scrape"])<1e-6)
+                testValLonEquality = (abs(longitude-clinic["Lon_scrape"])<1e-6)
                 if(testValLatEquality and testValLonEquality):
                     facility = __getFacility(loc)
                     best_match = __filter_and_replace_fuzzy_match(clinic["Hospitals"],facility)
@@ -175,23 +177,28 @@ def trials_clinics_LonLat(clinics_json_df):
     """
     df_result = pd.DataFrame()
     for index, clinic in clinics_json_df.iterrows() :
+         # break loop after first record
+        if index == "Boston Childrens":
+
         
-        #print(clinic)
-        as_trials_list_ASO = __buid_ClinicalsTrials(clinic, 
-                                                    'EXPANSION[Concept]"ASO" OR EXPANSION[Concept]"antisense oligonucleotide"', 
-                                                    "ASO")
-        
-        df_trialsASO = __BuildDataFrame(as_trials_list_ASO,
-                                        listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Treatment", "Facility", "Lat_scrape", "Lon_scrape", "Lat_map", "Lon_map"])
-        
-        #print(df_trialsASO)
-        
-        as_trials_list_GeneTherapy = __buid_ClinicalsTrials(clinic, 
-                                                            'EXPANSION[Concept]"gene therapy"', 
-                                                            "gene_therapy")
-        
-        df_trialsGeneTherapy =  __BuildDataFrame(as_trials_list_GeneTherapy,
-                                                 listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Treatment", "Facility", "Lat_scrape", "Lon_scrape", "Lat_map", "Lon_map"])
+            print(index)
+            print(clinic)
+            as_trials_list_ASO = __buid_ClinicalsTrials(clinic, 
+                                                        'EXPANSION[Concept]"ASO" OR EXPANSION[Concept]"antisense oligonucleotide"', 
+                                                        "ASO")
+       
+
+            df_trialsASO = __BuildDataFrame(as_trials_list_ASO,
+                                            listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Treatment", "Facility", "Lat_scrape", "Lon_scrape", "Lat_map", "Lon_map"])
+            
+            #print(df_trialsASO)
+            
+            as_trials_list_GeneTherapy = __buid_ClinicalsTrials(clinic, 
+                                                                'EXPANSION[Concept]"gene therapy"', 
+                                                                "gene_therapy")
+            
+            df_trialsGeneTherapy =  __BuildDataFrame(as_trials_list_GeneTherapy,
+                                                    listColumns=["NCT_ID","Sponsor","Study_Name","Start_Date","End_Date", "Current_Status", "Treatment", "Facility", "Lat_scrape", "Lon_scrape", "Lat_map", "Lon_map"])
         
         #print(df_trialsGeneTherapy)
         
