@@ -150,6 +150,7 @@ def export_Table(table_name, sql_script, reader):
 
 def readTable(table_name):
     try:
+        print("Read Table ", table_name)
         query = f"SELECT * FROM {table_name}"
         rows = _run_query(query, return_result=True)
 
