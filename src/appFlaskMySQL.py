@@ -108,8 +108,15 @@ def home():
     <li>API in order for reading data from Capabilitie : <a href="./api/v2/resources/FAST_Latam/Capabilities_English">./api/v2/resources/FAST_Latam_Capabilities_English</a></li>
     </ul>
 
+    API FAST Poland
+    <ul>
+    <li>API in order for reading data from MapLatam_Spanish : <a href="./api/v4/resources/FAST_Poland/MapPoland_Polish">./api/v4/resources/FAST_Poland/MapPoland_Polish</a></li>
+    <li>API in order for reading data from MapLatam_English : <a href="./api/v4/resources/FAST_Poland/MapPoland_English">./api/v4/resources/FAST_Poland/MapPoland_English</a></li>
+    </ul>
+
+
     API MAP Global
-    API in order for reading data from MapLatam_Spanish : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
+    API in order for reading data from Map : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
     '''
 
 
@@ -217,6 +224,21 @@ def api_MapGlobal():
     API to expose the results from Map Global in English with the specific table from the database
     """
     return __api_Table('T_MapGlobal')
+
+@appFlaskMySQL.route('/api/v4/resources/FAST_Poland/MapPoland_Polish', methods=['GET'])
+def api_MapPoland_Polish():
+    """
+    API to expose the results from MapPoland in Polish with the specific table from the database
+    """
+    return __api_Table('T_FAST_Poland_MapPoland_Polish')
+
+@appFlaskMySQL.route('/api/v4/resources/FAST_Poland/MapPoland_English', methods=['GET'])
+def api_MapPoland_English():
+    """
+    API to expose the results from MapPoland in English with the specific table from the database
+    """
+    return __api_Table('T_FAST_Poland_MapPoland_English')
+
 
 
 if __name__ == '__main__':

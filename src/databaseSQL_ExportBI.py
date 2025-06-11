@@ -1,6 +1,7 @@
 import time
 import exportBI.exportFASTFrance as expFASTFrance
 import exportBI.exportFASTLatam as expFASTLatam
+import exportBI.exportFASTPoland as expFASTPoland
 import exportBI.exportFASTGlobal as expFASTGlobal
 from utilsTools import export_Table
 
@@ -52,6 +53,15 @@ def export_mapLatam_English():
     reader = expFASTLatam.T_MapFASTLatam_EN()
     export_Table("T_FAST_Latam_MapLatam_English","FAST Latam/createMapFASTLatam_English.sql", reader)
 
+def export_mapPoland_Polish():
+    reader = expFASTPoland.T_MapFASTPoland()
+    export_Table("T_FAST_Poland_MapPoland_Polish","FAST Poland/createMapFASTPoland_Polish.sql", reader)
+
+def export_mapPoland_English():
+    reader = expFASTPoland.T_MapFASTPoland_EN()
+    export_Table("T_FAST_Poland_MapPoland_English","FAST Poland/createMapFASTPoland_English.sql", reader)
+
+
 def export_capabilities_Latam_English():
     reader = expFASTLatam.T_Capabilities()
     export_Table("T_FAST_Latam_Capabilitie","FAST Latam/createCapabilities.sql", reader)
@@ -86,7 +96,12 @@ if __name__ == "__main__":
     print("\n")
     export_capabilities_Latam_English()
     print("\n")
-
+    
+    export_mapPoland_Polish()
+    print("\n")
+    export_mapPoland_English()
+    print("\n")
+    
     export_mapGlobal()
     print("\n")
     
