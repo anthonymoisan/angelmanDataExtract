@@ -50,6 +50,7 @@ def _buildDataframeMapFASTSpain_EN():
 def _transformersMapFASTSpain_EN(df):
     df["sexe"] = df["sexe"].replace("Male", "M")
     df["sexe"] = df["sexe"].replace("Female", "F")
+    df = df.rename(columns={"sexe": "gender"})    
 
     df["genotype"] = df["genotype"].replace("Uniparental disomy","UPD")
     df["genotype"] = df["genotype"].replace("NA","I don't know")
