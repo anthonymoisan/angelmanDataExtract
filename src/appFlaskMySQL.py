@@ -114,6 +114,11 @@ def home():
     <li>API in order for reading data from MapLatam_English : <a href="./api/v4/resources/FAST_Poland/MapPoland_English">./api/v4/resources/FAST_Poland/MapPoland_English</a></li>
     </ul>
 
+    API FAST Spain
+    <ul>
+    <li>API in order for reading data from MapSpain_Spanish : <a href="./api/v4/resources/FAST_Spain/MapSpain_Spanish">./api/v4/resources/FAST_Spain/MapSpain_Spanish</a></li>
+    <li>API in order for reading data from MapSpain_English : <a href="./api/v4/resources/FAST_Spain/MapSpain_English">./api/v4/resources/FAST_Spain/MapSpain_English</a></li>
+    </ul>
 
     API MAP Global
     API in order for reading data from Map : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
@@ -239,6 +244,20 @@ def api_MapPoland_English():
     """
     return __api_Table('T_FAST_Poland_MapPoland_English')
 
+
+@appFlaskMySQL.route('/api/v4/resources/FAST_Spain/MapSpain_Spanish', methods=['GET'])
+def api_MapSpain_Spanish():
+    """
+    API to expose the results from MapSpain in Spanish with the specific table from the database
+    """
+    return __api_Table('T_FAST_Spain_MapSpain_Spanish')
+
+@appFlaskMySQL.route('/api/v4/resources/FAST_Spain/MapSpain_English', methods=['GET'])
+def api_MapSpain_English():
+    """
+    API to expose the results from MapSpain in English with the specific table from the database
+    """
+    return __api_Table('T_FAST_Spain_MapSpain_English')
 
 
 if __name__ == '__main__':
