@@ -17,7 +17,9 @@ def _buildDataFrameMapMapGlobal():
     df_FAST_Poland = _transformersMapFASTPoland(df_FAST_Poland)
     df_FAST_Spain = readTable("T_FAST_Spain_MapSpain_English")
     df_FAST_Spain = _transformersMapFASTSpain(df_FAST_Spain)
-    df_total = pd.concat([df_FAST_France, df_FAST_Latam, df_FAST_Poland, df_FAST_Spain], ignore_index=True)
+    df_FAST_Australia = readTable("T_FAST_Australia_MapAustralia_English")
+    df_FAST_Australia = _transformersMapFASTAustralia(df_FAST_Australia)
+    df_total = pd.concat([df_FAST_France, df_FAST_Latam, df_FAST_Poland, df_FAST_Spain, df_FAST_Australia], ignore_index=True)
     
     df_total = df_total[df_total["genotype"].isin(["Deletion", "Clinical", "Mutation", "UPD", "ICD", "Mosaic"])]
     df_total = df_total[df_total["gender"].isin(["M", "F"])] 
@@ -47,6 +49,10 @@ def _transformersMapFASTSpain(df):
     df["linkDashboard"] = "https://app.powerbi.com/groups/5dee59e6-0976-4d44-a23f-5cc6b6508f60/reports/81fe5a2a-36ad-46dd-bb48-8771730376bf/fdaf46ffd7a806123186?experience=power-bi"
     return df    
 
+def _transformersMapFASTAustralia(df):
+    df["country"] = "Australia"
+    df["linkDashboard"] = ""
+    return df
 
 class T_MapFASTGlobal(T_ReaderAbstract):
 
