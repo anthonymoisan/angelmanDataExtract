@@ -5,16 +5,8 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utilsTools import readTable
 import pandas as pd
-from abc import ABC, abstractmethod
+from exportBI.exportTools import T_ReaderAbstract
 
-class T_ReaderAbstract(ABC):
-
-    def __init__(self):
-        self.df = pd.DataFrame()
-
-    @abstractmethod
-    def readData(self):
-        pass
 
 def _buildDataFrameMapMapGlobal():
     df_FAST_France = readTable("T_FAST_France_MapFrance_English")
@@ -27,7 +19,7 @@ def _buildDataFrameMapMapGlobal():
     df_FAST_Spain = _transformersMapFASTSpain(df_FAST_Spain)
     df_total = pd.concat([df_FAST_France, df_FAST_Latam, df_FAST_Poland, df_FAST_Spain], ignore_index=True)
     
-    df_total = df_total[df_total["genotype"].isin(["Deletion", "Clinical", "Mutation", "UPD", "ICD", "I don't know", "Mosaic"])]
+    df_total = df_total[df_total["genotype"].isin(["Deletion", "Clinical", "Mutation", "UPD", "ICD", "Mosaic"])]
     df_total = df_total[df_total["gender"].isin(["M", "F"])] 
     return df_total
 
@@ -68,4 +60,4 @@ if __name__ == "__main__":
     df = reader.readData()
     print(df.head())
     print(df.shape)
-    print(df.dtypes)
+    #print(df.dtypes)

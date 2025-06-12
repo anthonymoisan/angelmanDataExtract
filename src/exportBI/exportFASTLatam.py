@@ -1,31 +1,11 @@
-import requests
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pandas as pd
 import time
-import os
 from configparser import ConfigParser
 from datetime import datetime
-from abc import ABC, abstractmethod
-
-def _get_google_sheet_data(spreadsheet_id,sheet_name, api_key):
-    # Construct the URL for the Google Sheets API
-    url = f'https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{sheet_name}!A1:Z?alt=json&key={api_key}'
-
-    try:
-        # Make a GET request to retrieve data from the Google Sheets API
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-
-        # Parse the JSON response
-        data = response.json()
-        if not data:
-            print("Failed to fetch data from Google Sheets API.")
-
-        return data
-
-    except requests.exceptions.RequestException as e:
-        # Handle any errors that occur during the request
-        print(f"An error occurred: {e}")
-        return None
+from exportBI.exportTools import get_google_sheet_data, T_ReaderAbstract
     
 def _buildDataframeMapFASTLatam():
     # Get working directory
@@ -36,7 +16,7 @@ def _buildDataframeMapFASTLatam():
         spreadsheet_id = config['Latam']['SHEET_ID_MAP_FAST_LATAM']
         api_key = config['APIGoogleSheets']['KEY']
         sheet_name = 'Hoja 1'
-        sheet_data = _get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
+        sheet_data = get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
         df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
@@ -93,7 +73,7 @@ def _buildDataframeCapabilities():
         spreadsheet_id = config['Latam']['SHEET_ID_GLOBAL_CAPACITIES']
         api_key = config['APIGoogleSheets']['KEY']
         sheet_name = "Responses-New"
-        sheet_data = _get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
+        sheet_data = get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
         df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
@@ -105,16 +85,6 @@ def _buildDataframeCapabilities():
         df.rename(columns={"Population" : "populations", "Condition" : "condition", "Therapy" : "therapy", "Hospital" : "hospital", "Contact PI or Research department" : "contact", "Contact e-mail" : "email", "Contact e-mail 2" : "email2", "Address (City)" : "addressLocation", "Country" : "country", "URL" : "urlWebSite", "Longitude" : "longitude", "Lattitude" : "lattitude"},inplace=True)
         df = df[['populations', 'condition', 'therapy', 'hospital', 'contact', 'email', 'email2', 'addressLocation', 'country', 'urlWebSite', 'longitude', 'lattitude' ]]
         return df
-
-
-class T_ReaderAbstract(ABC):
-
-    def __init__(self):
-        self.df = pd.DataFrame()
-
-    @abstractmethod
-    def readData(self):
-        pass
 
 class T_MapFASTLatam(T_ReaderAbstract):
 
