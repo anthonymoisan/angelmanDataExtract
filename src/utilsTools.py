@@ -3,7 +3,6 @@ import time
 import smtplib
 import numpy as np
 import pandas as pd
-import socket
 from sqlalchemy import create_engine, text
 from sshtunnel import SSHTunnelForwarder
 from configparser import ConfigParser
@@ -19,8 +18,7 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__), "../angelman_viz_keys/Conf
 CONFIG_GMAIL_PATH = os.path.join(os.path.dirname(__file__), "../angelman_viz_keys/Config4.ini")
 
 # Détection automatique de l'environnement
-hostname = socket.gethostname()
-LOCAL_CONNEXION = not "pythonanywhere" in hostname.lower()
+LOCAL_CONNEXION = not os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower().startswith("pythonanywhere")
 
 def load_config(filepath):
     config = ConfigParser()

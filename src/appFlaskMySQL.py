@@ -121,10 +121,19 @@ def home():
     </ul>
 
     API Australia
-    API in order for reading data from Map : <a href="./api/v4/resources/Australia/MapAustralia_English">./api/v4/resources/Australia/MapAustralia_English</a>
+    API in order for reading data from Map Australia : <a href="./api/v4/resources/Australia/MapAustralia_English">./api/v4/resources/Australia/MapAustralia_English</a>
     <br><br>
+
+    API USA
+    API in order for reading data from Map USA : <a href="./api/v4/resources/USA/MapUSA_English">./api/v4/resources/USA/MapUSA_English</a>
+    <br><br>
+
+    API Canada
+    API in order for reading data from Map Canada : <a href="./api/v4/resources/Canada/MapCanada_English">./api/v4/resources/Canada/MapCanada_English</a>
+    <br><br>
+
     API MAP Global
-    API in order for reading data from Map : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
+    API in order for reading data from Map Global : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
     '''
 
 
@@ -263,11 +272,25 @@ def api_MapSpain_English():
     return __api_Table('T_MapSpain_English')
 
 @appFlaskMySQL.route('/api/v4/resources/Australia/MapAustralia_English', methods=['GET'])
-def api_MapAustralai_English():
+def api_MapAustralia_English():
     """
     API to expose the results from MapAustralia in English with the specific table from the database
     """
     return __api_Table('T_MapAustralia_English')
+
+@appFlaskMySQL.route('/api/v4/resources/USA/MapUSA_English', methods=['GET'])
+def api_MapUSA_English():
+    """
+    API to expose the results from MapUSA in English with the specific table from the database
+    """
+    return __api_Table('T_MapUSA_English')
+
+@appFlaskMySQL.route('/api/v4/resources/Canada/MapCanada_English', methods=['GET'])
+def api_MapCanada_English():
+    """
+    API to expose the results from MapCanada in English with the specific table from the database
+    """
+    return __api_Table('T_MapCanada_English')
 
 
 if __name__ == '__main__':

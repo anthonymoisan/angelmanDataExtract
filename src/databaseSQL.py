@@ -12,8 +12,9 @@ import pandas as pd
 import numpy as np
 import json
 
-# Very important parameter to execute locally or remotely (production)
-LOCAL_CONNEXION = True
+# Détection automatique de l'environnement
+LOCAL_CONNEXION = not os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower().startswith("pythonanywhere")
+
 
 # Read SSH information and DB information in a file Config2.ini
 wkdir = os.path.dirname(__file__)
