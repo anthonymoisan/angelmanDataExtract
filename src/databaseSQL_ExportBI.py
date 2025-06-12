@@ -1,10 +1,14 @@
-import time
+import sys, os
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 import exportBI.exportFASTFrance as expFASTFrance
 import exportBI.exportFASTLatam as expFASTLatam
 import exportBI.exportFASTPoland as expFASTPoland
 import exportBI.exportFASTSpain as expFASTSpain
 import exportBI.exportFASTGlobal as expFASTGlobal
+import exportBI.exportFASTAustralia as expFASTAustralia
 from utilsTools import export_Table
+import time
+
 
 def export_RegionsDepartements_French():
     """
@@ -70,6 +74,10 @@ def export_mapSpain_English():
     reader = expFASTSpain.T_MapFASTSpain_EN()
     export_Table("T_FAST_Spain_MapSpain_English","FAST Spain/createMapFASTSpain_English.sql", reader)
 
+def export_mapAustralia_English():
+    reader = expFASTAustralia.T_MapFASTAustralia_EN()
+    export_Table("T_FAST_Australia_MapAustralia_English","FAST Australia/createMapFASTAustralia_English.sql", reader)
+
 def export_capabilities_Latam_English():
     reader = expFASTLatam.T_Capabilities()
     export_Table("T_FAST_Latam_Capabilitie","FAST Latam/createCapabilities.sql", reader)
@@ -115,6 +123,9 @@ if __name__ == "__main__":
     export_mapSpain_English()
     print("\n")
     
+    export_mapAustralia_English()
+    print("\n")
+
     export_mapGlobal()
     print("\n")
     
