@@ -1,6 +1,6 @@
-CREATE TABLE T_FAST_Australia_MapAustralia_English (
+CREATE TABLE T_MapPoland_English (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    indexation INT NOT NULL UNIQUE,
+    indexation VARCHAR(255) NOT NULL UNIQUE,
     gender VARCHAR(255) NOT NULL,
     genotype VARCHAR(255) NOT NULL,
     age INT NOT NULL,

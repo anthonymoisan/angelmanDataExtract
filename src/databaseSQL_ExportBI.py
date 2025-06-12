@@ -1,11 +1,11 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-import exportBI.exportFASTFrance as expFASTFrance
-import exportBI.exportFASTLatam as expFASTLatam
-import exportBI.exportFASTPoland as expFASTPoland
-import exportBI.exportFASTSpain as expFASTSpain
-import exportBI.exportFASTGlobal as expFASTGlobal
-import exportBI.exportFASTAustralia as expFASTAustralia
+import exportBI.exportFrance as expFrance
+import exportBI.exportLatam as expLatam
+import exportBI.exportPoland as expPoland
+import exportBI.exportSpain as expSpain
+import exportBI.exportGlobal as expGlobal
+import exportBI.exportAustralia as expAustralia
 from utilsTools import export_Table
 import time
 
@@ -14,84 +14,84 @@ def export_RegionsDepartements_French():
     """
     Method to read RegionsDepartements in French
     """
-    reader = expFASTFrance.T_RegionsDepartements()
-    export_Table("T_FAST_France_RegionDepartement_French","FAST France/createRegionDepartement_French.sql", reader)
+    reader = expFrance.T_RegionsDepartements()
+    export_Table("T_MapFrance_RegionDepartement_French","France/createRegionDepartement_French.sql", reader)
 
 def export_RegionsPrefectures_French():
     """
     Method to read RegionsPrefectures in French
     """
-    reader = expFASTFrance.T_Regions()
-    export_Table("T_FAST_France_RegionPrefecture_French","FAST France/createPrefectureRegion_French.sql", reader)
+    reader = expFrance.T_Regions()
+    export_Table("T_MapFrance_RegionPrefecture_French","France/createPrefectureRegion_French.sql", reader)
 
 def export_DifficultiesSA_French():
     """
     Method to read DifficultiesSA in French
     """
-    reader = expFASTFrance.T_DifficultiesSA()
-    export_Table("T_FAST_France_DifficultiesSA_French","FAST France/createDifficultiesSA_French.sql", reader)
+    reader = expFrance.T_DifficultiesSA()
+    export_Table("T_MapFrance_DifficultiesSA_French","France/createDifficultiesSA_French.sql", reader)
 
 def export_DifficultiesSA_English():
     """
     Method to read DifficultiesSA in English
     """
-    reader = expFASTFrance.T_DifficultiesSA_EN()
-    export_Table("T_FAST_France_DifficultiesSA_English","FAST France/createDifficultiesSA_English.sql", reader)
+    reader = expFrance.T_DifficultiesSA_EN()
+    export_Table("T_MapFrance_DifficultiesSA_English","France/createDifficultiesSA_English.sql", reader)
 
 def export_mapFrance_French():
-    reader = expFASTFrance.T_MapFASTFrance()
-    export_Table("T_FAST_France_MapFrance_French","FAST France/createMapFrance_French.sql", reader)
+    reader = expFrance.T_MapFrance()
+    export_Table("T_MapFrance_French","France/createMapFrance_French.sql", reader)
 
 def export_mapFrance_English():
-    reader = expFASTFrance.T_MapFASTFrance_EN()
-    export_Table("T_FAST_France_MapFrance_English","FAST France/createMapFrance_English.sql", reader)
+    reader = expFrance.T_MapFrance_EN()
+    export_Table("T_MapFrance_English","France/createMapFrance_English.sql", reader)
 
 def export_capabilities_English():
-    reader = expFASTFrance.T_Capabilities()
-    export_Table("T_FAST_France_Capabilitie","FAST France/createCapabilities.sql", reader)
+    reader = expFrance.T_Capabilities()
+    export_Table("T_MapFrance_Capabilitie","France/createCapabilities.sql", reader)
 
 def export_mapLatam_Spanish():
-    reader = expFASTLatam.T_MapFASTLatam()
-    export_Table("T_FAST_Latam_MapLatam_Spanish","FAST Latam/createMapFASTLatam_Spanish.sql", reader)
+    reader = expLatam.T_MapLatam()
+    export_Table("T_MapLatam_Spanish","Latam/createMapLatam_Spanish.sql", reader)
 
 def export_mapLatam_English():
-    reader = expFASTLatam.T_MapFASTLatam_EN()
-    export_Table("T_FAST_Latam_MapLatam_English","FAST Latam/createMapFASTLatam_English.sql", reader)
+    reader = expLatam.T_MapLatam_EN()
+    export_Table("T_MapLatam_English","Latam/createMapLatam_English.sql", reader)
 
 def export_mapPoland_Polish():
-    reader = expFASTPoland.T_MapFASTPoland()
-    export_Table("T_FAST_Poland_MapPoland_Polish","FAST Poland/createMapFASTPoland_Polish.sql", reader)
+    reader = expPoland.T_MapPoland()
+    export_Table("T_MapPoland_Polish","Poland/createMapPoland_Polish.sql", reader)
 
 def export_mapPoland_English():
-    reader = expFASTPoland.T_MapFASTPoland_EN()
-    export_Table("T_FAST_Poland_MapPoland_English","FAST Poland/createMapFASTPoland_English.sql", reader)
+    reader = expPoland.T_MapPoland_EN()
+    export_Table("T_MapPoland_English","Poland/createMapPoland_English.sql", reader)
 
 def export_mapSpain_Spanish():
-    reader = expFASTSpain.T_MapFASTSpain()
-    export_Table("T_FAST_Spain_MapSpain_Spanish","FAST Spain/createMapFASTSpain_Spanish.sql", reader)
+    reader = expSpain.T_MapSpain()
+    export_Table("T_MapSpain_Spanish","Spain/createMapSpain_Spanish.sql", reader)
 
 def export_mapSpain_English():
-    reader = expFASTSpain.T_MapFASTSpain_EN()
-    export_Table("T_FAST_Spain_MapSpain_English","FAST Spain/createMapFASTSpain_English.sql", reader)
+    reader = expSpain.T_MapSpain_EN()
+    export_Table("T_MapSpain_English","Spain/createMapSpain_English.sql", reader)
 
 def export_mapAustralia_English():
-    reader = expFASTAustralia.T_MapFASTAustralia_EN()
-    export_Table("T_FAST_Australia_MapAustralia_English","FAST Australia/createMapFASTAustralia_English.sql", reader)
+    reader = expAustralia.T_MapAustralia_EN()
+    export_Table("T_MapAustralia_English","Australia/createMapAustralia_English.sql", reader)
 
 def export_capabilities_Latam_English():
-    reader = expFASTLatam.T_Capabilities()
-    export_Table("T_FAST_Latam_Capabilitie","FAST Latam/createCapabilities.sql", reader)
+    reader = expLatam.T_Capabilities()
+    export_Table("T_MapLatam_Capabilitie","Latam/createCapabilities.sql", reader)
 
 def export_mapGlobal():
-    reader = expFASTGlobal.T_MapFASTGlobal()
-    export_Table("T_MapGlobal", "MAP Global/createMapGlobal.sql", reader)
+    reader = expGlobal.T_MapGlobal()
+    export_Table("T_MapGlobal", "Global/createMapGlobal.sql", reader)
 
 if __name__ == "__main__":
     """
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
-    
+
     export_DifficultiesSA_English()
     print("\n")
     export_capabilities_English()
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     export_RegionsPrefectures_French()
     print("\n")
     export_DifficultiesSA_French()
-
+    
     export_mapLatam_Spanish()
     print("\n")
     export_mapLatam_English()
@@ -122,10 +122,10 @@ if __name__ == "__main__":
     print("\n")
     export_mapSpain_English()
     print("\n")
-    
+
     export_mapAustralia_English()
     print("\n")
-
+ 
     export_mapGlobal()
     print("\n")
     

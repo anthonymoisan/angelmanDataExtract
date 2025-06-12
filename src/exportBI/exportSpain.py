@@ -6,11 +6,11 @@ import time
 from datetime import datetime
 from exportBI.exportTools import get_google_sheet_data, T_ReaderAbstract, BuildDataframeFromRegistry
   
-def _buildDataframeMapFASTSpain_EN():
+def _buildDataframeMapSpain_EN():
     df = BuildDataframeFromRegistry("Spain")
     return df
 
-def _transformersMapFASTSpain_EN(df):
+def _transformersMapSpain_EN(df):
     df["sexe"] = df["sexe"].replace("Male", "M")
     df["sexe"] = df["sexe"].replace("Female", "F")
     df = df.rename(columns={"sexe": "gender"})    
@@ -34,7 +34,7 @@ def _transformersMapFASTSpain_EN(df):
 
     return df
 
-def _transformersMapFASTSpain(df):
+def _transformersMapSpain(df):
     
     df["sexe"] = df["sexe"].replace("Male", "Hombre")
     df["sexe"] = df["sexe"].replace("Female", "Mujer")
@@ -54,24 +54,24 @@ def _transformersMapFASTSpain(df):
 
     return df
 
-class T_MapFASTSpain_EN(T_ReaderAbstract):
+class T_MapSpain_EN(T_ReaderAbstract):
 
     def readData(self):
-        self.df = _buildDataframeMapFASTSpain_EN()
-        self.df = _transformersMapFASTSpain_EN(self.df)
+        self.df = _buildDataframeMapSpain_EN()
+        self.df = _transformersMapSpain_EN(self.df)
         return self.df
 
-class T_MapFASTSpain(T_ReaderAbstract):
+class T_MapSpain(T_ReaderAbstract):
     def readData(self):
-        self.df = _buildDataframeMapFASTSpain_EN()
-        self.df = _transformersMapFASTSpain(self.df)
+        self.df = _buildDataframeMapSpain_EN()
+        self.df = _transformersMapSpain(self.df)
         return self.df
     
 if __name__ == "__main__":
   
-    reader = T_MapFASTSpain_EN()
+    reader = T_MapSpain_EN()
     df = reader.readData()
-    reader = T_MapFASTSpain()
+    reader = T_MapSpain()
     df = reader.readData()
     print(df.head())
     print(df.shape)

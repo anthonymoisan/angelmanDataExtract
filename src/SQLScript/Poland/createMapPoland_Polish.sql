@@ -1,4 +1,4 @@
-CREATE TABLE T_FAST_Latam_MapLatam_English (
+CREATE TABLE T_MapPoland_English (
     id INT PRIMARY KEY AUTO_INCREMENT,
     indexation VARCHAR(255) NOT NULL UNIQUE,
     gender VARCHAR(255) NOT NULL,

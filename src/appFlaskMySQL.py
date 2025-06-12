@@ -89,7 +89,7 @@ def home():
     <li>API in order for scraping data from Clinical Trials : <a href="./api/v1/resources/ClinicalTrials">./api/v1/resources/ClinicalTrials</a></li>
     </ul>
     
-    API Map FAST France
+    API Map France
     
     <ul>
     <li>API in order for reading data from MapFrance_French : <a href="./api/v2/resources/FAST_France/MapFrance_French">./api/v2/resources/FAST_France/MapFrance_French</a></li>
@@ -101,25 +101,28 @@ def home():
     <li>API in order for reading data from Capabilitie : <a href="./api/v2/resources/FAST_France/Capabilities_English">./api/v2/resources/FAST_France_Capabilities_English</a></li>
     </ul>
 
-    API FAST Latam
+    API Latam
     <ul>
     <li>API in order for reading data from MapLatam_Spanish : <a href="./api/v2/resources/FAST_Latam/MapLatam_Spanish">./api/v2/resources/FAST_Latam/MapLatam_Spanish</a></li>
     <li>API in order for reading data from MapLatam_English : <a href="./api/v2/resources/FAST_Latam/MapLatam_English">./api/v2/resources/FAST_Latam/MapLatam_English</a></li>
     <li>API in order for reading data from Capabilitie : <a href="./api/v2/resources/FAST_Latam/Capabilities_English">./api/v2/resources/FAST_Latam_Capabilities_English</a></li>
     </ul>
 
-    API FAST Poland
+    API Poland
     <ul>
     <li>API in order for reading data from MapLatam_Spanish : <a href="./api/v4/resources/FAST_Poland/MapPoland_Polish">./api/v4/resources/FAST_Poland/MapPoland_Polish</a></li>
     <li>API in order for reading data from MapLatam_English : <a href="./api/v4/resources/FAST_Poland/MapPoland_English">./api/v4/resources/FAST_Poland/MapPoland_English</a></li>
     </ul>
 
-    API FAST Spain
+    API Spain
     <ul>
     <li>API in order for reading data from MapSpain_Spanish : <a href="./api/v4/resources/FAST_Spain/MapSpain_Spanish">./api/v4/resources/FAST_Spain/MapSpain_Spanish</a></li>
     <li>API in order for reading data from MapSpain_English : <a href="./api/v4/resources/FAST_Spain/MapSpain_English">./api/v4/resources/FAST_Spain/MapSpain_English</a></li>
     </ul>
 
+    API Australia
+    API in order for reading data from Map : <a href="./api/v4/resources/Australia/MapAustralia_English">./api/v4/resources/Australia/MapAustralia_English</a>
+    <br><br>
     API MAP Global
     API in order for reading data from Map : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
     '''
@@ -158,70 +161,70 @@ def api_MapFrance_French():
     """
     API to expose the results from MapFrance in French with the specific table from the database
     """
-    return __api_Table("T_FAST_France_MapFrance_French")
+    return __api_Table("T_MapFrance_French")
 
 @appFlaskMySQL.route('/api/v2/resources/FAST_France/DifficultiesSA_French', methods=['GET'])
 def api_DifficultiesSA_French():
     """
     API to expose the results from Difficulties SA in French with the specific table from the database
     """
-    return __api_Table('T_FAST_France_DifficultiesSA_French')
+    return __api_Table('T_MapFrance_DifficultiesSA_French')
 
 @appFlaskMySQL.route('/api/v2/resources/FAST_France/RegionDepartement_French', methods=['GET'])
 def api_RegionDepartement_French():
     """
     API to expose the results from Region Departement in French with the specific table from the database
     """
-    return __api_Table('T_FAST_France_RegionDepartement_French')
+    return __api_Table('T_MapFrance_RegionDepartement_French')
 
 @appFlaskMySQL.route('/api/v2/resources/FAST_France/RegionPrefecture_French', methods=['GET'])
 def api_RegionPrefecture_French():
     """
     API to expose the results from Region Prefecture in French with the specific table from the database
     """
-    return __api_Table('T_FAST_France_RegionPrefecture_French')
+    return __api_Table('T_MapFrance_RegionPrefecture_French')
 
 @appFlaskMySQL.route('/api/v2/resources/FAST_France/MapFrance_English', methods=['GET'])
 def api_MapFrance_English():
     """
     API to expose the results from MapFrance in English with the specific table from the database
     """
-    return __api_Table('T_FAST_France_MapFrance_English')
+    return __api_Table('T_MapFrance_English')
 
 @appFlaskMySQL.route('/api/v2/resources/FAST_France/DifficultiesSA_English', methods=['GET'])
 def api_DifficultiesSA_English():
     """
     API to expose the results from DifficultiesSA in English with the specific table from the database
     """
-    return __api_Table('T_FAST_France_DifficultiesSA_English')
+    return __api_Table('T_MapFrance_DifficultiesSA_English')
 
 @appFlaskMySQL.route('/api/v2/resources/FAST_France/Capabilities_English', methods=['GET'])
 def api_Capabilities_English():
     """
     API to expose the results from Capabilities in English with the specific table from the database
     """
-    return __api_Table('T_FAST_France_Capabilitie')
+    return __api_Table('T_MapFrance_Capabilitie')
 
 @appFlaskMySQL.route('/api/v2/resources/FAST_Latam/MapLatam_Spanish', methods=['GET'])
 def api_MapLatam_Spanish():
     """
     API to expose the results from MapLatam in Spanish with the specific table from the database
     """
-    return __api_Table('T_FAST_Latam_MapLatam_Spanish')
+    return __api_Table('T_MapLatam_Spanish')
 
 @appFlaskMySQL.route('/api/v2/resources/FAST_Latam/MapLatam_English', methods=['GET'])
 def api_MapLatam_English():
     """
     API to expose the results from MapLatam in English with the specific table from the database
     """
-    return __api_Table('T_FAST_Latam_MapLatam_English')
+    return __api_Table('T_MapLatam_English')
 
 @appFlaskMySQL.route('/api/v2/resources/FAST_Latam/Capabilities_English', methods=['GET'])
 def api_Capabilities_Latam_English():
     """
     API to expose the results from Capabilities in English with the specific table from the database
     """
-    return __api_Table('T_FAST_Latam_Capabilitie')
+    return __api_Table('T_MapLatam_Capabilitie')
 
 @appFlaskMySQL.route('/api/v3/resources/Map_Global', methods=['GET'])
 def api_MapGlobal():
@@ -235,14 +238,14 @@ def api_MapPoland_Polish():
     """
     API to expose the results from MapPoland in Polish with the specific table from the database
     """
-    return __api_Table('T_FAST_Poland_MapPoland_Polish')
+    return __api_Table('T_MapPoland_Polish')
 
 @appFlaskMySQL.route('/api/v4/resources/FAST_Poland/MapPoland_English', methods=['GET'])
 def api_MapPoland_English():
     """
     API to expose the results from MapPoland in English with the specific table from the database
     """
-    return __api_Table('T_FAST_Poland_MapPoland_English')
+    return __api_Table('T_MapPoland_English')
 
 
 @appFlaskMySQL.route('/api/v4/resources/FAST_Spain/MapSpain_Spanish', methods=['GET'])
@@ -250,14 +253,21 @@ def api_MapSpain_Spanish():
     """
     API to expose the results from MapSpain in Spanish with the specific table from the database
     """
-    return __api_Table('T_FAST_Spain_MapSpain_Spanish')
+    return __api_Table('T_MapSpain_Spanish')
 
 @appFlaskMySQL.route('/api/v4/resources/FAST_Spain/MapSpain_English', methods=['GET'])
 def api_MapSpain_English():
     """
     API to expose the results from MapSpain in English with the specific table from the database
     """
-    return __api_Table('T_FAST_Spain_MapSpain_English')
+    return __api_Table('T_MapSpain_English')
+
+@appFlaskMySQL.route('/api/v4/resources/Australia/MapAustralia_English', methods=['GET'])
+def api_MapAustralai_English():
+    """
+    API to expose the results from MapAustralia in English with the specific table from the database
+    """
+    return __api_Table('T_MapAustralia_English')
 
 
 if __name__ == '__main__':

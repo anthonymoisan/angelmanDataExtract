@@ -7,11 +7,11 @@ import os
 from datetime import datetime
 from exportBI.exportTools import get_google_sheet_data, T_ReaderAbstract, BuildDataframeFromRegistry
   
-def _buildDataframeMapFASTAustralia_EN():
-    df = BuildDataframeFromRegistry("Australia")
+def _buildDataframeMapFASTUSA_EN():
+    df = BuildDataframeFromRegistry("United States of America")
     return df
 
-def _transformersMapFASTAustralia_EN(df):
+def _transformersMapFASTUSA_EN(df):
     df["sexe"] = df["sexe"].replace("Male", "M")
     df["sexe"] = df["sexe"].replace("Female", "F")
     df = df.rename(columns={"sexe": "gender"})    
@@ -35,15 +35,15 @@ def _transformersMapFASTAustralia_EN(df):
 
     return df
 
-class T_MapFASTAustralia_EN(T_ReaderAbstract):
+class T_MapFASTUSA_EN(T_ReaderAbstract):
 
     def readData(self):
-        self.df = _buildDataframeMapFASTAustralia_EN()
-        self.df = _transformersMapFASTAustralia_EN(self.df)
+        self.df = _buildDataframeMapFASTUSA_EN()
+        self.df = _transformersMapFASTUSA_EN(self.df)
         return self.df
  
 if __name__ == "__main__": 
-    reader = T_MapFASTAustralia_EN()
+    reader = T_MapFASTUSA_EN()
     df = reader.readData()
     print(df.head())
     print(df.shape)

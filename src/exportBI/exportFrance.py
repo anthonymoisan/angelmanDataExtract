@@ -7,7 +7,7 @@ from configparser import ConfigParser
 from datetime import datetime
 from exportBI.exportTools import get_google_sheet_data, T_ReaderAbstract
 
-def _buildDataframeMapFASTFrance():
+def _buildDataframeMapFrance():
     # Get working directory
     wkdir = os.path.dirname(__file__)
     config = ConfigParser()
@@ -24,7 +24,7 @@ def _buildDataframeMapFASTFrance():
         df.rename(columns={"Id" : "id", "Année de naissance" : "annee", "Zip" : "code_Departement", "Génotype" : "genotype", "DifficultesSA" : "difficultesSA", "Sexe" : "sexe"},inplace=True)
         return df
 
-def _transformersMapFASTFrance(df):
+def _transformersMapFrance(df):
     df["sexe"] = df["sexe"].replace("Homme", "H")
     df["sexe"] = df["sexe"].replace("Femme", "F")
     return df
@@ -91,7 +91,7 @@ def _transformersDifficultiesSA_EN(df):
     df["difficultiesSA"] = df["difficultiesSA"].replace("Aucune","None")
     return df
 
-def _transformersMapFASTFrance_EN(df):   
+def _transformersMapFrance_EN(df):   
     df["sexe"] = df["sexe"].replace("Homme", "M")
     df["sexe"] = df["sexe"].replace("Femme", "F")
     df["genotype"] = df["genotype"].replace("Délétion","Deletion")
@@ -141,18 +141,18 @@ class T_DifficultiesSA_EN(T_ReaderAbstract):
         self.df = _transformersDifficultiesSA_EN(self.df)
         return self.df
 
-class T_MapFASTFrance(T_ReaderAbstract):
+class T_MapFrance(T_ReaderAbstract):
 
     def readData(self):
-        self.df = _buildDataframeMapFASTFrance()
-        self.df = _transformersMapFASTFrance(self.df)
+        self.df = _buildDataframeMapFrance()
+        self.df = _transformersMapFrance(self.df)
         return self.df
 
-class T_MapFASTFrance_EN(T_ReaderAbstract):
+class T_MapFrance_EN(T_ReaderAbstract):
 
     def readData(self):
-        self.df = _buildDataframeMapFASTFrance()
-        self.df = _transformersMapFASTFrance_EN(self.df)
+        self.df = _buildDataframeMapFrance()
+        self.df = _transformersMapFrance_EN(self.df)
         self.df['difficultesSA'] = self.df['difficultesSA'].apply(_transformDifficultiesSA)
         return self.df
 
@@ -180,9 +180,9 @@ if __name__ == "__main__":
     
     reader = T_DifficultiesSA()
     df = reader.readData()
-    reader = T_MapFASTFrance()
+    reader = T_MapFrance()
     df = reader.readData()
-    reader = T_MapFASTFrance_EN()
+    reader = T_MapFrance_EN()
     df = reader.readData()
     reader = T_DifficultiesSA_EN()
     df = reader.readData()

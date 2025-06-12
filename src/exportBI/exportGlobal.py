@@ -9,15 +9,15 @@ from exportBI.exportTools import T_ReaderAbstract
 
 
 def _buildDataFrameMapMapGlobal():
-    df_FAST_France = readTable("T_FAST_France_MapFrance_English")
+    df_FAST_France = readTable("T_MapFrance_English")
     df_FAST_France = _transformersMapFASTFrance(df_FAST_France)
-    df_FAST_Latam = readTable("T_FAST_Latam_MapLatam_English")
+    df_FAST_Latam = readTable("T_MapLatam_English")
     df_FAST_Latam =  _transformersMapFASTLatam(df_FAST_Latam)
-    df_FAST_Poland = readTable("T_FAST_Poland_MapPoland_English")
+    df_FAST_Poland = readTable("T_MapPoland_English")
     df_FAST_Poland = _transformersMapFASTPoland(df_FAST_Poland)
-    df_FAST_Spain = readTable("T_FAST_Spain_MapSpain_English")
+    df_FAST_Spain = readTable("T_MapSpain_English")
     df_FAST_Spain = _transformersMapFASTSpain(df_FAST_Spain)
-    df_FAST_Australia = readTable("T_FAST_Australia_MapAustralia_English")
+    df_FAST_Australia = readTable("T_MapAustralia_English")
     df_FAST_Australia = _transformersMapFASTAustralia(df_FAST_Australia)
     df_total = pd.concat([df_FAST_France, df_FAST_Latam, df_FAST_Poland, df_FAST_Spain, df_FAST_Australia], ignore_index=True)
     
@@ -54,7 +54,7 @@ def _transformersMapFASTAustralia(df):
     df["linkDashboard"] = ""
     return df
 
-class T_MapFASTGlobal(T_ReaderAbstract):
+class T_MapGlobal(T_ReaderAbstract):
 
     def readData(self):
         self.df = _buildDataFrameMapMapGlobal()
@@ -62,7 +62,7 @@ class T_MapFASTGlobal(T_ReaderAbstract):
     
 if __name__ == "__main__":
   
-    reader = T_MapFASTGlobal()
+    reader = T_MapGlobal()
     df = reader.readData()
     print(df.head())
     print(df.shape)

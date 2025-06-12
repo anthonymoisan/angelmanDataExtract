@@ -7,7 +7,7 @@ from configparser import ConfigParser
 from datetime import datetime
 from exportBI.exportTools import get_google_sheet_data, T_ReaderAbstract
     
-def _buildDataframeMapFASTLatam():
+def _buildDataframeMapLatam():
     # Get working directory
     wkdir = os.path.dirname(__file__)
     config = ConfigParser()
@@ -24,7 +24,7 @@ def _buildDataframeMapFASTLatam():
         df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
         return df
 
-def _transformersMapFASTLatam(df):
+def _transformersMapLatam(df):
     #Add an index column
     df.index.name = 'index'
     df = df.reset_index()
@@ -45,7 +45,7 @@ def _transformersMapFASTLatam(df):
 
     return df
 
-def _transformersMapFASTLatam_EN(df):
+def _transformersMapLatam_EN(df):
     df.rename(columns={"sexo" : "gender", "pais" : "country", "ciudad" : "city", "genotipo" : "genotype", "edad": "age"},inplace=True)
     df["genotype"] = df["genotype"].replace("Deleción","Deletion")
     df["genotype"] = df["genotype"].replace("Mutación UBE3A","Mutation")
@@ -86,19 +86,19 @@ def _buildDataframeCapabilities():
         df = df[['populations', 'condition', 'therapy', 'hospital', 'contact', 'email', 'email2', 'addressLocation', 'country', 'urlWebSite', 'longitude', 'lattitude' ]]
         return df
 
-class T_MapFASTLatam(T_ReaderAbstract):
+class T_MapLatam(T_ReaderAbstract):
 
     def readData(self):
-        self.df = _buildDataframeMapFASTLatam()
-        self.df = _transformersMapFASTLatam(self.df)
+        self.df = _buildDataframeMapLatam()
+        self.df = _transformersMapLatam(self.df)
         return self.df
 
-class T_MapFASTLatam_EN(T_ReaderAbstract):
+class T_MapLatam_EN(T_ReaderAbstract):
 
     def readData(self):
-        self.df = _buildDataframeMapFASTLatam()
-        self.df = _transformersMapFASTLatam(self.df)
-        self.df = _transformersMapFASTLatam_EN(self.df)
+        self.df = _buildDataframeMapLatam()
+        self.df = _transformersMapLatam(self.df)
+        self.df = _transformersMapLatam_EN(self.df)
         return self.df
 
 class T_Capabilities(T_ReaderAbstract):
@@ -110,9 +110,9 @@ class T_Capabilities(T_ReaderAbstract):
 
 if __name__ == "__main__":
   
-    reader = T_MapFASTLatam()
+    reader = T_MapLatam()
     df = reader.readData()
-    reader = T_MapFASTLatam_EN()
+    reader = T_MapLatam_EN()
     df = reader.readData()
     reader = T_Capabilities()
     df = reader.readData()

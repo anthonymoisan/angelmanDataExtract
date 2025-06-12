@@ -1,9 +1,7 @@
-CREATE TABLE T_FAST_Latam_MapLatam_Spanish (
+CREATE TABLE T_MapSpain_Spanish (
     id INT PRIMARY KEY AUTO_INCREMENT,
     indexation INT NOT NULL UNIQUE,
     sexo VARCHAR(255) NOT NULL,
-    pais VARCHAR(255) NOT NULL,
-    ciudad VARCHAR(255) NOT NULL,
     genotipo VARCHAR(255) NOT NULL,
     edad INT NOT NULL
 );
