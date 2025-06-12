@@ -7,25 +7,50 @@ from utilsTools import readTable
 import pandas as pd
 from exportBI.exportTools import T_ReaderAbstract
 
+import time
+import logging
 
-def _buildDataFrameMapMapGlobal():
-    df_FAST_France = readTable("T_MapFrance_English")
-    df_FAST_France = _transformersMapFASTFrance(df_FAST_France)
-    df_FAST_Latam = readTable("T_MapLatam_English")
-    df_FAST_Latam =  _transformersMapFASTLatam(df_FAST_Latam)
-    df_FAST_Poland = readTable("T_MapPoland_English")
-    df_FAST_Poland = _transformersMapFASTPoland(df_FAST_Poland)
-    df_FAST_Spain = readTable("T_MapSpain_English")
-    df_FAST_Spain = _transformersMapFASTSpain(df_FAST_Spain)
-    df_FAST_Australia = readTable("T_MapAustralia_English")
-    df_FAST_Australia = _transformersMapFASTAustralia(df_FAST_Australia)
-    df_total = pd.concat([df_FAST_France, df_FAST_Latam, df_FAST_Poland, df_FAST_Spain, df_FAST_Australia], ignore_index=True)
+def readTable_with_retry(table_name, max_retries=3, delay_seconds=5):
+    """
+    Tentative de lecture avec relances automatiques
+    """
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"Tentative {attempt} de lecture de la table '{table_name}'")
+            df = readTable(table_name)
+            return df
+        except Exception as e:
+            logging.error(f"[ERREUR LECTURE] Table '{table_name}' - Tentative {attempt} : {e}")
+            if attempt < max_retries:
+                time.sleep(delay_seconds)
+            else:
+                print(f"[ÉCHEC] Lecture de la table '{table_name}' échouée après {max_retries} tentatives.")
+                return pd.DataFrame()
+
+def safe_readTable(table_name, transformer):
+    df = readTable_with_retry(table_name)
+    return transformer(df)
     
-    df_total = df_total[df_total["genotype"].isin(["Deletion", "Clinical", "Mutation", "UPD", "ICD", "Mosaic"])]
-    df_total = df_total[df_total["gender"].isin(["M", "F"])] 
+def _buildDataFrameMapMapGlobal():
+    df_France = safe_readTable("T_MapFrance_English", _transformersMapFrance)
+    df_Latam = safe_readTable("T_MapLatam_English", _transformersMapLatam)
+    df_Poland = safe_readTable("T_MapPoland_English", _transformersMapPoland)
+    df_Spain = safe_readTable("T_MapSpain_English", _transformersMapSpain)
+    df_Australia = safe_readTable("T_MapAustralia_English", _transformersMapAustralia)
+    df_USA = safe_readTable("T_MapUSA_English", _transformersMapUSA)
+    df_Canada = safe_readTable("T_MapCanada_English", _transformersMapCanada)
+
+    df_total = pd.concat([df_France, df_Latam, df_Poland, df_Spain, df_Australia, df_USA, df_Canada], ignore_index=True)
+
+    # Filtrage des valeurs valides uniquement si les colonnes existent
+    if not df_total.empty and "genotype" in df_total.columns and "gender" in df_total.columns:
+        df_total = df_total[df_total["genotype"].isin(["Deletion", "Clinical", "Mutation", "UPD", "ICD", "Mosaic"])]
+        df_total = df_total[df_total["gender"].isin(["M", "F"])] 
+
     return df_total
 
-def _transformersMapFASTFrance(df):
+
+def _transformersMapFrance(df):
     df = df.rename(columns={"sexe": "gender"})
     df["country"] = "France"
     df = df[~df["code_Departement"].isin(["971", "972", "973", "974", "975", "976", "Maroc", "Algerie", "Belgique", "Canada", "Suisse", "Tunisie"])]
@@ -33,24 +58,34 @@ def _transformersMapFASTFrance(df):
     df["linkDashboard"] = "https://app.powerbi.com/groups/e021dfb0-ec0b-4e9b-aeee-89cd478700fc/reports/a3f644fe-4767-4ab6-a596-9a0ed63c8f9e/fdaf46ffd7a806123186?experience=power-bi"
     return df
 
-def _transformersMapFASTLatam(df):
+def _transformersMapLatam(df):
     df = df.drop(columns={'city'})
     df["linkDashboard"] = "https://app.powerbi.com/groups/b84b4375-5794-4a36-a6c8-6554b4e53de1/reports/17a3330d-e21b-4d9f-9515-f04a5a118edd/fdaf46ffd7a806123186?experience=power-bi"
     return df
 
-def _transformersMapFASTPoland(df):
+def _transformersMapPoland(df):
     df = df.rename(columns={"sexe": "gender"})
     df["country"] = "Poland"
     df["linkDashboard"] = "https://app.powerbi.com/groups/04e96c79-6db1-468b-9211-5cad9a6be08f/reports/face6d1a-6581-46de-a4d5-73a6d4aff2e6/fdaf46ffd7a806123186?experience=power-bi"
     return df    
 
-def _transformersMapFASTSpain(df):
+def _transformersMapSpain(df):
     df["country"] = "Spain"
     df["linkDashboard"] = "https://app.powerbi.com/groups/5dee59e6-0976-4d44-a23f-5cc6b6508f60/reports/81fe5a2a-36ad-46dd-bb48-8771730376bf/fdaf46ffd7a806123186?experience=power-bi"
     return df    
 
-def _transformersMapFASTAustralia(df):
+def _transformersMapAustralia(df):
     df["country"] = "Australia"
+    df["linkDashboard"] = ""
+    return df
+
+def _transformersMapUSA(df):
+    df["country"] = "USA"
+    df["linkDashboard"] = ""
+    return df
+
+def _transformersMapCanada(df):
+    df["country"] = "Canada"
     df["linkDashboard"] = ""
     return df
 

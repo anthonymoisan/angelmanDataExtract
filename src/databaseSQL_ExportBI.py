@@ -6,8 +6,15 @@ import exportBI.exportPoland as expPoland
 import exportBI.exportSpain as expSpain
 import exportBI.exportGlobal as expGlobal
 import exportBI.exportAustralia as expAustralia
+import exportBI.exportUSA as expUSA
+import exportBI.exportCanada as expCanada
 from utilsTools import export_Table
 import time
+import logging
+from logger import setup_logger
+
+# Set up logger
+logger = setup_logger(debug=False)
 
 
 def export_RegionsDepartements_French():
@@ -78,6 +85,14 @@ def export_mapAustralia_English():
     reader = expAustralia.T_MapAustralia_EN()
     export_Table("T_MapAustralia_English","Australia/createMapAustralia_English.sql", reader)
 
+def export_mapUSA_English():
+    reader = expUSA.T_MapFASTUSA_EN()
+    export_Table("T_MapUSA_English","USA/createMapUSA_English.sql", reader)
+
+def export_mapCanada_English():
+    reader = expCanada.T_MapFASTCanada_EN()
+    export_Table("T_MapCanada_English","Canada/createMapCanada_English.sql", reader)
+
 def export_capabilities_Latam_English():
     reader = expLatam.T_Capabilities()
     export_Table("T_MapLatam_Capabilitie","Latam/createCapabilities.sql", reader)
@@ -91,42 +106,47 @@ if __name__ == "__main__":
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
-
+ 
     export_DifficultiesSA_English()
-    print("\n")
+    logger.info("\n")
     export_capabilities_English()
-    print("\n")
+    logger.info("\n")
     export_mapFrance_French()
-    print("\n")
+    logger.info("\n")
     export_mapFrance_English()
-    print("\n")
+    logger.info("\n")
     export_RegionsDepartements_French()
-    print("\n")
+    logger.info("\n")
     export_RegionsPrefectures_French()
-    print("\n")
+    logger.info("\n")
     export_DifficultiesSA_French()
     
     export_mapLatam_Spanish()
-    print("\n")
+    logger.info("\n")
     export_mapLatam_English()
-    print("\n")
+    logger.info("\n")
     export_capabilities_Latam_English()
-    print("\n")
+    logger.info("\n")
     
     export_mapPoland_Polish()
-    print("\n")
+    logger.info("\n")
     export_mapPoland_English()
-    print("\n")
-    
+    logger.info("\n")    
     export_mapSpain_Spanish()
-    print("\n")
+    logger.info("\n")
     export_mapSpain_English()
-    print("\n")
+    logger.info("\n")
 
     export_mapAustralia_English()
-    print("\n")
- 
-    export_mapGlobal()
-    print("\n")
+    logger.info("\n")
     
-    print("\nExecute time : ", round(time.time()-start, 2), "s")
+    export_mapUSA_English()
+    logger.info("\n")
+
+    export_mapCanada_English()
+    logger.info("\n")
+   
+    export_mapGlobal()
+    logger.info("\n")
+    
+    logger.info("\nExecute time : ", round(time.time()-start, 2), "s")
