@@ -8,6 +8,8 @@ import exportBI.exportGlobal as expGlobal
 import exportBI.exportAustralia as expAustralia
 import exportBI.exportUSA as expUSA
 import exportBI.exportCanada as expCanada
+import exportBI.exportUK as expUK
+
 from utilsTools import export_Table
 import time
 import logging
@@ -86,12 +88,16 @@ def export_mapAustralia_English():
     export_Table("T_MapAustralia_English","Australia/createMapAustralia_English.sql", reader)
 
 def export_mapUSA_English():
-    reader = expUSA.T_MapFASTUSA_EN()
+    reader = expUSA.T_MapUSA_EN()
     export_Table("T_MapUSA_English","USA/createMapUSA_English.sql", reader)
 
 def export_mapCanada_English():
     reader = expCanada.T_MapFASTCanada_EN()
     export_Table("T_MapCanada_English","Canada/createMapCanada_English.sql", reader)
+
+def export_mapUK_English():
+    reader = expUK.T_MapUK_EN()
+    export_Table("T_MapUK_English","UK/createMapUK_English.sql", reader)
 
 def export_capabilities_Latam_English():
     reader = expLatam.T_Capabilities()
@@ -106,7 +112,7 @@ if __name__ == "__main__":
     Endpoint to launch the different scrapers with injection of the results into the database 
     """
     start = time.time()
- 
+    
     export_DifficultiesSA_English()
     logger.info("\n")
     export_capabilities_English()
@@ -146,7 +152,10 @@ if __name__ == "__main__":
 
     export_mapCanada_English()
     logger.info("\n")
-   
+    
+    export_mapUK_English()
+    logger.info("\n")
+
     export_mapGlobal()
     logger.info("\n")
 

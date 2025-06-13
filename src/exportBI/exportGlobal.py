@@ -10,13 +10,18 @@ from exportBI.exportTools import T_ReaderAbstract
 import time
 import logging
 
+from logger import setup_logger
+
+# Set up logger
+logger = setup_logger(debug=False)
+
 def readTable_with_retry(table_name, max_retries=3, delay_seconds=5):
     """
     Tentative de lecture avec relances automatiques
     """
     for attempt in range(1, max_retries + 1):
         try:
-            print(f"Tentative {attempt} de lecture de la table '{table_name}'")
+            logging.info(f"Tentative {attempt} de lecture de la table '{table_name}'")
             df = readTable(table_name)
             return df
         except Exception as e:
@@ -24,7 +29,7 @@ def readTable_with_retry(table_name, max_retries=3, delay_seconds=5):
             if attempt < max_retries:
                 time.sleep(delay_seconds)
             else:
-                print(f"[ÉCHEC] Lecture de la table '{table_name}' échouée après {max_retries} tentatives.")
+                logging.info(f"[ÉCHEC] Lecture de la table '{table_name}' échouée après {max_retries} tentatives.")
                 return pd.DataFrame()
 
 def safe_readTable(table_name, transformer):
@@ -39,8 +44,9 @@ def _buildDataFrameMapMapGlobal():
     df_Australia = safe_readTable("T_MapAustralia_English", _transformersMapAustralia)
     df_USA = safe_readTable("T_MapUSA_English", _transformersMapUSA)
     df_Canada = safe_readTable("T_MapCanada_English", _transformersMapCanada)
+    df_UK = safe_readTable("T_MapUK_English", _transformersMapUK)
 
-    df_total = pd.concat([df_France, df_Latam, df_Poland, df_Spain, df_Australia, df_USA, df_Canada], ignore_index=True)
+    df_total = pd.concat([df_France, df_Latam, df_Poland, df_Spain, df_Australia, df_USA, df_Canada, df_UK], ignore_index=True)
 
     # Filtrage des valeurs valides uniquement si les colonnes existent
     if not df_total.empty and "genotype" in df_total.columns and "gender" in df_total.columns:
@@ -89,6 +95,11 @@ def _transformersMapCanada(df):
     df["linkDashboard"] = ""
     return df
 
+def _transformersMapUK(df):
+    df["country"] = "United Kingdom"
+    df["linkDashboard"] = ""
+    return df
+
 class T_MapGlobal(T_ReaderAbstract):
 
     def readData(self):
@@ -99,6 +110,6 @@ if __name__ == "__main__":
   
     reader = T_MapGlobal()
     df = reader.readData()
-    print(df.head())
-    print(df.shape)
+    logging.info(df.head())
+    logging.info(df.shape)
     #print(df.dtypes)

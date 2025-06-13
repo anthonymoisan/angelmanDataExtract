@@ -132,6 +132,10 @@ def home():
     API in order for reading data from Map Canada : <a href="./api/v4/resources/Canada/MapCanada_English">./api/v4/resources/Canada/MapCanada_English</a>
     <br><br>
 
+    API UK
+    API in order for reading data from Map UK : <a href="./api/v4/resources/UK/MapUK_English">./api/v4/resources/UK/MapUK_English</a>
+    <br><br>
+
     API MAP Global
     API in order for reading data from Map Global : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
     '''
@@ -291,6 +295,13 @@ def api_MapCanada_English():
     API to expose the results from MapCanada in English with the specific table from the database
     """
     return __api_Table('T_MapCanada_English')
+
+@appFlaskMySQL.route('/api/v4/resources/UK/MapUK_English', methods=['GET'])
+def api_MapUK_English():
+    """
+    API to expose the results from MapUK in English with the specific table from the database
+    """
+    return __api_Table('T_MapUK_English')
 
 
 if __name__ == '__main__':
