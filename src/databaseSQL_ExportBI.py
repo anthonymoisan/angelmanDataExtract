@@ -127,11 +127,12 @@ if __name__ == "__main__":
     logger.info("\n")
     export_capabilities_Latam_English()
     logger.info("\n")
-    
+
     export_mapPoland_Polish()
     logger.info("\n")
     export_mapPoland_English()
-    logger.info("\n")    
+    logger.info("\n")
+   
     export_mapSpain_Spanish()
     logger.info("\n")
     export_mapSpain_English()
@@ -148,5 +149,5 @@ if __name__ == "__main__":
    
     export_mapGlobal()
     logger.info("\n")
-    
-    logger.info("\nExecute time : ", round(time.time()-start, 2), "s")
+
+    logger.info("\nExecute time : %.2fs", time.time() - start)

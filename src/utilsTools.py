@@ -139,7 +139,15 @@ def export_Table(table_name, sql_script, reader):
         df = reader.readData()
         df = df.replace([np.inf, -np.inf], np.nan)
         df = df.astype({col: 'object' for col in df.select_dtypes(include='category').columns})
-        df.fillna("None", inplace=True)
+        
+        for col in df.columns:
+            if df[col].dtype == 'float64':
+                df[col] = df[col].fillna(0.0)  # ou np.nan ou une autre valeur numérique cohérente
+            elif df[col].dtype == 'object':
+                df[col] = df[col].fillna("None")
+            elif pd.api.types.is_categorical_dtype(df[col]):
+                df[col] = df[col].fillna("None")
+                
         current_count = df.shape[0]
 
         check_query = f"""

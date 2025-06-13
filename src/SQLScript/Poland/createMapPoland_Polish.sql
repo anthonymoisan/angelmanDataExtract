@@ -1,4 +1,4 @@
-CREATE TABLE T_MapPoland_English (
+CREATE TABLE T_MapPoland_Polish (
     id INT PRIMARY KEY AUTO_INCREMENT,
     indexation VARCHAR(255) NOT NULL UNIQUE,
     gender VARCHAR(255) NOT NULL,
