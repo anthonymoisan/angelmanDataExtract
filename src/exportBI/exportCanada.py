@@ -26,7 +26,7 @@ def _transformersMapCanada_EN(df):
 
     df["groupAge"] = pd.cut(
         df["age"],
-        bins=[0, 4, 8, 12, 17, 1000],
+        bins=[-0.1, 4, 8, 12, 17, 100],
         labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
         right=True
     )  

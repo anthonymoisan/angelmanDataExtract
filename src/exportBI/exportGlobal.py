@@ -49,9 +49,11 @@ def _buildDataFrameMapMapGlobal():
     df_total = pd.concat([df_France, df_Latam, df_Poland, df_Spain, df_Australia, df_USA, df_Canada, df_UK], ignore_index=True)
 
     # Filtrage des valeurs valides uniquement si les colonnes existent
-    if not df_total.empty and "genotype" in df_total.columns and "gender" in df_total.columns:
+    if not df_total.empty:
         df_total = df_total[df_total["genotype"].isin(["Deletion", "Clinical", "Mutation", "UPD", "ICD", "Mosaic"])]
         df_total = df_total[df_total["gender"].isin(["M", "F"])] 
+        df_total = df_total[pd.to_numeric(df_total["age"], errors="coerce").dropna().apply(float.is_integer)]
+
 
     return df_total
 

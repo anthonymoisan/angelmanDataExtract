@@ -119,4 +119,4 @@ if __name__ == "__main__":
         
     pubmed_df = pubmed_by_year(1965)
     pubmed_df.to_csv(f"{wkdir}/../../data/pub_details_df.csv")
-    print("Execute time : ", round(time.time()-start, 2), "s")
+    logger.info("\nExecute time : %.2fs", time.time() - start)
