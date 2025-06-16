@@ -10,7 +10,12 @@ import os
 from lxml import etree
 from bs4 import BeautifulSoup, Tag
 import time
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from logger import setup_logger
 
+# Set up logger
+logger = setup_logger( debug=False)
 
 def pubmed_details(query_key, web_env):
     """

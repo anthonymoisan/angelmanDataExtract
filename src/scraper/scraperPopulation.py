@@ -8,9 +8,15 @@ import pandas as pd
 import requests
 import time
 from datetime import datetime
-import os
 import numpy as np
 from configparser import ConfigParser
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from logger import setup_logger
+
+# Set up logger
+logger = setup_logger( debug=False)
 
 
 def get_un_locations(locations_url):
@@ -75,7 +81,7 @@ def get_country_pops(auth_token, indicators, start_year, end_year, countries_lis
                 response = requests.get(url, headers=headers, params=params)
                 break
             except:
-                print(f"Population call failed attempt {i}")
+                logger.error(f"Population call failed attempt {i}")
                 time.sleep(2)
                 response = requests.get(url, headers=headers, params=params)
                 i += 1
@@ -135,7 +141,7 @@ def un_population(auth_token):
     pop_dfs = []
     for i in range(0, len(countries_df), 100):
         locations = ",".join(countries_df.loc[countries_df.index[i:i+100], "id"])
-        print(f"--- Pop {i+100} ---")
+        logger.info(f"--- Pop {i+100} ---")
         pop_df = get_country_pops(auth_token, indicators, start_year, end_year, locations)
         pop_dfs.append(pop_df)
         time.sleep(2)
@@ -163,11 +169,11 @@ if __name__ == "__main__":
     # Get working directory
     wkdir = os.path.dirname(__file__)
     config = ConfigParser()
-    filePath = f"{wkdir}/../../angelman_viz_keys/Config2.ini"
+    filePath = f"{wkdir}/../../angelman_viz_keys/Config3.ini"
     if config.read(filePath):
         auth_token = config['UnPopulation']['bearerToken']
         un_pop_final_df = un_population(auth_token)
         un_pop_final_df.to_csv(f"{wkdir}/../../data/un_wpp_pivot_data.csv", index=False)
     else:
-        print("Error Config3.ini File with auth_token")
-    print("Execute time : ", round(time.time()-start, 2), "s")
+        logger.error("Error Config3.ini File with auth_token")
+    logger.info("\nExecute time : %.2fs", time.time() - start)

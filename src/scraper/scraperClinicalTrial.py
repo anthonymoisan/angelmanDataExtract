@@ -12,6 +12,12 @@ import requests
 import time
 import numpy as np
 from thefuzz import fuzz, process
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from logger import setup_logger
+
+# Set up logger
+logger = setup_logger( debug=False)
 
 def __requestJSON2(clinic_geocode, queryCondition):
     query_params = {
@@ -149,17 +155,17 @@ def __buid_ClinicalsTrials(clinic, queryCondition, TypeTherapy):
         return as_trials_list
     except :
         #NOT NORMAL BECAUSE IT WORKS WITH THE PARAMETERS OF THE REQUEST
-        print("ISSUE : " + TypeTherapy)
-        print(clinic)
-        print()
+        logger.error("ISSUE : " + TypeTherapy)
+        logger.error(clinic)
+        logger.error("\n")
         return None
 
 def __concatDataFrame(df1, df2, clinic):
     if not df1.empty and not df2.empty :
         return pd.concat([df1, df2], axis = 0)
     if df1.empty and df2.empty:
-        print("Clinic without trials")
-        print(clinic)
+        logger.info("Clinic without trials")
+        logger.info(clinic)
         # return clinic alone without clinic trials
         #return pd.DataFrame()
         return pd.DataFrame({"NCT_ID":[None], "Sponsor":[None], "Study_Name":[None],"Start_Date":[None], "End_Date":[None], "Current_Status":[None], "Treatment":[None], "Facility":[clinic.name], "Lat":[clinic["Lat"]], "Lon":[clinic["Lon"]]})
@@ -206,4 +212,4 @@ if __name__ == "__main__":
     clinics_json_df = pd.read_json(f"{wkdir}/../../data/asf_clinics2.json", orient="index")
     asf_all_trials_raw_trial_df = trials_clinics_LonLat(clinics_json_df)
     asf_all_trials_raw_trial_df.to_csv(f"{wkdir}/../../data/asf_clinics_raw_trial_data2.csv", index=False)
-    print("Execute time : ", round(time.time()-start, 2), "s")
+    logger.info("\nExecute time : %.2fs", time.time() - start)
