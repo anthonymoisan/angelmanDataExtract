@@ -64,9 +64,9 @@ if __name__ == "__main__":
     logger.info("\n")
     asTrials()
     logger.info("\n")
-    unPopulation()
-    logger.info("\n")
-    clinicalTrials()
-    logger.info("\n")
+    #unPopulation()
+    #logger.info("\n")
+    #clinicalTrials()
+    #logger.info("\n")
 
     logger.info("Global execution time: %.2fs", time.time() - start)
