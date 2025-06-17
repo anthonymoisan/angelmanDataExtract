@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from utilsTools import readTable
 import pandas as pd
 from exportBI.exportTools import T_ReaderAbstract
+from configparser import ConfigParser
 
 import time
 import logging
@@ -14,6 +15,13 @@ from logger import setup_logger
 
 # Set up logger
 logger = setup_logger(debug=False)
+
+# Get working directory
+wkdir = os.path.dirname(__file__)
+config = ConfigParser()
+filePath = f"{wkdir}/../../angelman_viz_keys/Config4.ini"
+config.read(filePath)
+    
 
 def readTable_with_retry(table_name, max_retries=3, delay_seconds=5):
     """
@@ -63,23 +71,24 @@ def _transformersMapFrance(df):
     df["country"] = "France"
     df = df[~df["code_Departement"].isin(["971", "972", "973", "974", "975", "976", "Maroc", "Algerie", "Belgique", "Canada", "Suisse", "Tunisie"])]
     df = df.drop(columns={'code_Departement','difficultesSA', 'annee'})
-    df["linkDashboard"] = "https://app.powerbi.com/groups/e021dfb0-ec0b-4e9b-aeee-89cd478700fc/reports/a3f644fe-4767-4ab6-a596-9a0ed63c8f9e/fdaf46ffd7a806123186?experience=power-bi"
+    df["linkDashboard"] = config['IdDashboard']['ID_FRENCH_ENGLISH']
     return df
 
 def _transformersMapLatam(df):
     df = df.drop(columns={'city'})
-    df["linkDashboard"] = "https://app.powerbi.com/groups/b84b4375-5794-4a36-a6c8-6554b4e53de1/reports/17a3330d-e21b-4d9f-9515-f04a5a118edd/fdaf46ffd7a806123186?experience=power-bi"
+    df["linkDashboard"] = config['IdDashboard']['ID_LATAM_ENGLISH']
+    
     return df
 
 def _transformersMapPoland(df):
     df = df.rename(columns={"sexe": "gender"})
     df["country"] = "Poland"
-    df["linkDashboard"] = "https://app.powerbi.com/groups/04e96c79-6db1-468b-9211-5cad9a6be08f/reports/face6d1a-6581-46de-a4d5-73a6d4aff2e6/fdaf46ffd7a806123186?experience=power-bi"
+    df["linkDashboard"] = config['IdDashboard']['ID_POLAND_ENGLISH']
     return df    
 
 def _transformersMapSpain(df):
     df["country"] = "Spain"
-    df["linkDashboard"] = "https://app.powerbi.com/groups/5dee59e6-0976-4d44-a23f-5cc6b6508f60/reports/81fe5a2a-36ad-46dd-bb48-8771730376bf/fdaf46ffd7a806123186?experience=power-bi"
+    df["linkDashboard"] = config['IdDashboard']['ID_SPAIN_ENGLISH']
     return df    
 
 def _transformersMapAustralia(df):
