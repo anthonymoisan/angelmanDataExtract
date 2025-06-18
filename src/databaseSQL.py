@@ -1,5 +1,6 @@
 import os
 import time
+import sys
 import numpy as np
 import pandas as pd
 
@@ -10,8 +11,8 @@ import scraper.scraperPopulation as scrPopulation
 import scraper.scraperClinicalTrial as scrClinicalTrial
 from logger import setup_logger
 
-# Logger setup
 logger = setup_logger(log_file="steve.log", debug=False)
+
 
 # === READER CLASSES ===
 
@@ -25,48 +26,51 @@ class ASTrialReader:
 
 class UnPopulationReader:
     def readData(self):
-        wkdir = os.path.dirname(__file__)
+        config_path = os.path.join(os.path.dirname(__file__), "../angelman_viz_keys/Config3.ini")
         from configparser import ConfigParser
         config = ConfigParser()
-        filePath = f"{wkdir}/../angelman_viz_keys/Config3.ini"
-        if config.read(filePath):
-            auth_token = config['UnPopulation']['bearerToken']
-            return scrPopulation.un_population(auth_token)
+        if config.read(config_path):
+            token = config['UnPopulation']['bearerToken']
+            return scrPopulation.un_population(token)
         else:
             raise Exception("Config3.ini non trouvé ou invalide")
 
 class ClinicalTrialsReader:
     def readData(self):
-        wkdir = os.path.dirname(__file__)
-        clinics_json_df = pd.read_json(f"{wkdir}/../data/asf_clinics2.json", orient="index")
-        return scrClinicalTrial.trials_clinics_LonLat(clinics_json_df)
+        json_path = os.path.join(os.path.dirname(__file__), "../data/asf_clinics2.json")
+        df = pd.read_json(json_path, orient="index")
+        return scrClinicalTrial.trials_clinics_LonLat(df)
 
-# === MAIN FUNCTIONS ===
 
-def articlesPubMed():
-    export_Table("T_ArticlesPubMed", "createArticlesPubMed.sql", PubMedReader())
+# === EXPORT FUNCTIONS ===
 
-def asTrials():
-    export_Table("T_ASTrials", "createASTrials.sql", ASTrialReader())
+def safe_export(table_name, sql_file, reader, label):
+    try:
+        logger.info(f"🟡 Export : {label}")
+        export_Table(table_name, sql_file, reader)
+        logger.info(f"✅ Export OK : {label}\n")
+    except Exception as e:
+        logger.error(f"❌ Échec KO {label} : {e}")
+        raise
 
-def unPopulation():
-    export_Table("T_UnPopulation", "createUnPopulation.sql", UnPopulationReader())
 
-def clinicalTrials():
-    export_Table("T_ClinicalTrials", "createClinicalTrials.sql", ClinicalTrialsReader())
+# === MAIN ===
 
-# === LAUNCH ===
+def main():
+    start = time.time()
+    try:
+        safe_export("T_ArticlesPubMed", "createArticlesPubMed.sql", PubMedReader(), "Articles PubMed")
+        safe_export("T_ASTrials", "createASTrials.sql", ASTrialReader(), "AS Trials")
+        # safe_export("T_UnPopulation", "createUnPopulation.sql", UnPopulationReader(), "UN Population")
+        # safe_export("T_ClinicalTrials", "createClinicalTrials.sql", ClinicalTrialsReader(), "Clinical Trials")
+        elapsed = time.time() - start
+        logger.info(f"\n✅ All exports are ok with an execution time in {elapsed:.2f} secondes.")
+        sys.exit(0)
+
+    except Exception as e:
+        logger.critical(f"💥 Error in the export process : {e}")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
-    start = time.time()
-
-    articlesPubMed()
-    logger.info("\n")
-    asTrials()
-    logger.info("\n")
-    #unPopulation()
-    #logger.info("\n")
-    #clinicalTrials()
-    #logger.info("\n")
-
-    logger.info("Global execution time: %.2fs", time.time() - start)
+    main()
