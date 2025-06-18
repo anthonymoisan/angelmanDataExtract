@@ -1,5 +1,5 @@
 import scraper.scraperPubMed as scrPubMed
-import scraper.scraperASFClinicalTrial as scrASFClinicalTrial
+import Old.scraperASFClinicalTrial as scrASFClinicalTrial
 import scraper.scraperASTrial as scrASTrial
 import scraper.scraperPopulation as scrPopulation
 import time
