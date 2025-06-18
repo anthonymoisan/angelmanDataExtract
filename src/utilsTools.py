@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, text
 from sshtunnel import SSHTunnelForwarder
 from configparser import ConfigParser
 from email.message import EmailMessage
+from datetime import datetime
 import logging
 from logger import setup_logger
 
@@ -119,18 +120,69 @@ def _run_query(query, return_result=False, max_retries=3):
 
 def _insert_data(df, table_name):
     params = get_db_params()
-    if LOCAL_CONNEXION:
-        with SSHTunnelForwarder(
-            (params["ssh_host"]),
-            ssh_username=params["ssh_user"],
-            ssh_password=params["ssh_pass"],
-            remote_bind_address=(params["db_host"], 3306)
-        ) as tunnel:
-            db_url = _build_db_url(params, tunnel.local_bind_port)
-            _insert_df(db_url, table_name, df)
+    max_retries = 3
+    attempt = 0
+    while attempt < max_retries:
+        try:
+            if LOCAL_CONNEXION:
+                with SSHTunnelForwarder(
+                    (params["ssh_host"]),
+                    ssh_username=params["ssh_user"],
+                    ssh_password=params["ssh_pass"],
+                    remote_bind_address=(params["db_host"], 3306)
+                ) as tunnel:
+                    db_url = _build_db_url(params, tunnel.local_bind_port)
+                    return _insert_df(db_url, table_name, df)
+
+            else:
+                db_url = _build_db_url(params)
+                return _insert_df(db_url, table_name, df)
+        except Exception as e:
+            attempt += 1
+            logger.error("[Attempt %d] Insert failed: %s", attempt, e)
+            if attempt < max_retries:
+                logger.info("Retrying insert in 3 seconds...")
+                time.sleep(3)
+            else:
+                logger.error("Insert failed after %d attempts", max_retries)
+                raise
+
+
+def _log_table_update(table_name):
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    logger.info(f"Trying to log update for {table_name} at {now}")
+    
+    resultQuery = f"""
+                    SELECT COUNT(*) FROM update_log 
+                    WHERE table_name = '{table_name}'
+                    """
+    result = _run_query(resultQuery,return_result=True)
+    if result == 0:
+        insertQuery = f"""
+                            INSERT INTO update_log (table_name, updated_at)
+                            VALUES ('{table_name}', '{now}')
+                        """
+        _run_query(insertQuery)
+        logger.info(f"Inserted new row for {table_name} in update_log.")
     else:
-        db_url = _build_db_url(params)
-        _insert_df(db_url, table_name, df)
+        updateQuery = f"""
+                        UPDATE update_log 
+                        SET updated_at = '{now}' WHERE table_name = '{table_name}'
+                        """
+        _run_query(updateQuery)
+        logger.info(f"Updated row for {table_name} in update_log.")
+        
+
+def _create_update_log_table_if_not_exists():
+    query = """
+            CREATE TABLE IF NOT EXISTS update_log (
+            table_name VARCHAR(255) PRIMARY KEY,
+            updated_at DATETIME
+            )
+            """
+    _run_query(query=query, return_result=False)
+    logger.info("Table `update_log` vérifiée ou créée.")
+    
 
 def export_Table(table_name, sql_script, reader):
     try:
@@ -139,15 +191,15 @@ def export_Table(table_name, sql_script, reader):
         df = reader.readData()
         df = df.replace([np.inf, -np.inf], np.nan)
         df = df.astype({col: 'object' for col in df.select_dtypes(include='category').columns})
-        
+
         for col in df.columns:
             if df[col].dtype == 'float64':
-                df[col] = df[col].fillna(0.0)  # ou np.nan ou une autre valeur numérique cohérente
+                df[col] = df[col].fillna(0.0)
             elif df[col].dtype == 'object':
                 df[col] = df[col].fillna("None")
             elif pd.api.types.is_categorical_dtype(df[col]):
                 df[col] = df[col].fillna("None")
-                
+
         current_count = df.shape[0]
 
         check_query = f"""
@@ -167,14 +219,32 @@ def export_Table(table_name, sql_script, reader):
         else:
             logger.info("--- Data validated.")
             if table_exists:
+                logger.info("--- Drop Table.")
                 _run_query(f"DROP TABLE {table_name}")
             script_path = os.path.join(os.path.dirname(__file__), "SQLScript", sql_script)
             with open(script_path, "r", encoding="utf-8") as file:
+                logger.info("--- Create Table.")
                 _run_query(file.read())
+            logger.info("--- Insert data into Table.")
             _insert_data(df, table_name)
+            _create_update_log_table_if_not_exists()
+            logger.info("--- Update Log")
+            _log_table_update(table_name)
+            
             logger.info("Execution time for %s: %.2fs", table_name, time.time() - start)
     except Exception as e:
         logger.error("An error occurred in export_Table for %s: %s", table_name, e)
+
+def _debug_database_name(DATABASE_URL):
+    try:
+        engine = create_engine(DATABASE_URL)
+        with engine.connect() as conn:
+            db_name = conn.execute(text("SELECT DATABASE()")).scalar()
+            logger.info(f"Connected to database: {db_name}")
+    except Exception as e:
+        logger.error(f"Could not fetch database name: {e}")
+    finally:
+        engine.dispose()
 
 def readTable(table_name):
     try:
@@ -186,7 +256,7 @@ def readTable(table_name):
             return pd.DataFrame()
 
         try:
-            data = [row._mapping for row in rows]  # SQLAlchemy >= 1.4
+            data = [row._mapping for row in rows]
         except AttributeError:
             data = [dict(row) for row in rows]
 
