@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-from utilsTools import export_Table
+from utilsTools import export_Table, send_email_alert
 import scraper.scraperPubMed as scrPubMed
 import scraper.scraperASTrial as scrASTrial
 import scraper.scraperPopulation as scrPopulation
@@ -69,6 +69,9 @@ def main():
 
     except Exception as e:
         logger.critical(f"💥 Error in the export process : {e}")
+        title = "Error in the export process PubMed and ClinicalTrial"
+        message = "Export BI KO. Check the log"
+        send_email_alert(title, message)
         sys.exit(1)
 
 

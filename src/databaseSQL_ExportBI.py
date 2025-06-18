@@ -10,7 +10,7 @@ import exportBI.exportUSA as expUSA
 import exportBI.exportCanada as expCanada
 import exportBI.exportUK as expUK
 
-from utilsTools import export_Table
+from utilsTools import export_Table, send_email_alert
 import time
 import logging
 from logger import setup_logger
@@ -109,7 +109,7 @@ def export_mapGlobal():
 
 def safe_export(export_func, label):
     try:
-        logger.info(f"--- Export : {label}")
+        logger.info(f"🟡 Export : {label}")
         export_func()
         logger.info(f"✅ Export OK : {label}\n")
     except Exception as e:
@@ -144,6 +144,9 @@ def main():
 
     except Exception:
         logger.critical("🚨 Error in the export process.")
+        title = "Error in the export process BI"
+        message = "Export BI KO. Check the log"
+        send_email_alert(title, message)
         sys.exit(1)
 
 if __name__ == "__main__":
