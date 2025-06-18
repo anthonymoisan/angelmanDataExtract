@@ -10,6 +10,7 @@ from email.message import EmailMessage
 from datetime import datetime
 import logging
 from logger import setup_logger
+import sys
 
 # Set up logger
 logger = setup_logger(debug=True)
@@ -181,7 +182,7 @@ def _create_update_log_table_if_not_exists():
             )
             """
     _run_query(query=query, return_result=False)
-    logger.info("Table `update_log` vérifiée ou créée.")
+    logger.info("Create Table `update_log` if not exists.")
     
 
 def export_Table(table_name, sql_script, reader):
@@ -230,10 +231,12 @@ def export_Table(table_name, sql_script, reader):
             _create_update_log_table_if_not_exists()
             logger.info("--- Update Log")
             _log_table_update(table_name)
-            
+
+            sys.exit(0)  # ✅ Succès
             logger.info("Execution time for %s: %.2fs", table_name, time.time() - start)
     except Exception as e:
         logger.error("An error occurred in export_Table for %s: %s", table_name, e)
+        sys.exit(1)  # ❌ Échec
 
 def _debug_database_name(DATABASE_URL):
     try:

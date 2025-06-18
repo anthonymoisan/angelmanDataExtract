@@ -107,56 +107,45 @@ def export_mapGlobal():
     reader = expGlobal.T_MapGlobal()
     export_Table("T_MapGlobal", "Global/createMapGlobal.sql", reader)
 
-if __name__ == "__main__":
-    """
-    Endpoint to launch the different scrapers with injection of the results into the database 
-    """
+def safe_export(export_func, label):
+    try:
+        logger.info(f"--- Export : {label}")
+        export_func()
+        logger.info(f"✅ Export OK : {label}\n")
+    except Exception as e:
+        logger.error(f"❌ Échec KO {label} : {e}")
+        raise
+
+def main():
     start = time.time()
+    try:
+        safe_export(export_DifficultiesSA_English, "DifficultiesSA EN")
+        safe_export(export_capabilities_English, "Capabilities FR")
+        safe_export(export_mapFrance_French, "Map France FR")
+        safe_export(export_mapFrance_English, "Map France EN")
+        safe_export(export_RegionsDepartements_French, "Départements FR")
+        safe_export(export_RegionsPrefectures_French, "Préfectures FR")
+        safe_export(export_DifficultiesSA_French, "DifficultiesSA FR")
+        safe_export(export_mapLatam_Spanish, "Map Latam ES")
+        safe_export(export_mapLatam_English, "Map Latam EN")
+        safe_export(export_capabilities_Latam_English, "Capabilities Latam EN")
+        safe_export(export_mapPoland_Polish, "Map Poland PL")
+        safe_export(export_mapPoland_English, "Map Poland EN")
+        safe_export(export_mapSpain_Spanish, "Map Spain ES")
+        safe_export(export_mapSpain_English, "Map Spain EN")
+        safe_export(export_mapAustralia_English, "Map Australia EN")
+        safe_export(export_mapUSA_English, "Map USA EN")
+        safe_export(export_mapCanada_English, "Map Canada EN")
+        safe_export(export_mapUK_English, "Map UK EN")
+        safe_export(export_mapGlobal, "Map Global")
+        elapsed = time.time() - start
+        logger.info(f"\n✅ All exports are ok with an execution time in {elapsed:.2f} secondes.")
+        sys.exit(0)
+
+    except Exception:
+        logger.critical("🚨 Error in the export process.")
+        sys.exit(1)
+
+if __name__ == "__main__":
+     main()
     
-    export_DifficultiesSA_English()
-    logger.info("\n")
-    export_capabilities_English()
-    logger.info("\n")
-    export_mapFrance_French()
-    logger.info("\n")
-    export_mapFrance_English()
-    logger.info("\n")
-    export_RegionsDepartements_French()
-    logger.info("\n")
-    export_RegionsPrefectures_French()
-    logger.info("\n")
-    export_DifficultiesSA_French()
-    
-    export_mapLatam_Spanish()
-    logger.info("\n")
-    export_mapLatam_English()
-    logger.info("\n")
-    export_capabilities_Latam_English()
-    logger.info("\n")
-
-    export_mapPoland_Polish()
-    logger.info("\n")
-    export_mapPoland_English()
-    logger.info("\n")
-   
-    export_mapSpain_Spanish()
-    logger.info("\n")
-    export_mapSpain_English()
-    logger.info("\n")
-
-    export_mapAustralia_English()
-    logger.info("\n")
-    
-    export_mapUSA_English()
-    logger.info("\n")
-
-    export_mapCanada_English()
-    logger.info("\n")
-    
-    export_mapUK_English()
-    logger.info("\n")
-
-    export_mapGlobal()
-    logger.info("\n")
-
-    logger.info("\nExecute time : %.2fs", time.time() - start)
