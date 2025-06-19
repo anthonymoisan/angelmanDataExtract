@@ -10,7 +10,6 @@ from email.message import EmailMessage
 from datetime import datetime
 import logging
 from logger import setup_logger
-import sys
 
 # Set up logger
 logger = setup_logger(debug=True)
@@ -59,6 +58,24 @@ def send_email_alert(table_name, previous, current):
             logger.info("Email sent successfully.")
     except Exception as e:
         logger.error("Failed to send email: %s", e)
+
+def send_email_alert(title, message):
+    config = load_config(CONFIG_GMAIL_PATH)
+    msg = EmailMessage()
+    msg["Subject"] = title
+    msg["From"] = "fastfrancecontact@gmail.com"
+    msg["To"] = "anthonymoisan@yahoo.fr"
+    msg.set_content(message)
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login("fastfrancecontact", config['Gmail']['PASSWORD'])
+            server.send_message(msg)
+            logger.info("Email sent successfully.")
+    except Exception as e:
+        logger.error("Failed to send email: %s", e)
+
 
 def _execute_sql(DATABASE_URL, query, return_result=False):
     engine = create_engine(DATABASE_URL)
@@ -232,11 +249,9 @@ def export_Table(table_name, sql_script, reader):
             logger.info("--- Update Log")
             _log_table_update(table_name)
 
-            sys.exit(0)  # ✅ Succès
             logger.info("Execution time for %s: %.2fs", table_name, time.time() - start)
     except Exception as e:
         logger.error("An error occurred in export_Table for %s: %s", table_name, e)
-        sys.exit(1)  # ❌ Échec
 
 def _debug_database_name(DATABASE_URL):
     try:
