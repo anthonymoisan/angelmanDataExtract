@@ -93,22 +93,22 @@ def _transformersMapSpain(df):
 
 def _transformersMapAustralia(df):
     df["country"] = "Australia"
-    df["linkDashboard"] = ""
+    df["linkDashboard"] = config['IdDashboard']['ID_AUSTRALIA_ENGLISH']
     return df
 
 def _transformersMapUSA(df):
     df["country"] = "USA"
-    df["linkDashboard"] = ""
+    df["linkDashboard"] = config['IdDashboard']['ID_USA_ENGLISH']
     return df
 
 def _transformersMapCanada(df):
     df["country"] = "Canada"
-    df["linkDashboard"] = ""
+    df["linkDashboard"] = config['IdDashboard']['ID_CANADA_ENGLISH']
     return df
 
 def _transformersMapUK(df):
     df["country"] = "United Kingdom"
-    df["linkDashboard"] = ""
+    df["linkDashboard"] = config['IdDashboard']['ID_UK_ENGLISH']
     return df
 
 class T_MapGlobal(T_ReaderAbstract):
