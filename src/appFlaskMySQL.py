@@ -137,8 +137,10 @@ def home():
     <br><br>
 
     API Italy
-    API in order for reading data from Map Italy : <a href="./api/v4/resources/Italy/MapItaly_English">./api/v4/resources/Italy/MapItaly_English</a>
-    <br><br>
+    <ul>
+    <li> API in order for reading data from MapItaly_English : <a href="./api/v4/resources/Italy/MapItaly_English">./api/v4/resources/Italy/MapItaly_English</a>
+    <li> API in order for reading data from MapItaly_Italian : <a href="./api/v4/resources/Italy/MapItaly_Italian">./api/v4/resources/Italy/MapItaly_Italian</a>
+    </ul>
 
     API MAP Global
     API in order for reading data from Map Global : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
@@ -275,9 +277,16 @@ def api_MapSpain_Spanish():
 @appFlaskMySQL.route('/api/v4/resources/Italy/MapItaly_English', methods=['GET'])
 def api_MapItaly_English():
     """
-    API to expose the results from MapItaly in Spanish with the specific table from the database
+    API to expose the results from MapItaly in English with the specific table from the database
     """
     return __api_Table('T_MapItaly_English')
+
+@appFlaskMySQL.route('/api/v4/resources/Italy/MapItaly_Italian', methods=['GET'])
+def api_MapItaly_Italian():
+    """
+    API to expose the results from MapItaly in Italian with the specific table from the database
+    """
+    return __api_Table('T_MapItaly_Italian')
 
 
 @appFlaskMySQL.route('/api/v4/resources/FAST_Spain/MapSpain_English', methods=['GET'])

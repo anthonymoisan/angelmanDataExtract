@@ -35,15 +35,41 @@ def _transformersMapItaly_EN(df):
 
     return df
 
+def _transformersMapItaly(df):
+    df["sexe"] = df["sexe"].replace("Male", "Maschio")
+    df["sexe"] = df["sexe"].replace("Female", "Femmina")
+    df["sexe"] = df["sexe"].replace("Indeterminate","Indeterminato")
+
+    df["genotype"] = df["genotype"].replace("Uniparental disomy","Disomia uniparentale")
+    df["genotype"] = df["genotype"].replace("Clinical","Clinico")
+    df["genotype"] = df["genotype"].replace("NA","Non lo so")
+    df["genotype"] = df["genotype"].replace("Unknown","Non lo so")
+    df["genotype"] = df["genotype"].replace("Other","Nie wiem")
+    df["genotype"] = df["genotype"].replace("Imprinting centre defect","Difetto del centro di imprinting")
+    df["genotype"] = df["genotype"].replace("Deletion","Delezione")
+    df["genotype"] = df["genotype"].replace("Mutation","Mutazione")
+
+    df = df.drop(columns=['country','monthJoin', 'yearJoin'])
+
+    return df
+
+
 class T_MapItaly_EN(T_ReaderAbstract):
 
     def readData(self):
         self.df = _buildDataframeMapItaly_EN()
         self.df = _transformersMapItaly_EN(self.df)
         return self.df
- 
+
+class T_MapItaly(T_ReaderAbstract):
+    def readData(self):
+        self.df = _buildDataframeMapItaly_EN()
+        self.df = _transformersMapItaly(self.df)
+        return self.df
 if __name__ == "__main__": 
     reader = T_MapItaly_EN()
+    df = reader.readData()
+    reader = T_MapItaly()
     df = reader.readData()
     print(df.head())
     print(df.shape)

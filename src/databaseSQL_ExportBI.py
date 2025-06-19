@@ -104,6 +104,10 @@ def export_mapItaly_English():
     reader = expItaly.T_MapItaly_EN()
     export_Table("T_MapItaly_English","Italy/createMapItaly_English.sql", reader)
 
+def export_mapItaly_Italian():
+    reader = expItaly.T_MapItaly()
+    export_Table("T_MapItaly_Italian","Italy/createMapItaly_Italian.sql", reader)
+
 def export_capabilities_Latam_English():
     reader = expLatam.T_Capabilities()
     export_Table("T_MapLatam_Capabilitie","Latam/createCapabilities.sql", reader)
@@ -143,6 +147,7 @@ def main():
         safe_export(export_mapCanada_English, "Map Canada EN")
         safe_export(export_mapUK_English, "Map UK EN")
         safe_export(export_mapItaly_English, "Map Italy EN")
+        safe_export(export_mapItaly_Italian, "Map Italy IT")
         safe_export(export_mapGlobal, "Map Global")
         elapsed = time.time() - start
         logger.info(f"\n✅ All exports are ok with an execution time in {elapsed:.2f} secondes.")
