@@ -53,8 +53,8 @@ def _buildDataFrameMapMapGlobal():
     df_USA = safe_readTable("T_MapUSA_English", _transformersMapUSA)
     df_Canada = safe_readTable("T_MapCanada_English", _transformersMapCanada)
     df_UK = safe_readTable("T_MapUK_English", _transformersMapUK)
-
-    df_total = pd.concat([df_France, df_Latam, df_Poland, df_Spain, df_Australia, df_USA, df_Canada, df_UK], ignore_index=True)
+    df_Italy = safe_readTable("T_MapItaly_English", _transformersMapItaly)
+    df_total = pd.concat([df_France, df_Latam, df_Poland, df_Spain, df_Australia, df_USA, df_Canada, df_UK, df_Italy], ignore_index=True)
 
     # Filtrage des valeurs valides uniquement si les colonnes existent
     if not df_total.empty:
@@ -110,6 +110,12 @@ def _transformersMapUK(df):
     df["country"] = "United Kingdom"
     df["linkDashboard"] = config['IdDashboard']['ID_UK_ENGLISH']
     return df
+
+def _transformersMapItaly(df):
+    df["country"] = "Italy"
+    df["linkDashboard"] = ""
+    return df
+
 
 class T_MapGlobal(T_ReaderAbstract):
 
