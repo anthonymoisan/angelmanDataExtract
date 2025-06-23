@@ -1,0 +1,7 @@
+CREATE TABLE T_MapBrazil_Portuguese (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    indexation VARCHAR(255) NOT NULL UNIQUE,
+    gender VARCHAR(255) NOT NULL,
+    genotype VARCHAR(255) NOT NULL,
+    age INT NOT NULL
+);

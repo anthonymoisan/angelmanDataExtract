@@ -148,6 +148,12 @@ def home():
     <li> API in order for reading data from MapGermany_Deutsch : <a href="./api/v4/resources/Germany/MapGermany_Deutsch">./api/v4/resources/Germany/MapGermany_Deutsch</a>
     </ul>
 
+    API Brazil
+    <ul>
+    <li> API in order for reading data from MapBrazil_English : <a href="./api/v4/resources/Brazil/MapBrazil_English">./api/v4/resources/Brazil/MapBrazil_English</a>
+    <li> API in order for reading data from MapBrazil_Portuguese : <a href="./api/v4/resources/Brazil/MapBrazil_Portuguese">./api/v4/resources/Brazil/MapBrazil_Portuguese</a>
+    </ul>
+
     API MAP Global
     API in order for reading data from Map Global : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
     '''
@@ -307,6 +313,20 @@ def api_MapGermany_Deutsch():
     API to expose the results from MapGermany in Deutsch with the specific table from the database
     """
     return __api_Table('T_MapGermany_Deutsch')
+
+@appFlaskMySQL.route('/api/v4/resources/Brazil/MapBrazil_English', methods=['GET'])
+def api_MapBrazil_English():
+    """
+    API to expose the results from MapBrazil in English with the specific table from the database
+    """
+    return __api_Table('T_MapBrazil_English')
+
+@appFlaskMySQL.route('/api/v4/resources/Brazil/MapBrazil_Portuguese', methods=['GET'])
+def api_MapBrazil_Portuguese():
+    """
+    API to expose the results from MapBrazil in Portuguese with the specific table from the database
+    """
+    return __api_Table('T_MapBrazil_Portuguese')
 
 
 @appFlaskMySQL.route('/api/v4/resources/FAST_Spain/MapSpain_English', methods=['GET'])

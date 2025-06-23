@@ -11,6 +11,7 @@ import exportBI.exportCanada as expCanada
 import exportBI.exportUK as expUK
 import exportBI.exportItaly as expItaly
 import exportBI.exportGermany as expGermany
+import exportBI.exportBrazil as expBrazil
 
 from utilsTools import export_Table, send_email_alert
 import time
@@ -117,6 +118,14 @@ def export_mapGermany_Deutsch():
     reader = expGermany.T_MapGermany()
     export_Table("T_MapGermany_Deutsch","Germany/createMapGermany_Deutsch.sql", reader)
 
+def export_mapBrazil_English():
+    reader = expBrazil.T_MapBrazil_EN()
+    export_Table("T_MapBrazil_English","Brazil/createMapBrazil_English.sql", reader)
+
+def export_mapBrazil_Portuguese():
+    reader = expBrazil.T_MapBrazil()
+    export_Table("T_MapBrazil_Portuguese","Brazil/createMapBrazil_Portuguese.sql", reader)
+
 def export_capabilities_Latam_English():
     reader = expLatam.T_Capabilities()
     export_Table("T_MapLatam_Capabilitie","Latam/createCapabilities.sql", reader)
@@ -159,6 +168,8 @@ def main():
         safe_export(export_mapItaly_Italian, "Map Italy IT")
         safe_export(export_mapGermany_English, "Map Germany EN")
         safe_export(export_mapGermany_Deutsch, "Map Germany DE")
+        safe_export(export_mapBrazil_English, "Map Brazil EN")
+        safe_export(export_mapBrazil_Portuguese, "Map Brazil PT")
         safe_export(export_mapGlobal, "Map Global")
         elapsed = time.time() - start
         logger.info(f"\n✅ All exports are ok with an execution time in {elapsed:.2f} secondes.")
