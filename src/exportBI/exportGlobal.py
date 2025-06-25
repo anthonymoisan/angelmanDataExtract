@@ -62,8 +62,8 @@ def _buildDataFrameMapMapGlobal():
     if not df_total.empty:
         df_total = df_total[df_total["genotype"].isin(["Deletion", "Clinical", "Mutation", "UPD", "ICD", "Mosaic"])]
         df_total = df_total[df_total["gender"].isin(["M", "F"])] 
-        df_total = df_total[pd.to_numeric(df_total["age"], errors="coerce").dropna().apply(float.is_integer)]
-
+        df_total["age"] = pd.to_numeric(df_total["age"], errors="coerce")
+        df_total = df_total[df_total["age"].between(0, 120)]
 
     return df_total
 

@@ -39,7 +39,7 @@ def _transformersMapPoland(df):
     df["sexe"] = df["sexe"].replace("Indeterminate","Nieokreślona")
 
     df["genotype"] = df["genotype"].replace("Uniparental disomy","Disomia uniparentalna")
-    df["genotype"] = df["genotype"].replace("Clinical","Klinika")
+    df["genotype"] = df["genotype"].replace("Clinical","Diagnoza kliniczna")
     df["genotype"] = df["genotype"].replace("NA","Nie wiem")
     df["genotype"] = df["genotype"].replace("Unknown","Nie wiem")
     df["genotype"] = df["genotype"].replace("Other","Nie wiem")
