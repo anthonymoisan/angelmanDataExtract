@@ -125,7 +125,7 @@ def _transformersMapGermany(df):
 
 def _transformersMapBrazil(df):
     df["country"] = "Brazil"
-    df["linkDashboard"] = config['IdDashboard']['ID_GERMANY_ENGLISH']
+    df["linkDashboard"] = config['IdDashboard']['ID_BRAZIL_ENGLISH']
     return df
 
 class T_MapGlobal(T_ReaderAbstract):
