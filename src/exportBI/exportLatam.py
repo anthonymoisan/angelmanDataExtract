@@ -58,9 +58,9 @@ def _transformersMapLatam_EN(df):
     df["gender"] = df["gender"].replace("Mujer","F")
     df["groupAge"] = pd.cut(
         df["age"],
-        bins=[-0.1, 4, 8, 12, 17, 100],
+        bins=[-0.1, 4, 8, 12, 18, 100],
         labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
-        right=True
+        right = False
     )  
     return df
 
