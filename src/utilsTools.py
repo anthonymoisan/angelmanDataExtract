@@ -93,11 +93,11 @@ def _execute_sql(DATABASE_URL, query, return_result=False):
         engine.dispose()
         logger.info("Database connection closed.")
 
-def _insert_df(DATABASE_URL, table_name, df):
+def _insert_df(DATABASE_URL, table_name, df, if_exists='replace'):
     engine = create_engine(DATABASE_URL)
     try:
         with engine.connect() as conn:
-            df.to_sql(table_name, con=conn, if_exists='replace', index=False)
+            df.to_sql(table_name, con=conn, if_exists=if_exists, index=False)
             logger.info("Inserted values into %s", table_name)
     except Exception as e:
         logger.error("Insert error: %s", e)
@@ -136,7 +136,7 @@ def _run_query(query, return_result=False, max_retries=3):
             else:
                 raise
 
-def _insert_data(df, table_name):
+def _insert_data(df, table_name,if_exists='replace'):
     params = get_db_params()
     max_retries = 3
     attempt = 0
@@ -150,11 +150,11 @@ def _insert_data(df, table_name):
                     remote_bind_address=(params["db_host"], 3306)
                 ) as tunnel:
                     db_url = _build_db_url(params, tunnel.local_bind_port)
-                    return _insert_df(db_url, table_name, df)
+                    return _insert_df(db_url, table_name, df,if_exists)
 
             else:
                 db_url = _build_db_url(params)
-                return _insert_df(db_url, table_name, df)
+                return _insert_df(db_url, table_name, df,if_exists)
         except Exception as e:
             attempt += 1
             logger.error("[Attempt %d] Insert failed: %s", attempt, e)
