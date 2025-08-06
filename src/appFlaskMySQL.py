@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify,request
 from sqlalchemy import create_engine, text
 import os
 from configparser import ConfigParser
@@ -6,6 +6,8 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
+from databaseSQLAngelmanSyndromeConnection import insertData
+import json
 
 # Very important parameter to execute locally or remotely (production)
 LOCAL_CONNEXION = True
@@ -364,6 +366,27 @@ def api_MapUK_English():
     """
     return __api_Table('T_MapUK_English')
 
+@appFlaskMySQL.route('/webhook', methods=['POST'])
+def webhook():
+    raw_data = request.data
+    try:
+        json_str = raw_data.decode('utf-8')
+    except UnicodeDecodeError:
+        json_str = raw_data.decode('latin-1')
+    data = json.loads(json_str)
+    emailAdress = data.get("emailAdress")
+    firstName = data.get("firstName")
+    lastName = data.get("lastName")
+
+    genotype = data.get("genotype")
+    gender = data.get("gender")
+    groupAge = ''
+    age = data.get("age")
+    country = data.get("country")
+    region = data.get("region")
+    insertData(emailAdress,firstName,lastName,genotype,gender,age,groupAge,country,region)
+
+    return {"status": "OK"}, 200
 
 if __name__ == '__main__':
     appFlaskMySQL.run()

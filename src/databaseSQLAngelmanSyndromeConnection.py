@@ -43,6 +43,7 @@ def insertData(emailAdress,firstName,lastName,genotype,gender,age,groupAge,count
                                 VALUES (:gender, :genotype, :age, :groupAge, :country, :region)
                                 """
 
+
     rowData = {
         "gender": [gender],
         "genotype": [genotype],
@@ -53,6 +54,12 @@ def insertData(emailAdress,firstName,lastName,genotype,gender,age,groupAge,count
     }
 
     df = pd.DataFrame.from_dict(rowData)
+    df["groupAge"] = pd.cut(
+        pd.Series(df["age"].astype(int)),
+        bins=[-0.1, 4, 8, 12, 18, 100],
+        labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
+        right = False
+    )
     _insert_data(df, "T_AngelmanSyndromeConnexion",if_exists='append')
     
     #It works because the index begins to 1
@@ -108,12 +115,6 @@ def buildDataFrame():
     df_crypt = readTableCrypt()
     df_angelman = readTableAngelmanSyndromeConnexion()
     df = pd.merge(df_angelman, df_crypt, on='id', how='inner')
-    df["groupAge"] = pd.cut(
-        df["age"],
-        bins=[-0.1, 4, 8, 12, 18, 100],
-        labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
-        right = False
-    )
     return df
 
 def dropTables():
@@ -152,13 +153,12 @@ def main():
         country = 'Algeria'
         region = ''
         insertData(emailAdress,firstName,lastName,genotype,gender,age,groupAge,country,region)
+        
         df = buildDataFrame()
         logger.info(df.iloc[0])
         logger.info(df.iloc[1])
-        #logger.info(df["groupAge"])
-
+        
         dropTables()
-
         elapsed = time.time() - start
         logger.info(f"\n✅ Tables for Angelman Syndrome Connexion are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)
