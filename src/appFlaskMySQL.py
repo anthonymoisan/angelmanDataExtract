@@ -8,9 +8,16 @@ import pandas as pd
 import time
 from databaseSQLAngelmanSyndromeConnection import insertData
 import json
+from datetime import datetime
+from logger import setup_logger
+
+# Set up logger
+logger = setup_logger(debug=False)
 
 # Very important parameter to execute locally or remotely (production)
-LOCAL_CONNEXION = True
+# Détection automatique de l'environnement
+LOCAL_CONNEXION = not os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower().startswith("pythonanywhere")
+
 
 appFlaskMySQL = Flask(__name__)
 appFlaskMySQL.config["DEBUG"] = True
@@ -47,9 +54,9 @@ def __readTable(DATABASE_URL, tableName):
             df = pd.read_sql_table(tableName, connection)
             df.fillna("None", inplace=True)
             dict_df = df.to_dict(orient='records')
-            return jsonify(dict_df)  
+            return jsonify(dict_df)
     except Exception as e:
-        print("Connexion error :", e)
+        logger.error("Connexion error : %s", e)
     finally:
         engine.dispose()
 
@@ -73,7 +80,7 @@ def __api_Table(tableName):
         else:
             DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
             return __readTable(DATABASE_URL, tableName)
-        print("Execute time for "+ tableName +" : ", round(time.time()-start, 2), "s") 
+        logger.error("Execute time for "+ tableName +" : ", round(time.time()-start, 2), "s")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -84,15 +91,15 @@ def home():
     """
     return '''<h1>APIs</h1>
     API Steve
-    <ul>    
+    <ul>
     <li>API in order for scraping data from PubMed : <a href="./api/v1/resources/articlesPubMed">./api/v1/resources/articlesPubMed</a></li>
     <li>API in order for scraping data from AS Trial : <a href="./api/v1/resources/ASTrials">./api/v1/resources/ASTrials</a></li>
     <li>API in order for scraping data from UN Population : <a href="./api/v1/resources/UnPopulation">./api/v1/resources/UnPopulation</a></li>
     <li>API in order for scraping data from Clinical Trials : <a href="./api/v1/resources/ClinicalTrials">./api/v1/resources/ClinicalTrials</a></li>
     </ul>
-    
+
     API Map France
-    
+
     <ul>
     <li>API in order for reading data from MapFrance_French : <a href="./api/v2/resources/FAST_France/MapFrance_French">./api/v2/resources/FAST_France/MapFrance_French</a></li>
     <li>API in order for reading data from DifficultiesSA_French : <a href="./api/v2/resources/FAST_France/DifficultiesSA_French">./api/v2/resources/FAST_France/DifficultiesSA_French</a></li>
@@ -174,21 +181,21 @@ def api_articles_all():
     API to expose the results from Pub Med articles with the specific table from the database
     """
     return __api_Table("T_ArticlesPubMed")
-    
+
 @appFlaskMySQL.route('/api/v1/resources/UnPopulation', methods=['GET'])
 def api_UnPopulation_all():
     """
     API to expose the results from Un Population with the specific table from the database
     """
     return __api_Table("T_UnPopulation")
-    
+
 @appFlaskMySQL.route('/api/v1/resources/ClinicalTrials', methods=['GET'])
 def api_Clinicaltrials_all():
     """
     API to expose the results from clinical trials with the specific table from the database
     """
     return __api_Table("T_ClinicalTrials")
-    
+
 @appFlaskMySQL.route('/api/v2/resources/FAST_France/MapFrance_French', methods=['GET'])
 def api_MapFrance_French():
     """
@@ -366,6 +373,10 @@ def api_MapUK_English():
     """
     return __api_Table('T_MapUK_English')
 
+def safe_get(data, key, default=""):
+    """Retourne la valeur du champ ou une valeur par défaut."""
+    return data.get(key) if data.get(key) not in [None, ""] else default
+
 @appFlaskMySQL.route('/webhook', methods=['POST'])
 def webhook():
     raw_data = request.data
@@ -374,19 +385,56 @@ def webhook():
     except UnicodeDecodeError:
         json_str = raw_data.decode('latin-1')
     data = json.loads(json_str)
-    emailAdress = data.get("emailAdress")
-    firstName = data.get("firstName")
-    lastName = data.get("lastName")
+    #print(data)
 
-    genotype = data.get("genotype")
-    gender = data.get("gender")
-    groupAge = ''
-    age = data.get("age")
-    country = data.get("country")
-    region = data.get("region")
-    insertData(emailAdress,firstName,lastName,genotype,gender,age,groupAge,country,region)
+    form_data_mapping = {
+    "emailAdress": "email_2",
+    "firstName": "name_1",
+    "lastName": "name_2",
+    "genotype": "select_2",
+    "gender": "radio_1",
+    "age": "number_1",
+    "country": "select_1",
+    "region": "select_3"  # si tu en as un
+    }
 
-    return {"status": "OK"}, 200
+    emailAdress = safe_get(data, "email_2")
+    firstName = safe_get(data, "name_1")
+    lastName = safe_get(data, "name_2")
+    genotype = safe_get(data, "select_2")
+    gender = safe_get(data, "radio_1")
+    country = safe_get(data, "select_1")
+    region = safe_get(data, "select_3")
+
+    # Calcul de l’âge
+    birth_year_raw = safe_get(data, "number_1")
+    try:
+        birth_year = int(birth_year_raw)
+        age = datetime.now().year - birth_year
+        if age < 0 or age > 120:  # sécurité sur plage valide
+            age = None
+    except ValueError:
+        age = None
+
+    if age < 4:
+        groupAge = "<4 years"
+    elif age < 8:
+        groupAge = "4-8 years"
+    elif age < 12:
+        groupAge = "8-12 years"
+    elif age < 18:
+        groupAge = "12-17 years"
+    else:
+        groupAge = ">18 years"
+
+    try:
+        insertData(emailAdress, firstName, lastName, genotype, gender, age, groupAge, country, region)
+        logger.info("Insertion Data is OK !")
+        return {"status": "OK"}, 200
+    except Exception as e:
+        logger.error("Erreur d'insertion : %s", e)
+        return {"status": "error", "message": str(e)}, 500
+
 
 if __name__ == '__main__':
     appFlaskMySQL.run()

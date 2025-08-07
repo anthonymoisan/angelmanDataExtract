@@ -54,12 +54,14 @@ def insertData(emailAdress,firstName,lastName,genotype,gender,age,groupAge,count
     }
 
     df = pd.DataFrame.from_dict(rowData)
+    """
     df["groupAge"] = pd.cut(
         pd.Series(df["age"].astype(int)),
         bins=[-0.1, 4, 8, 12, 18, 100],
         labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
         right = False
     )
+    """
     _insert_data(df, "T_AngelmanSyndromeConnexion",if_exists='append')
     
     #It works because the index begins to 1
