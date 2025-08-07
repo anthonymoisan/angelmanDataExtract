@@ -137,7 +137,7 @@ def main():
 
         genotype = 'Deletion'
         gender = 'Female'
-        groupAge = ''
+        groupAge = '12-17 years'
         age = 15
         country = 'France'
         region = 'Ile de France'
@@ -150,7 +150,7 @@ def main():
 
         genotype = 'Mutation'
         gender = 'Male'
-        groupAge = ''
+        groupAge = '>18 years'
         age = 18
         country = 'Algeria'
         region = ''
