@@ -6,7 +6,7 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from databaseSQLAngelmanSyndromeConnection import insertData
+from databaseSQLAngelmanSyndromeConnection import insertData,buildDataFrame
 import json
 from datetime import datetime
 from logger import setup_logger
@@ -165,6 +165,13 @@ def home():
 
     API MAP Global
     API in order for reading data from Map Global : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
+    <br><br>
+
+    API Angelman Syndrome Connexion
+    <ul>
+    <li>API in order for reading data from AngelmanConnexion : <a href="./api/v5/resources/dataAngelmanSydromeConnexion">./api/v5/resources/dataAngelmanSydromeConnexion</a></li>
+    </ul>
+    
     '''
 
 
@@ -434,6 +441,11 @@ def webhook():
     except Exception as e:
         logger.error("Erreur d'insertion : %s", e)
         return {"status": "error", "message": str(e)}, 500
+
+@appFlaskMySQL.route("/api/v5/resources/dataAngelmanSydromeConnexion")
+def get_data():
+    df = buildDataFrame()
+    return df.to_json(orient="records")
 
 
 if __name__ == '__main__':
