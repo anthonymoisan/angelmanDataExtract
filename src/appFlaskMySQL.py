@@ -6,7 +6,7 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from databaseSQLAngelmanSyndromeConnection import insertData,buildDataFrame
+from databaseSQLAngelmanSyndromeConnection import insertData,buildDataFrame,get_recordsAngelmanConnexion
 import json
 from datetime import datetime
 from logger import setup_logger
@@ -170,6 +170,7 @@ def home():
     API Angelman Syndrome Connexion
     <ul>
     <li>API in order for reading data from AngelmanConnexion : <a href="./api/v5/resources/dataAngelmanSydromeConnexion">./api/v5/resources/dataAngelmanSydromeConnexion</a></li>
+    <li>API in order for reading some specific records : <a href="./api/v5/resources/records">./api/v5/resources/records</a></li>
     </ul>
     
     '''
@@ -442,11 +443,29 @@ def webhook():
         logger.error("Erreur d'insertion : %s", e)
         return {"status": "error", "message": str(e)}, 500
 
-@appFlaskMySQL.route("/api/v5/resources/dataAngelmanSydromeConnexion")
+@appFlaskMySQL.route("/api/v5/resources/dataAngelmanSydromeConnexion", methods=['GET'])
 def get_data():
     df = buildDataFrame()
     return df.to_json(orient="records")
 
+@appFlaskMySQL.route("/api/v5/resources/records", methods=['GET'])
+def get_records():
+    #age_min = 5
+    #age_max = 17
+    #countries = "Afghanistan"
+    #genotypes = "two"
+    #countries = None
+    #genotypes = None
+    age_min = request.args.get('age_min', type=int, default=0)
+    age_max = request.args.get('age_max', type=int, default=150)
+    countries = request.args.getlist('country')
+    genotypes = request.args.getlist('genotype')
+    print("age min: ",age_min)
+    print("age max: ",age_max)
+    print("countries :", countries)
+    print("genotypes ", genotypes)
+    result = get_recordsAngelmanConnexion(age_min, age_max, countries, genotypes)
+    return jsonify(result)
 
 if __name__ == '__main__':
     appFlaskMySQL.run()
