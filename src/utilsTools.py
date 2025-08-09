@@ -82,10 +82,11 @@ def _execute_sql(DATABASE_URL, query, return_result=False, params = None):
     try:
         with engine.connect() as conn:
             logger.info("Connected to database.")
-            result = conn.execute(text(query),params)
+            stmt = text(query) if isinstance(query, str) else query
+            result = conn.execute(stmt, params or {})
             if return_result:
                 data = result.fetchall()
-                return data[0][0] if data and len(data[0]) == 1 else data
+                return data
     except Exception as e:
         logger.error("Execution error: %s", e)
         raise
@@ -110,7 +111,7 @@ def _build_db_url(params, local_port=None):
     port = local_port if local_port else 3306
     return f"mysql+pymysql://{params['db_user']}:{params['db_pass']}@{host}:{port}/{params['db_name']}"
 
-def _run_query(query, return_result=False, max_retries=3, params=None):
+def _run_query(query, return_result=False, max_retries=3, paramsSQL=None):
     params = get_db_params()
     attempt = 0
     while attempt < max_retries:
@@ -123,10 +124,10 @@ def _run_query(query, return_result=False, max_retries=3, params=None):
                     remote_bind_address=(params["db_host"], 3306)
                 ) as tunnel:
                     db_url = _build_db_url(params, tunnel.local_bind_port)
-                    return _execute_sql(db_url, query, return_result, params)
+                    return _execute_sql(db_url, query, return_result, paramsSQL)
             else:
                 db_url = _build_db_url(params)
-                return _execute_sql(db_url, query, return_result, params)
+                return _execute_sql(db_url, query, return_result, paramsSQL)
         except Exception as e:
             attempt += 1
             logger.error("[Attempt %d] Query failed: %s", attempt, e)

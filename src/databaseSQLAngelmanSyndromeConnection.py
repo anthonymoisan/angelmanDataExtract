@@ -7,6 +7,7 @@ from logger import setup_logger
 import pandas as pd
 from cryptography.fernet import Fernet
 from configparser import ConfigParser
+from sqlalchemy import bindparam,text
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -118,6 +119,39 @@ def buildDataFrame():
     df_angelman = readTableAngelmanSyndromeConnexion()
     df = pd.merge(df_angelman, df_crypt, on='id', how='inner')
     return df
+
+def get_recordsAngelmanConnexion(age_min, age_max, countries, genotypes):
+    if not countries:
+        all_countries_query = text("SELECT DISTINCT country FROM T_AngelmanSyndromeConnexion")
+        countries = _run_query(all_countries_query, return_result=True)
+        print(countries)
+
+    if not genotypes:
+        all_genotypes_query = text("SELECT DISTINCT genotype FROM T_AngelmanSyndromeConnexion")
+        genotypes = _run_query(all_genotypes_query, return_result=True)
+        print(genotypes)
+        
+    query = text(""" SELECT country, genotype, age, gender
+        FROM T_AngelmanSyndromeConnexion
+        WHERE age BETWEEN :age_min AND :age_max
+        AND country IN :countries
+        AND genotype IN :genotypes
+        """).bindparams(
+            bindparam("countries", expanding=True),
+            bindparam("genotypes", expanding=True)
+        )
+
+    params_sql = {
+        "age_min": age_min,
+        "age_max": age_max,
+        "countries": countries,
+        "genotypes": genotypes
+    }
+
+    rows = _run_query(query, return_result=True, max_retries=3, paramsSQL=params_sql)
+    # SQLAlchemy 1.4+/2.0 : utiliser ._mapping
+    payload = [dict(r._mapping) for r in rows]
+    return payload
 
 def dropTables():
     sqlCrypte = "DROP TABLE T_Crypte"
