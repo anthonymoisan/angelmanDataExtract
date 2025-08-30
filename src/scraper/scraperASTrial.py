@@ -219,7 +219,7 @@ def as_trials():
     all_cities = pd.DataFrame()
     for city in merged[["Lat", "Lon"]].drop_duplicates().itertuples(index=False):
         current_city = merged[(merged["Lat"] == city[0]) & (merged["Lon"] == city[1])].copy()
-        facilities = process.dedupe(current_city["Facility"], threshold=70, len_selector="shortest")
+        facilities = process.dedupe(current_city["Facility"], threshold=70)
         current_city["Facility_dedupe"] = current_city["Facility"].apply(lambda x: process.extractOne(x, facilities)[0])
         cities = process.dedupe(current_city["Hover_City"], threshold=70)
         current_city["Dedupe_City"] = current_city["Hover_City"].apply(lambda x: process.extractOne(x, cities)[0])
