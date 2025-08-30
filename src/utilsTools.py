@@ -227,10 +227,14 @@ def export_Table(table_name, sql_script, reader):
         """
         table_exists = _run_query(check_query, return_result=True)
 
-        previous_count = (
+        previous_countSQL = (
             _run_query(f"SELECT COUNT(*) FROM {table_name}", return_result=True)
             if table_exists else 0
         )
+
+        previous_count= int(previous_countSQL[0][0])
+
+        #logger.info("type previous count :", type(previous_count))
 
         if current_count < 0.9 * previous_count:
             logger.warning("--- Data check failed. Keeping previous version.")
