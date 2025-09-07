@@ -11,6 +11,7 @@ import json
 from datetime import datetime
 from logger import setup_logger
 
+
 # Set up logger
 logger = setup_logger(debug=False)
 
@@ -171,6 +172,11 @@ def home():
     <ul>
     <li>API in order for reading data from AngelmanConnexion : <a href="./api/v5/resources/dataAngelmanSydromeConnexion">./api/v5/resources/dataAngelmanSydromeConnexion</a></li>
     <li>API in order for reading some specific records : <a href="./api/v5/resources/records">./api/v5/resources/records</a></li>
+    </ul>
+    
+    API Health Data Hub
+    <ul>
+    <li>API in order for reading data from HDH for pharmaceutical offices : <a href="./api/v6/resources/PharmaceuticalOffice">./api/v6/resources/PharmaceuticalOffice</a></li>
     </ul>
     
     '''
@@ -466,6 +472,18 @@ def get_records():
     print("genotypes ", genotypes)
     result = get_recordsAngelmanConnexion(age_min, age_max, countries, genotypes)
     return jsonify(result)
+
+
+@appFlaskMySQL.route('/api/v6/resources/PharmaceuticalOffice', methods=['GET'])
+def api_PharmaceuticalOffice():
+    """
+    API to expose the results from Pharmaceutical Offices
+    """
+    with open("../data/pharmaceuticalOffice.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return jsonify(data)
+
+#pharmaceuticalOffice
 
 if __name__ == '__main__':
     appFlaskMySQL.run()
