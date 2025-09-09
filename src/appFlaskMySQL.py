@@ -10,7 +10,7 @@ from databaseSQLAngelmanSyndromeConnection import insertData,buildDataFrame,get_
 import json
 from datetime import datetime
 from logger import setup_logger
-
+from flask_cors import CORS
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -21,6 +21,7 @@ LOCAL_CONNEXION = not os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower().starts
 
 
 appFlaskMySQL = Flask(__name__)
+CORS(appFlaskMySQL, resources={r"/api/*": {"origins": "*"}})
 appFlaskMySQL.config["DEBUG"] = True
 
 # Read SSH information and DB information in a file Config2.ini
@@ -177,6 +178,7 @@ def home():
     API Health Data Hub
     <ul>
     <li>API in order for reading data from HDH for pharmaceutical offices : <a href="./api/v6/resources/PharmaceuticalOffice">./api/v6/resources/PharmaceuticalOffice</a></li>
+    <li>API in order for reading data from HDH for ime : <a href="./api/v6/resources/Ime">./api/v6/resources/Ime</a></li>
     </ul>
     
     '''
@@ -483,7 +485,15 @@ def api_PharmaceuticalOffice():
         data = json.load(f)
     return jsonify(data)
 
-#pharmaceuticalOffice
+@appFlaskMySQL.route('/api/v6/resources/Ime', methods=['GET'])
+def api_Ime():
+    """
+    API to expose the results from Ime
+    """
+    with open("../data/ime.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return jsonify(data)
+
 
 if __name__ == '__main__':
     appFlaskMySQL.run()

@@ -201,3 +201,6 @@ angelmanExtract/Scripts/pip3.exe
 angelmanExtract/Scripts/python.exe
 angelmanExtract/Scripts/pythonw.exe
 angelmanExtract/Scripts/sshtunnel.exe
+data/pharmaceuticalOffice.json
+data/hospital.json
+data/ime.json

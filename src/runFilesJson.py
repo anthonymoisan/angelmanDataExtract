@@ -14,6 +14,7 @@ def main():
     try:
         elapsed = time.time() - start
         scrHealthData.pharmaceuticalOffice("../data/")
+        scrHealthData.ime("../data/")
         logger.info(f"\n✅ JSon Files for Angelman Connexion are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)
 

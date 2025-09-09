@@ -9,11 +9,11 @@ from logger import setup_logger
 # Set up logger
 logger = setup_logger( debug=False)
 
-def __requestJSON():
+def __requestJSON(numCat):
     url = "https://data.opendatasoft.com/api/explore/v2.1/catalog/datasets/healthref-france-finess@public/exports/json"
     params = {
-        "select": "rslongue,address,coord,telephone",
-        "where": "categetab=620",
+        "select": "rs,rslongue,address,coord,telephone",
+        "where": "categetab=" + str(numCat),
     }
     
     response = requests.get(url, params=params)
@@ -25,13 +25,17 @@ def __writeJSON(result,repoPath, nameFileJSon):
         json.dump(result, f, ensure_ascii=False, separators=(",", ":"))
 
 def pharmaceuticalOffice(repoPath):
-    resultJSON = __requestJSON()
+    resultJSON = __requestJSON(numCat=620)
     __writeJSON(resultJSON,repoPath,"pharmaceuticalOffice.json")
 
+def ime(repoPath):
+    resultJSON = __requestJSON(numCat=183)
+    __writeJSON(resultJSON,repoPath,"ime.json")
 
 if __name__ == "__main__":
     start = time.time()
     wkdir = os.path.dirname(__file__)
     repoPath = f"{wkdir}/../../data/"
     pharmaceuticalOffice(repoPath)
+    ime(repoPath)
     logger.info("\nExecute time : %.2fs", time.time() - start)
