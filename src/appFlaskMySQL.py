@@ -481,7 +481,8 @@ def api_PharmaceuticalOffice():
     """
     API to expose the results from Pharmaceutical Offices
     """
-    with open("../data/pharmaceuticalOffice.json", "r", encoding="utf-8") as f:
+    wkdir = os.path.dirname(__file__)
+    with open(f"{wkdir}/../data/pharmaceuticalOffice.json", "r", encoding="utf-8") as f:
         data = json.load(f)
     return jsonify(data)
 
@@ -490,7 +491,8 @@ def api_Ime():
     """
     API to expose the results from Ime
     """
-    with open("../data/ime.json", "r", encoding="utf-8") as f:
+    wkdir = os.path.dirname(__file__)
+    with open(f"{wkdir}/../data/ime.json", "r", encoding="utf-8") as f:
         data = json.load(f)
     return jsonify(data)
 

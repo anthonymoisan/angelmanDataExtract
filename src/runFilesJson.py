@@ -13,8 +13,11 @@ def main():
     start = time.time()
     try:
         elapsed = time.time() - start
-        scrHealthData.pharmaceuticalOffice("../data/")
-        scrHealthData.ime("../data/")
+        wkdir = os.path.dirname(__file__)
+        logger.info(f"🟡 Export : PhamaceuticalOffice.json")
+        scrHealthData.pharmaceuticalOffice(f"{wkdir}/../data/")
+        logger.info(f"🟡 Export : Ime.json")
+        scrHealthData.ime(f"{wkdir}/../data/")
         logger.info(f"\n✅ JSon Files for Angelman Connexion are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)
 
