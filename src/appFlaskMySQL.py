@@ -185,6 +185,10 @@ def home():
     <ul>
     <li>API in order for reading data from HDH for pharmaceutical offices : <a href="./api/v6/resources/PharmaceuticalOffice">./api/v6/resources/PharmaceuticalOffice</a></li>
     <li>API in order for reading data from HDH for ime : <a href="./api/v6/resources/Ime">./api/v6/resources/Ime</a></li>
+    <li>API in order for reading data from HDH for mas : <a href="./api/v6/resources/Mas">./api/v6/resources/Mas</a></li>
+    <li>API in order for reading data from HDH for fam : <a href="./api/v6/resources/Fam">./api/v6/resources/Fam</a></li>
+    <li>API in order for reading data from HDH for camps : <a href="./api/v6/resources/Camps">./api/v6/resources/Camps</a></li>
+    <li>API in order for reading data from HDH for mdph : <a href="./api/v6/resources/Mdph">./api/v6/resources/Mdph</a></li>
     </ul>
     
     '''
@@ -509,6 +513,45 @@ def api_Ime():
         data = json.load(f)
     return jsonify(data)
 
+@appFlaskMySQL.route('/api/v6/resources/Mas', methods=['GET'])
+def api_Mas():
+    """
+    API to expose the results from Mas
+    """
+    wkdir = os.path.dirname(__file__)
+    with open(f"{wkdir}/../data/mas.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return jsonify(data)
+
+@appFlaskMySQL.route('/api/v6/resources/Fam', methods=['GET'])
+def api_fam():
+    """
+    API to expose the results from Fam
+    """
+    wkdir = os.path.dirname(__file__)
+    with open(f"{wkdir}/../data/fam.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return jsonify(data)
+
+@appFlaskMySQL.route('/api/v6/resources/Mdph', methods=['GET'])
+def api_Mdph():
+    """
+    API to expose the results from Mdph
+    """
+    wkdir = os.path.dirname(__file__)
+    with open(f"{wkdir}/../data/mdph.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return jsonify(data)
+
+@appFlaskMySQL.route('/api/v6/resources/Camps', methods=['GET'])
+def api_Camps():
+    """
+    API to expose the results from Camps
+    """
+    wkdir = os.path.dirname(__file__)
+    with open(f"{wkdir}/../data/camps.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return jsonify(data)
 
 if __name__ == '__main__':
     appFlaskMySQL.run()

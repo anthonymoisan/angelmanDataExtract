@@ -32,10 +32,32 @@ def ime(repoPath):
     resultJSON = __requestJSON(numCat=183)
     __writeJSON(resultJSON,repoPath,"ime.json")
 
+def mas(repoPath):
+    resultJSON = __requestJSON(numCat=255)
+    __writeJSON(resultJSON,repoPath,"mas.json")
+    
+def fam(repoPath):
+    resultJSON = __requestJSON(numCat=437)
+    __writeJSON(resultJSON,repoPath,"fam.json")
+
+def mdph(repoPath):
+    resultJSON = __requestJSON(numCat=609)
+    __writeJSON(resultJSON,repoPath,"mdph.json")
+
+def camps(repoPath):
+    resultJSON = __requestJSON(numCat=190)
+    __writeJSON(resultJSON,repoPath,"camps.json")
+
+
+
 if __name__ == "__main__":
     start = time.time()
     wkdir = os.path.dirname(__file__)
     repoPath = f"{wkdir}/../../data/"
     pharmaceuticalOffice(repoPath)
     ime(repoPath)
+    mas(repoPath)
+    fam(repoPath)
+    mdph(repoPath)
+    camps(repoPath)
     logger.info("\nExecute time : %.2fs", time.time() - start)

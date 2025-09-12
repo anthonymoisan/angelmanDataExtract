@@ -204,3 +204,7 @@ angelmanExtract/Scripts/sshtunnel.exe
 data/pharmaceuticalOffice.json
 data/hospital.json
 data/ime.json
+data/camps.json
+data/fam.json
+data/mas.json
+data/mdph.json
