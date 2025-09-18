@@ -1,4 +1,4 @@
-from flask import Flask, jsonify,request
+from flask import Flask, jsonify,request, Response, abort
 from sqlalchemy import create_engine, text
 import os
 from configparser import ConfigParser
@@ -6,11 +6,12 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from databaseSQLAngelmanSyndromeConnection import insertData,buildDataFrame,get_recordsAngelmanConnexion
+from databaseSQLAngelmanSyndromeConnection import fetch_photo,fetch_person_decrypted
 import json
 from datetime import datetime
 from logger import setup_logger
 from flask_cors import CORS
+
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -177,8 +178,8 @@ def home():
 
     API Angelman Syndrome Connexion
     <ul>
-    <li>API in order for reading data from AngelmanConnexion : <a href="./api/v5/resources/dataAngelmanSydromeConnexion">./api/v5/resources/dataAngelmanSydromeConnexion</a></li>
-    <li>API in order for reading some specific records : <a href="./api/v5/resources/records">./api/v5/resources/records</a></li>
+    <li>API in order for reading data from the first picture : <a href="./api/v5/people/1/photo">./api/v5/people/1/photo</a></li>
+    <li>API in order for reading data from the first info : <a href="./api/v5/people/1/info">./api/v5/people/1/info</a></li>
     </ul>
     
     API Health Data Hub
@@ -410,6 +411,7 @@ def safe_get(data, key, default=""):
     """Retourne la valeur du champ ou une valeur par défaut."""
     return data.get(key) if data.get(key) not in [None, ""] else default
 
+'''
 @appFlaskMySQL.route('/webhook', methods=['POST'])
 def webhook():
     raw_data = request.data
@@ -467,30 +469,20 @@ def webhook():
     except Exception as e:
         logger.error("Erreur d'insertion : %s", e)
         return {"status": "error", "message": str(e)}, 500
+'''
 
-@appFlaskMySQL.route("/api/v5/resources/dataAngelmanSydromeConnexion", methods=['GET'])
-def get_data():
-    df = buildDataFrame()
-    return df.to_json(orient="records")
+@appFlaskMySQL.route('/api/v5/people/<int:person_id>/photo', methods=['GET'])
+def person_photo(person_id):
+    photo, mime = fetch_photo(person_id)
+    if not photo:
+        abort(404)
+    return Response(photo, mimetype=mime)
 
-@appFlaskMySQL.route("/api/v5/resources/records", methods=['GET'])
-def get_records():
-    #age_min = 5
-    #age_max = 17
-    #countries = "Afghanistan"
-    #genotypes = "two"
-    #countries = None
-    #genotypes = None
-    age_min = request.args.get('age_min', type=int, default=0)
-    age_max = request.args.get('age_max', type=int, default=150)
-    countries = request.args.getlist('country')
-    genotypes = request.args.getlist('genotype')
-    print("age min: ",age_min)
-    print("age max: ",age_max)
-    print("countries :", countries)
-    print("genotypes ", genotypes)
-    result = get_recordsAngelmanConnexion(age_min, age_max, countries, genotypes)
+@appFlaskMySQL.route('/api/v5/people/<int:person_id>/info', methods=['GET'])
+def person_info(person_id):
+    result = fetch_person_decrypted(person_id)
     return jsonify(result)
+
 
 
 @appFlaskMySQL.route('/api/v6/resources/PharmaceuticalOffice', methods=['GET'])

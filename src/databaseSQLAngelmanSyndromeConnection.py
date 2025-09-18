@@ -1,4 +1,5 @@
 import sys, os
+from tkinter import Image
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from utilsTools import send_email_alert, _run_query,readTable,_insert_data
 import time
@@ -8,6 +9,11 @@ import pandas as pd
 from cryptography.fernet import Fernet
 from configparser import ConfigParser
 from sqlalchemy import bindparam,text
+from datetime import date
+from pathlib import Path
+from datetime import datetime, timezone
+import io
+
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -19,191 +25,184 @@ key = config['CleChiffrement']['KEY']
 
 cipher = Fernet(key)
 
+def encrypt_str(s: str) -> bytes:
+    return cipher.encrypt(s.encode("utf-8"))  # -> bytes pour VARBINARY
+
+def encrypt_date_like(d) -> bytes:
+    # accepte date / datetime / pandas.Timestamp / str
+    from datetime import date, datetime
+    import pandas as pd
+
+    if isinstance(d, pd.Timestamp):
+        d = d.date()
+    elif isinstance(d, datetime):
+        d = d.date()
+    elif isinstance(d, str):
+        # garde juste la partie date si "YYYY-MM-DDTHH:MM:SS"
+        d = d.split('T')[0].split(' ')[0]
+        return cipher.encrypt(d.encode('utf-8'))
+    elif isinstance(d, date):
+        pass
+    else:
+        raise TypeError("Type de date non supporté")
+
+    return cipher.encrypt(d.isoformat().encode('utf-8'))
+
+
 def createTable(sql_script):
     script_path = os.path.join(os.path.dirname(__file__), "angelmanSyndromeConnexion/SQL", sql_script)
     with open(script_path, "r", encoding="utf-8") as file:
         logger.info("--- Create Table.")
         _run_query(file.read())
 
-def encrypt(data):
-    return cipher.encrypt(data.encode()).decode()
+def insertData(firstname, lastname, emailAddress, dateOfBirth, genotype, photo, city):
 
-# Fonction de déchiffrement
-def decrypt(encrypted_data):
     try:
-        return cipher.decrypt(encrypted_data.encode()).decode()
-    except Exception as e:
-        print("Erreur lors du déchiffrement:", e)
+            
+        # 1) validations applicatives minimum
+        if not isinstance(dateOfBirth, date):
+            raise TypeError("dateOfBirth doit être un datetime.date")
+        if photo is not None and len(photo) > 4 * 1024 * 1024:
+            raise ValueError("Photo > 4 MiB")
+        
+        detected = detect_mime_from_bytes(photo)      # ex. "image/jpeg"
+        photo_mime = normalize_mime(detected or "image/jpeg")
+
+        # 2) chiffrement des champs
+        fn_enc   = encrypt_str(firstname)
+        ln_enc   = encrypt_str(lastname)
+        em_enc   = encrypt_str(emailAddress)  # bytes
+        dob_enc  = encrypt_date_like(dateOfBirth)
+        gt_enc   = encrypt_str(genotype)
+        ci_enc   = encrypt_str(city)
+
+        rowData = {
+            "firstname": [fn_enc],
+            "lastname": [ln_enc],
+            "emailAddress": [em_enc],
+            "dateOfBirth": [dob_enc],
+            "genotype" : [gt_enc],
+            "photo": [photo],
+            "photo_mime": [photo_mime], 
+            "city": [ci_enc]
+        }
+
+        df = pd.DataFrame.from_dict(rowData)
+        
+        _insert_data(df, "T_ASPeople", if_exists="append")
+    except Exception:
+        logger.error("Insert failed in T_ASPeople")
+        raise
+
+
+def fetch_photo(person_id: int):
+    rows = _run_query(
+        text("SELECT photo, photo_mime FROM T_ASPeople WHERE id=:id"),
+        return_result=True,
+        paramsSQL={"id": person_id},
+    )
+    if not rows:
+        return None, None
+    photo, mime = rows[0]
+    return photo, mime or "image/jpeg"
+
+
+def dropTable():
+    sql = "DROP TABLE T_ASPeople"
+    _run_query(sql)
+   
+CANONICAL_MIME = {
+    "JPEG": "image/jpeg",
+    "PNG":  "image/png",
+    "WEBP": "image/webp",
+}
+
+ALIASES = {
+    "image/jpg": "image/jpeg",
+    "image/pjpeg": "image/jpeg",
+}
+
+def detect_mime_from_bytes(b: bytes) -> str | None:
+    try:
+        with Image.open(io.BytesIO(b)) as im:
+            fmt = (im.format or "").upper()
+        return CANONICAL_MIME.get(fmt)
+    except Exception:
+        return None
+
+def normalize_mime(mime: str | None) -> str | None:
+    if mime is None:
+        return None
+    return ALIASES.get(mime, mime)
+
+# Déchiffrement bytes -> str (UTF-8)
+def decrypt_bytes_to_str(b: bytes | memoryview | None) -> str | None:
+    if b is None:
+        return None
+    if isinstance(b, memoryview):
+        b = b.tobytes()
+    return cipher.decrypt(b).decode("utf-8")
+
+def fetch_person_decrypted(person_id: int) -> dict | None:
+    row = _run_query(
+        text("""SELECT id, firstname, lastname, emailAddress, dateOfBirth,
+                       genotype, photo_mime, city
+                FROM T_ASPeople WHERE id=:id"""),
+        return_result=True, paramsSQL={"id": person_id}
+    )
+
+    if not row:
         return None
     
-def insertData(emailAdress,firstName,lastName,genotype,gender,age,groupAge,country,region):
-    
-    
-    sql_scriptTablePrincipal = """INSERT INTO T_AngelmanSyndromeConnexion 
-                                (gender, genotype, age, groupAge, country, region)
-                                VALUES (:gender, :genotype, :age, :groupAge, :country, :region)
-                                """
-
-
-    rowData = {
-        "gender": [gender],
-        "genotype": [genotype],
-        "age": [age],
-        "groupAge": [groupAge],
-        "country": [country],
-        "region": [region]
+    r = row[0]
+    fn  = decrypt_bytes_to_str(r[1])
+    ln  = decrypt_bytes_to_str(r[2])
+    em  = decrypt_bytes_to_str(r[3])
+    dob = decrypt_bytes_to_str(r[4])
+    gt  = decrypt_bytes_to_str(r[5])
+    ci  = decrypt_bytes_to_str(r[7])
+    return {
+        "id": r[0],
+        "firstname": fn,
+        "lastname": ln,
+        "email": em,
+        "dateOfBirth": date.fromisoformat(dob) if dob else None,
+        "genotype": gt,
+        "photo_mime": r[6],
+        "city" : ci,
     }
-
-    df = pd.DataFrame.from_dict(rowData)
-    """
-    df["groupAge"] = pd.cut(
-        pd.Series(df["age"].astype(int)),
-        bins=[-0.1, 4, 8, 12, 18, 100],
-        labels=["<4 years", "4-8 years", "8-12 years", "12-17 years", ">18 years"],
-        right = False
-    )
-    """
-    _insert_data(df, "T_AngelmanSyndromeConnexion",if_exists='append')
-    
-    #It works because the index begins to 1
-    countSQL = "SELECT count(*) from T_AngelmanSyndromeConnexion"
-    last_Records = _run_query(countSQL,return_result=True)
-    
-    encrypted_data = {
-        "id": last_Records,
-        "email": [encrypt(emailAdress)],
-        "firstname": [encrypt(firstName)],
-        "lastname": [encrypt(lastName)]
-    }
-
-    df_crypted = pd.DataFrame.from_dict(encrypted_data)
-    _insert_data(df_crypted, "T_Crypte",if_exists='append')
-
-def readTableAngelmanSyndromeConnexion():
-    sql_tableAngelman = "SELECT * FROM T_AngelmanSyndromeConnexion"
-    result = _run_query(sql_tableAngelman,return_result=True)
-
-    rows = []
-    for res in result:
-        rows.append({
-            "id": res[0],
-            "gender" : res[1], 
-            "genotype" : res[2],
-            "age": res[3],
-            "groupAge" : res[4],
-            "country" : res[5], 
-            "region" : res[6]
-        })
-    
-    df_angelman = pd.DataFrame(rows)
-    return df_angelman
-    
-def readTableCrypt():
-    sql_tableCrypt = "SELECT * FROM T_Crypte"
-    result = _run_query(sql_tableCrypt,return_result=True)
-
-    decrypted_rows = []
-    for res in result:
-        decrypted_rows.append({
-            "id": res[0],
-            "firstname": decrypt(res[1]),
-            "lastname": decrypt(res[2]),
-            "email": decrypt(res[3])
-        })
-    
-    df_decrypted = pd.DataFrame(decrypted_rows)
-    return df_decrypted
-    
-def buildDataFrame():
-    df_crypt = readTableCrypt()
-    df_angelman = readTableAngelmanSyndromeConnexion()
-    df = pd.merge(df_angelman, df_crypt, on='id', how='inner')
-    return df
-
-def get_recordsAngelmanConnexion(age_min, age_max, countries, genotypes):
-    if not countries:
-        all_countries_query = text("SELECT DISTINCT country FROM T_AngelmanSyndromeConnexion")
-        countries = _run_query(all_countries_query, return_result=True)
-        print(countries)
-
-    if not genotypes:
-        all_genotypes_query = text("SELECT DISTINCT genotype FROM T_AngelmanSyndromeConnexion")
-        genotypes = _run_query(all_genotypes_query, return_result=True)
-        print(genotypes)
-        
-    query = text(""" SELECT country, genotype, age, gender
-        FROM T_AngelmanSyndromeConnexion
-        WHERE age BETWEEN :age_min AND :age_max
-        AND country IN :countries
-        AND genotype IN :genotypes
-        """).bindparams(
-            bindparam("countries", expanding=True),
-            bindparam("genotypes", expanding=True)
-        )
-
-    params_sql = {
-        "age_min": age_min,
-        "age_max": age_max,
-        "countries": countries,
-        "genotypes": genotypes
-    }
-
-    rows = _run_query(query, return_result=True, max_retries=3, paramsSQL=params_sql)
-    # SQLAlchemy 1.4+/2.0 : utiliser ._mapping
-    payload = [dict(r._mapping) for r in rows]
-    return payload
-
-def dropTables():
-    sqlCrypte = "DROP TABLE T_Crypte"
-    _run_query(sqlCrypte)
-    sqlAngelman = "DROP TABLE T_AngelmanSyndromeConnexion"
-    _run_query(sqlAngelman)
 
 def main():
     start = time.time()
     try:
-        createTable("createAngelmanSydromeConnection.sql")
-        createTable("createTableCrypte.sql")
         
-        emailAdress = "anthonymoisan@yahoo.fr"
-        firstName = "Héloïse"
-        lastName = "Moisan"
+        df = pd.read_excel("../data/Picture/DataAngelman.xlsx")
 
-        genotype = 'Deletion'
-        gender = 'Female'
-        groupAge = '12-17 years'
-        age = 15
-        country = 'France'
-        region = 'Ile de France'
-    
-        insertData(emailAdress,firstName,lastName,genotype,gender,age,groupAge,country,region)
-        
-        emailAdress = "prestat@yahoo.com"
-        firstName = "Rodger"
-        lastName = "Feder"
+        createTable("createASPeople.sql")
 
-        genotype = 'Mutation'
-        gender = 'Male'
-        groupAge = '>18 years'
-        age = 18
-        country = 'Algeria'
-        region = ''
-        insertData(emailAdress,firstName,lastName,genotype,gender,age,groupAge,country,region)
-        
-        df = buildDataFrame()
-        logger.info(df.iloc[0])
-        logger.info(df.iloc[1])
-        
-        dropTables()
+        for row in df.itertuples(index=False):
+            emailAdress = row[3]
+            firstName = row[1]
+            lastName = row[2]
+
+            dateOfBirth = row[4]
+            genotype = row[5]
+            city = row[7]
+            try:
+                img_path = Path("../data/Picture/"+row[6])
+                with open(img_path, "rb") as f:
+                    photo_data = f.read()
+            except:
+                logger.error("No file for : %s", img_path)
+                raise
+
+            insertData(firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, city)
+
         elapsed = time.time() - start
-        logger.info(f"\n✅ Tables for Angelman Syndrome Connexion are ok with an execution time in {elapsed:.2f} secondes.")
+        logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)
-
     except Exception:
-        logger.critical("🚨 Error in the Angelman Syndrome Connexion process.")
-        title = "Error in the Tables Angelman Syndrome Connexion"
-        message = "Export Tables Angelman Syndrome KO. Check the log"
-        #send_email_alert(title, message)
+        logger.critical("🚨 Error in the AS People process.")
         sys.exit(1)
 
 if __name__ == "__main__":
