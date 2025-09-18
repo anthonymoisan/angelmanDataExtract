@@ -1,7 +1,7 @@
 import sys, os
 from tkinter import Image
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-from utilsTools import send_email_alert, _run_query,readTable,_insert_data
+from utilsTools import send_email_alert, _run_query,_insert_data
 import time
 import logging
 from logger import setup_logger
@@ -180,21 +180,31 @@ def main():
 
         createTable("createASPeople.sql")
 
-        for row in df.itertuples(index=False):
-            emailAdress = row[3]
-            firstName = row[1]
-            lastName = row[2]
+        BASE = Path(__file__).resolve().parent / ".." / "data" / "Picture"
 
-            dateOfBirth = row[4]
-            genotype = row[5]
-            city = row[7]
+        for row in df.itertuples(index=False):
+            firstName   = getattr(row, "Firstname")
+            lastName    = getattr(row, "Lastname")
+            emailAdress = getattr(row, "Email")
+            dateOfBirth = getattr(row, "DateOfBirth")
+            genotype    = getattr(row, "Genotype")
+            fileName    = getattr(row, "File")
+            city        = getattr(row, "City")
+            
+            img_path = BASE / str(fileName)
+            photo_data = None
             try:
-                img_path = Path("../data/Picture/"+row[6])
-                with open(img_path, "rb") as f:
-                    photo_data = f.read()
-            except:
-                logger.error("No file for : %s", img_path)
-                raise
+                if img_path.is_file():
+                    size = img_path.stat().st_size
+                    if size <= 4 * 1024 * 1024:
+                        with img_path.open("rb") as f:
+                            photo_data = f.read()
+                    else:
+                        logger.error("Photo > 4MiB: %s", img_path)
+                else:
+                    logger.warning("Fichier introuvable: %s", img_path)
+            except Exception:
+                logger.exception("Erreur lecture photo: %s", img_path)
 
             insertData(firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, city)
 
