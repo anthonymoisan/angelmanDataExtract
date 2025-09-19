@@ -6,7 +6,7 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from databaseSQLAngelmanSyndromeConnection import fetch_photo,fetch_person_decrypted, insertData
+from databaseSQLAngelmanSyndromeConnection import giveId,fetch_photo,fetch_person_decrypted, insertData,DuplicateEmailError
 import json
 from datetime import datetime
 from logger import setup_logger
@@ -14,6 +14,12 @@ from flask_cors import CORS
 from utilsTools import _run_query
 import base64
 from datetime import date, datetime
+from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import RequestEntityTooLarge
+from error import (
+    AppError, MissingFieldError, BadDateFormatError, FutureDateError,
+    PhotoTooLargeError, InvalidMimeTypeError, DuplicateEmailError
+)
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -47,6 +53,26 @@ sshtunnel.TUNNEL_TIMEOUT = 10.0
 
 # Limite d'upload (4 MiB + petite marge)
 appFlaskMySQL.config["MAX_CONTENT_LENGTH"] = 4 * 1024 * 1024 + 16 * 1024
+
+@appFlaskMySQL.errorhandler(AppError)
+def handle_app_error(e: AppError):
+    resp = {"status": "error", "code": e.code, "message": str(e)}
+    if e.details: resp["details"] = e.details
+    return jsonify(resp), e.http_status
+
+@appFlaskMySQL.errorhandler(IntegrityError)
+def handle_integrity(e: IntegrityError):
+    # MySQL duplicate unique key -> 1062
+    if "1062" in str(getattr(e, "orig", e)):
+        err = DuplicateEmailError("Un enregistrement avec cet email existe déjà")
+        return handle_app_error(err)
+    # autre intégrité BDD:
+    return jsonify({"status":"error","code":"db_integrity","message":"Violation d'intégrité"}), 409
+
+@appFlaskMySQL.errorhandler(RequestEntityTooLarge)
+def handle_too_large(e: RequestEntityTooLarge):
+    # si Flask bloque avant ta logique (MAX_CONTENT_LENGTH)
+    return jsonify({"status":"error","code":"payload_too_large","message":"Fichier trop volumineux (>4 MiB)"}), 413
 
 
 def __readTable(DATABASE_URL, tableName):
@@ -520,6 +546,11 @@ def get_payload_from_request():
     Supporte multipart/form-data et JSON.
     """
     if request.content_type and request.content_type.startswith("multipart/form-data"):
+        src = request.form
+    else:
+        src = request.get_json(silent=True) or {}
+
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
         form = request.form
         firstname    = form.get("firstname")
         lastname     = form.get("lastname")
@@ -547,13 +578,18 @@ def get_payload_from_request():
         else:
             photo_bytes = None
 
-    # validations minimales
-    missing = [k for k, v in {
-        "firstname": firstname, "lastname": lastname, "emailAddress": emailAddress,
-        "dateOfBirth": dob_str, "genotype": genotype, "city": city
-    }.items() if not v]
+    # Champs requis
+    required = ["firstname","lastname","emailAddress","dateOfBirth","genotype"]
+    # Considère vide / espaces comme manquant
+    def is_missing(v): return v is None or (isinstance(v, str) and v.strip() == "")
+    missing = [k for k in required if is_missing(src.get(k))]
+
     if missing:
-        raise ValueError(f"Champs manquants: {', '.join(missing)}")
+        raise MissingFieldError(
+            f"Champs manquants: {', '.join(missing)}",
+            details={"missing": missing}
+        )
+        return {k: src[k] for k in required}
 
     dob = parse_date_any(dob_str)
     return firstname, lastname, emailAddress, dob, genotype, photo_bytes, city
@@ -572,14 +608,33 @@ def create_person():
             "id": new_id
         }), 201
 
-    except ValueError as ve:
-        return jsonify({"status": "error", "message": str(ve)}), 400
+    except AppError as e:
+        return jsonify({"status": e.http_status, "message": e.code}), e.http_status
     except Exception as e:
         # log détaillé côté serveur
         logger.error("Unhandled error:", e)
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
+@appFlaskMySQL.route("/api/v5/people/lookup", methods=['GET'])
+def get_idPerson():
+    try:
+        
+        email = request.args.get("email") or request.args.get("emailAddress")
+        if not email or not email.strip():
+            raise MissingFieldError("email (query param) manquant", {"missing": ["email"]})
 
+        person_id = giveId(email)
+        if person_id is None:
+            return jsonify({"status": "not_found"}), 404
+        else:
+            return jsonify({"status": "found", "id": person_id}), 200
+
+    except AppError as e:
+        return jsonify({"status": e.http_status, "message": e.code}), e.http_status
+    except Exception as e:
+        # log détaillé côté serveur
+        logger.error("Unhandled error:", e)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
 

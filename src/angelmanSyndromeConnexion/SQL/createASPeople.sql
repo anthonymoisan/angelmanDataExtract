@@ -7,7 +7,11 @@ CREATE TABLE IF NOT EXISTS T_ASPeople (
   emailAddress     VARBINARY(1024) NOT NULL,
   dateOfBirth      VARBINARY(256)  NOT NULL,
   genotype         VARBINARY(1024) NOT NULL,
-  city             VARBINARY(1024) NOT NULL,
+  city             VARBINARY(1024) NULL,
+
+  -- Unicité déterministe (email normalisé: strip+lower)
+  email_sha        BINARY(32)      NOT NULL,
+  CONSTRAINT uq_aspeople_emailsha UNIQUE (email_sha),
 
   -- Photo et méta non chiffrées
   photo            MEDIUMBLOB NULL,
