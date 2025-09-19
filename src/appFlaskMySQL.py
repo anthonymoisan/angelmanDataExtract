@@ -212,7 +212,7 @@ def home():
     <ul>
     <li>API in order for reading data from the first picture : <a href="./api/v5/people/1/photo">./api/v5/people/1/photo</a></li>
     <li>API in order for reading data from the first info : <a href="./api/v5/people/1/info">./api/v5/people/1/info</a></li>
-    <li>API in order for posting data in AS People : <a href="./api/v5/people/">./api/v5/people/</a></li>
+    <li>API in order for reading a record from emailAddress : <a href="./api/v5/people/lookup?emailAddress=ben@example.com">./api/v5/api/v5/people/lookup?emailAddress=ben@example.com</a></li>
     </ul>
     
     API Health Data Hub
