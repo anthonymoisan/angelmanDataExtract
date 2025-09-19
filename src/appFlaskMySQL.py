@@ -6,12 +6,14 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from databaseSQLAngelmanSyndromeConnection import fetch_photo,fetch_person_decrypted
+from databaseSQLAngelmanSyndromeConnection import fetch_photo,fetch_person_decrypted, insertData
 import json
 from datetime import datetime
 from logger import setup_logger
 from flask_cors import CORS
-
+from utilsTools import _run_query
+import base64
+from datetime import date, datetime
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -41,6 +43,10 @@ SSH_USERNAME = config['SSH']['SSH_USERNAME']
 SSH_PASSWORD = config['SSH']['SSH_PASSWORD']
 sshtunnel.SSH_TIMEOUT = 10.0
 sshtunnel.TUNNEL_TIMEOUT = 10.0
+
+
+# Limite d'upload (4 MiB + petite marge)
+appFlaskMySQL.config["MAX_CONTENT_LENGTH"] = 4 * 1024 * 1024 + 16 * 1024
 
 
 def __readTable(DATABASE_URL, tableName):
@@ -180,6 +186,7 @@ def home():
     <ul>
     <li>API in order for reading data from the first picture : <a href="./api/v5/people/1/photo">./api/v5/people/1/photo</a></li>
     <li>API in order for reading data from the first info : <a href="./api/v5/people/1/info">./api/v5/people/1/info</a></li>
+    <li>API in order for posting data in AS People : <a href="./api/v5/people/">./api/v5/people/</a></li>
     </ul>
     
     API Health Data Hub
@@ -482,6 +489,97 @@ def person_photo(person_id):
 def person_info(person_id):
     result = fetch_person_decrypted(person_id)
     return jsonify(result)
+
+# --- utilitaires ---
+def parse_date_any(s: str) -> date:
+    """
+    Accepte 'YYYY-MM-DD', 'YYYY-MM-DDTHH:MM:SS', 'DD/MM/YYYY' ou 'MM/DD/YYYY'.
+    Retourne datetime.date.
+    """
+    s = (s or "").strip()
+    # ISO date ou datetime ISO
+    try:
+        return date.fromisoformat(s.split("T")[0].split(" ")[0])
+    except Exception:
+        pass
+    # DD/MM/YYYY
+    try:
+        return datetime.strptime(s, "%d/%m/%Y").date()
+    except Exception:
+        pass
+    # MM/DD/YYYY
+    try:
+        return datetime.strptime(s, "%m/%d/%Y").date()
+    except Exception:
+        pass
+    raise ValueError("dateOfBirth invalide. Formats acceptés: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS, DD/MM/YYYY, MM/DD/YYYY")
+
+def get_payload_from_request():
+    """
+    Retourne (firstname, lastname, emailAddress, dateOfBirth(date), genotype, photo_bytes, city).
+    Supporte multipart/form-data et JSON.
+    """
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
+        form = request.form
+        firstname    = form.get("firstname")
+        lastname     = form.get("lastname")
+        emailAddress = form.get("emailAddress")
+        dob_str      = form.get("dateOfBirth")
+        genotype     = form.get("genotype")
+        city         = form.get("city")
+        file = request.files.get("photo")
+        photo_bytes = file.read() if file else None
+    else:
+        data = request.get_json(silent=True) or {}
+        firstname    = data.get("firstname")
+        lastname     = data.get("lastname")
+        emailAddress = data.get("emailAddress")
+        dob_str      = data.get("dateOfBirth")
+        genotype     = data.get("genotype")
+        city         = data.get("city")
+        # photo en base64 optionnelle
+        photo_b64    = data.get("photo_base64")
+        if photo_b64:
+            # accepte "data:image/jpeg;base64,...." ou juste la base64
+            if "," in photo_b64:
+                photo_b64 = photo_b64.split(",", 1)[1]
+            photo_bytes = base64.b64decode(photo_b64)
+        else:
+            photo_bytes = None
+
+    # validations minimales
+    missing = [k for k, v in {
+        "firstname": firstname, "lastname": lastname, "emailAddress": emailAddress,
+        "dateOfBirth": dob_str, "genotype": genotype, "city": city
+    }.items() if not v]
+    if missing:
+        raise ValueError(f"Champs manquants: {', '.join(missing)}")
+
+    dob = parse_date_any(dob_str)
+    return firstname, lastname, emailAddress, dob, genotype, photo_bytes, city
+
+
+@appFlaskMySQL.route("/api/v5/people", methods=['POST'])
+def create_person():
+    try:
+        fn, ln, email, dob, gt, photo_bytes, city = get_payload_from_request()
+
+        # Appel de TA fonction (Option B : elle chiffre et insère)
+        new_id = insertData(fn, ln, email, dob, gt, photo_bytes, city)
+
+        return jsonify({
+            "status": "created",
+            "id": new_id
+        }), 201
+
+    except ValueError as ve:
+        return jsonify({"status": "error", "message": str(ve)}), 400
+    except Exception as e:
+        # log détaillé côté serveur
+        logger.error("Unhandled error:", e)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
+
+
 
 
 

@@ -90,6 +90,12 @@ def insertData(firstname, lastname, emailAddress, dateOfBirth, genotype, photo, 
         df = pd.DataFrame.from_dict(rowData)
         
         _insert_data(df, "T_ASPeople", if_exists="append")
+
+        lastRowId = _run_query(
+        text("SELECT COUNT(*) FROM T_ASPeople"),
+        return_result=True)
+
+        return lastRowId[0][0]
     except Exception:
         logger.error("Insert failed in T_ASPeople")
         raise
