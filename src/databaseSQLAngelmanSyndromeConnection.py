@@ -232,6 +232,26 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
         "city" : ci,
     }
 
+def getRecordsMapRepresentation():
+    data = []
+    #Only need City, Id, Firstname, LastName
+    rows = _run_query(
+        text("SELECT id FROM T_ASPeople ORDER BY id"),
+        return_result=True)
+
+    for (pid,) in rows:               # chaque row est un tuple (id,)
+        person = fetch_person_decrypted(pid)   # ta fonction existante
+        if not person:
+            continue
+        data.append({
+            "id": pid,
+            "firstname": person["firstname"],
+            "lastname": person["lastname"],
+            "city": person["city"],
+        })
+    df = pd.DataFrame(data, columns=["id","firstname","lastname","city"])
+    return df
+    
 def giveId(email_real):
     sha = email_sha256(email_real)
     row = _run_query(
@@ -282,7 +302,9 @@ def main():
     start = time.time()
     try:
         #insertDataFrame()
-        findId("gustave.faivre@yahoo.fr")
+        #findId("gustave.faivre@yahoo.fr")
+        df = getRecordsMapRepresentation()
+        logger.info(df.head())
         elapsed = time.time() - start
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)

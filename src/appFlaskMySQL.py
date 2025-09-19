@@ -6,7 +6,7 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from databaseSQLAngelmanSyndromeConnection import giveId,fetch_photo,fetch_person_decrypted, insertData,DuplicateEmailError
+from databaseSQLAngelmanSyndromeConnection import getRecordsMapRepresentation,giveId,fetch_photo,fetch_person_decrypted, insertData,DuplicateEmailError
 import json
 from datetime import datetime
 from logger import setup_logger
@@ -213,6 +213,7 @@ def home():
     <li>API in order for reading data from the first picture : <a href="./api/v5/people/1/photo">./api/v5/people/1/photo</a></li>
     <li>API in order for reading data from the first info : <a href="./api/v5/people/1/info">./api/v5/people/1/info</a></li>
     <li>API in order for reading a record from emailAddress : <a href="./api/v5/people/lookup?emailAddress=ben@example.com">./api/v5/api/v5/people/lookup?emailAddress=ben@example.com</a></li>
+    <li>API in order for reading records for MapRepresentation : <a href="./api/v5/peopleMapRepresentation">./api/v5/peopleMapRepresentation</a></li>
     </ul>
     
     API Health Data Hub
@@ -515,6 +516,11 @@ def person_photo(person_id):
 def person_info(person_id):
     result = fetch_person_decrypted(person_id)
     return jsonify(result)
+
+@appFlaskMySQL.route('/api/v5/peopleMapRepresentation', methods=['GET'])
+def peopleMapRepresentation():
+    df = getRecordsMapRepresentation()
+    return jsonify(df.to_dict(orient="records"))
 
 # --- utilitaires ---
 def parse_date_any(s: str) -> date:
