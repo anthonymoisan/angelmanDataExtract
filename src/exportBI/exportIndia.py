@@ -38,6 +38,17 @@ def _transformersMapIndia(df):
     df['age'] = df['dateOfBirth'].apply(
         lambda dob: today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
     )
+
+    df["genotype"] = df["genotype"].replace("deletion positive","Deletion")
+    df["genotype"] = df["genotype"].replace("Deletion positive","Deletion")
+    df["genotype"] = df["genotype"].replace("Deletion Positive","Deletion")
+    df["genotype"] = df["genotype"].replace("Uniparental Disonomy","Uniparental disomy")
+    df["genotype"] = (
+    df["genotype"].astype("string").str.strip()
+      .replace(["", "None", "none", "nan", "NaN"], pd.NA)
+      .fillna("I don't know")
+)
+
     df['age'] = pd.to_numeric(df['age'], errors='coerce')
     df['age'] = df['age'].fillna(0)
     df.drop(columns=["dateOfBirth" ],inplace=True)
@@ -50,6 +61,25 @@ def _transformersMapIndia(df):
     )  
     return df
 
+def _transformersMapIndia_IN(df):
+    df["genotype"] = df["genotype"].replace("Deletion","विलोपन")
+    df["genotype"] = df["genotype"].replace("Mutation","जीन उत्परिवर्तन")
+    df["genotype"] = df["genotype"].replace("Mutation","जीन उत्परिवर्तन")
+    df["genotype"] = df["genotype"].replace("Uniparental disomy","यूनिपेरेंटल डिसॉमी")
+    df["genotype"] = df["genotype"].replace("Imprinting centre defect","इम्प्रिंटिंग केंद्र दोष")
+    df["genotype"] = df["genotype"].replace("I don't know","मालूम नहीं")
+    df["genotype"] = df["genotype"].replace("Clinical","नैदानिक")
+    
+    df["gender"] = df["gender"].replace("M","पुरुष")
+    df["gender"] = df["gender"].replace("F","महिला")
+
+    df["groupAge"] = df["groupAge"].replace("<4 years","4 वर्ष से कम")
+    df["groupAge"] = df["groupAge"].replace("4-8 years","4–8 वर्ष")
+    df["groupAge"] = df["groupAge"].replace("8-12 years","8–12 वर्ष")
+    df["groupAge"] = df["groupAge"].replace("12-17 years","12–17 वर्ष")
+    df["groupAge"] = df["groupAge"].replace(">18 years","> 18 वर्ष")
+    return df
+
 class T_MapIndia_EN(T_ReaderAbstract):
 
     def readData(self):
@@ -60,20 +90,16 @@ class T_MapIndia_EN(T_ReaderAbstract):
 class T_MapIndia_IN(T_ReaderAbstract):
 
     def readData(self):
-        '''
-        self.df = _buildDataframeMapLatam()
-        self.df = _transformersMapLatam(self.df)
-        self.df = _transformersMapLatam_EN(self.df)
+        self.df = _buildDataframeMapIndia()
+        self.df = _transformersMapIndia(self.df)
+        self.df = _transformersMapIndia_IN(self.df)
         return self.df
-        '''
-
+        
 if __name__ == "__main__":
   
     reader = T_MapIndia_EN()
     df = reader.readData()
+    reader = T_MapIndia_IN()
+    df = reader.readData()
     print(df.head())
     print(df.shape)
-    #print(df.dtypes)
-
-    #resultat = df.groupby('Genotipo').size().reset_index(name='Nombre')
-    #print(resultat)

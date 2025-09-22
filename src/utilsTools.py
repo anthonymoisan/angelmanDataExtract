@@ -257,6 +257,7 @@ def export_Table(table_name, sql_script, reader):
             logger.info("Execution time for %s: %.2fs", table_name, time.time() - start)
     except Exception as e:
         logger.error("An error occurred in export_Table for %s: %s", table_name, e)
+        raise
 
 def _debug_database_name(DATABASE_URL):
     try:

@@ -135,6 +135,10 @@ def export_mapIndia_English():
     reader = expIndia.T_MapIndia_EN()
     export_Table("T_MapIndia_English", "India/createMapIndia_English.sql", reader)
 
+def export_mapIndia_Hindi():
+    reader = expIndia.T_MapIndia_IN()
+    export_Table("T_MapIndia_Hindi", "India/createMapIndia_Hindi.sql", reader)
+
 def export_mapGlobal():
     reader = expGlobal.T_MapGlobal()
     export_Table("T_MapGlobal", "Global/createMapGlobal.sql", reader)
@@ -176,6 +180,7 @@ def main():
         safe_export(export_mapBrazil_English, "Map Brazil EN")
         safe_export(export_mapBrazil_Portuguese, "Map Brazil PT")
         safe_export(export_mapIndia_English, "Map India EN")
+        safe_export(export_mapIndia_Hindi, "Map India HI")
         safe_export(export_mapGlobal, "Map Global")
         elapsed = time.time() - start
         logger.info(f"\n✅ All exports are ok with an execution time in {elapsed:.2f} secondes.")
