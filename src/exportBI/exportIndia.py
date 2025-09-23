@@ -64,7 +64,6 @@ def _transformersMapIndia(df):
 def _transformersMapIndia_IN(df):
     df["genotype"] = df["genotype"].replace("Deletion","विलोपन")
     df["genotype"] = df["genotype"].replace("Mutation","जीन उत्परिवर्तन")
-    df["genotype"] = df["genotype"].replace("Mutation","जीन उत्परिवर्तन")
     df["genotype"] = df["genotype"].replace("UPD","यूनिपेरेंटल डिसॉमी")
     df["genotype"] = df["genotype"].replace("ICD","इम्प्रिंटिंग केंद्र दोष")
     df["genotype"] = df["genotype"].replace("I don't know","मालूम नहीं")

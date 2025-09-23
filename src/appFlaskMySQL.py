@@ -204,6 +204,11 @@ def home():
     <li> API in order for reading data from MapIndia_Hindi : <a href="/api/v4/resources/India/MapIndia_Hindi">./api/v4/resources/India/MapIndia_Hindi</a>
     </ul>
     
+    API Indonesia
+    <ul>
+    <li> API in order for reading data from MapIndonesia_English : <a href="/api/v4/resources/Indonesia/MapIndonesia_English">./api/v4/resources/India/MapIndonesia_English</a>
+    <li> API in order for reading data from MapIndonesia_Ind : <a href="/api/v4/resources/Indonesia/MapIndonesia_Ind">./api/v4/resources/Indonesia/MapIndonesia_Ind</a>
+    </ul>
 
     API MAP Global
     API in order for reading data from Map Global : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
@@ -448,6 +453,20 @@ def api_MapIndia_Hindi():
     API to expose the results from Map India in Hindi in English with the specific table from the database
     """
     return __api_Table('T_MapIndia_Hindi')
+
+@appFlaskMySQL.route('/api/v4/resources/Indonesia/MapIndonesia_English', methods=['GET'])
+def api_MapIndonesia_English():
+    """
+    API to expose the results from Map Indonesia in English with the specific table from the database
+    """
+    return __api_Table('T_MapIndonesia_English')
+
+@appFlaskMySQL.route('/api/v4/resources/Indonesia/MapIndonesia_Ind', methods=['GET'])
+def api_MapIndonesia_Ind():
+    """
+    API to expose the results from Map Indonesia in Ind in English with the specific table from the database
+    """
+    return __api_Table('T_MapIndonesia_Ind')
 
 def safe_get(data, key, default=""):
     """Retourne la valeur du champ ou une valeur par défaut."""

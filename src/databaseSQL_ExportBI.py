@@ -13,6 +13,7 @@ import exportBI.exportItaly as expItaly
 import exportBI.exportGermany as expGermany
 import exportBI.exportBrazil as expBrazil
 import exportBI.exportIndia as expIndia
+import exportBI.exportIndonesia as expIndonesia
 
 from utilsTools import export_Table, send_email_alert
 import time
@@ -139,6 +140,14 @@ def export_mapIndia_Hindi():
     reader = expIndia.T_MapIndia_IN()
     export_Table("T_MapIndia_Hindi", "India/createMapIndia_Hindi.sql", reader)
 
+def export_mapIndonesia_English():
+    reader = expIndonesia.T_MapIndonesia_EN()
+    export_Table("T_MapIndonesia_English", "Indonesia/createMapIndonesia_English.sql", reader)
+
+def export_mapIndonesia_Ind():
+    reader = expIndonesia.T_MapIndonesia_IN()
+    export_Table("T_MapIndonesia_Ind", "Indonesia/createMapIndonesia_Ind.sql", reader)
+
 def export_mapGlobal():
     reader = expGlobal.T_MapGlobal()
     export_Table("T_MapGlobal", "Global/createMapGlobal.sql", reader)
@@ -150,7 +159,6 @@ def safe_export(export_func, label):
         logger.info(f"✅ Export OK : {label}\n")
     except Exception as e:
         logger.error(f"❌ Échec KO {label} : {e}")
-        raise
 
 def main():
     start = time.time()
@@ -181,6 +189,8 @@ def main():
         safe_export(export_mapBrazil_Portuguese, "Map Brazil PT")
         safe_export(export_mapIndia_English, "Map India EN")
         safe_export(export_mapIndia_Hindi, "Map India HI")
+        safe_export(export_mapIndonesia_English, "Map Indonesia EN")
+        safe_export(export_mapIndonesia_Ind, "Map Indonesia IN")
         safe_export(export_mapGlobal, "Map Global")
         elapsed = time.time() - start
         logger.info(f"\n✅ All exports are ok with an execution time in {elapsed:.2f} secondes.")
