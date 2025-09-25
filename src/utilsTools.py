@@ -80,7 +80,7 @@ def send_email_alert(title, message):
 def _execute_sql(DATABASE_URL, query, return_result=False, params = None):
     engine = create_engine(DATABASE_URL)
     try:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             logger.info("Connected to database.")
             stmt = text(query) if isinstance(query, str) else query
             result = conn.execute(stmt, params or {})

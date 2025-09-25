@@ -115,7 +115,7 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
         "city" : ci,
     }
 
-def getRecordsMapRepresentation():
+def getRecordsPeople():
     data = []
     #Only need City, Id, Firstname, LastName
     rows = _run_query(

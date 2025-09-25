@@ -6,7 +6,8 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from angelmanSyndromeConnexion.peopleRepresentation import getRecordsMapRepresentation,giveId,fetch_photo,fetch_person_decrypted, insertData
+from angelmanSyndromeConnexion.peopleRepresentation import getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData
+from angelmanSyndromeConnexion.pointRemarquable import getRecordsPointsRemarquables,insertPointRemarquable
 import json
 from datetime import datetime
 from logger import setup_logger
@@ -16,7 +17,7 @@ from datetime import date, datetime
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import RequestEntityTooLarge
 from angelmanSyndromeConnexion.error import (
-    AppError, MissingFieldError, DuplicateEmailError
+    AppError, MissingFieldError, DuplicateEmailError, ValidationError
 )
 
 # Set up logger
@@ -217,7 +218,8 @@ def home():
     <li>API in order for reading data from the first picture : <a href="./api/v5/people/1/photo">./api/v5/people/1/photo</a></li>
     <li>API in order for reading data from the first info : <a href="./api/v5/people/1/info">./api/v5/people/1/info</a></li>
     <li>API in order for reading a record from emailAddress : <a href="./api/v5/people/lookup?emailAddress=mathys.rob@gmail.com">./api/v5/api/v5/people/lookup?emailAddress=mathys.rob@gmail.com</a></li>
-    <li>API in order for reading records for MapRepresentation : <a href="./api/v5/peopleMapRepresentation">./api/v5/peopleMapRepresentation</a></li>
+    <li>API in order for reading records for People : <a href="./api/v5/peopleMapRepresentation">./api/v5/peopleMapRepresentation</a></li>
+    <li>API in order for reading records for PointRemarquable : <a href="./api/v5/pointRemarquableRepresentation">./api/v5/pointRemarquableRepresentation</a></li>
     </ul>
     
     API Health Data Hub
@@ -544,7 +546,13 @@ def person_info(person_id):
 
 @appFlaskMySQL.route('/api/v5/peopleMapRepresentation', methods=['GET'])
 def peopleMapRepresentation():
-    df = getRecordsMapRepresentation()
+    df = getRecordsPeople()
+    return jsonify(df.to_dict(orient="records"))
+
+
+@appFlaskMySQL.route('/api/v5/pointRemarquableRepresentation', methods=['GET'])
+def pointRemarquableRepresentation():
+    df = getRecordsPointsRemarquables()
     return jsonify(df.to_dict(orient="records"))
 
 # --- utilitaires ---
@@ -571,15 +579,19 @@ def parse_date_any(s: str) -> date:
         pass
     raise ValueError("dateOfBirth invalide. Formats acceptés: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS, DD/MM/YYYY, MM/DD/YYYY")
 
-def get_payload_from_request():
+def _get_src():
+    # unifie la source ; multipart => request.form ; sinon JSON
+    ctype = (request.content_type or "")
+    if ctype.startswith("multipart/form-data"):
+        return request.form
+    return request.get_json(silent=True) or {}
+
+def get_payloadPeople_from_request():
     """
     Retourne (firstname, lastname, emailAddress, dateOfBirth(date), genotype, photo_bytes, city).
     Supporte multipart/form-data et JSON.
     """
-    if request.content_type and request.content_type.startswith("multipart/form-data"):
-        src = request.form
-    else:
-        src = request.get_json(silent=True) or {}
+    src = _get_src()
 
     if request.content_type and request.content_type.startswith("multipart/form-data"):
         form = request.form
@@ -629,7 +641,7 @@ def get_payload_from_request():
 @appFlaskMySQL.route("/api/v5/people", methods=['POST'])
 def create_person():
     try:
-        fn, ln, email, dob, gt, photo_bytes, city = get_payload_from_request()
+        fn, ln, email, dob, gt, photo_bytes, city = get_payloadPeople_from_request()
 
         new_id = insertData(fn, ln, email, dob, gt, photo_bytes, city)
 
@@ -644,6 +656,72 @@ def create_person():
         # log détaillé côté serveur
         logger.error("Unhandled error:", e)
         return jsonify({"status": "error", "message": "Internal server error"}), 500
+
+def get_payloadPointRemarquable_from_request():
+    """
+    Retourne (longitude, latitude, short_desc, long_desc).
+    Supporte multipart/form-data et JSON.
+    """
+    src = _get_src()
+
+    # autorise quelques alias
+    raw_lon = src.get("longitude") or src.get("lon")
+    raw_lat = src.get("latitude")  or src.get("lat")
+    short_desc = src.get("short_desc") or src.get("short") or src.get("title")
+    long_desc  = src.get("long_desc")  or src.get("description") or ""
+
+    # présence minimale
+    missing = []
+    def _miss(v): return v is None or (isinstance(v, str) and v.strip() == "")
+    if _miss(raw_lon):     missing.append("longitude")
+    if _miss(raw_lat):     missing.append("latitude")
+    if _miss(short_desc):  missing.append("short_desc")
+    if missing:
+        raise MissingFieldError(
+            f"Champs manquants: {', '.join(missing)}",
+            details={"missing": missing}
+        )
+
+    # normalisation / conversion
+    try:
+        # gère "," décimale (FR)
+        lon = float(str(raw_lon).replace(",", "."))
+        lat = float(str(raw_lat).replace(",", "."))
+    except ValueError:
+        raise ValidationError("longitude/latitude doivent être numériques")
+
+    # bornes WGS84
+    if not (-180.0 <= lon <= 180.0):
+        raise ValidationError("longitude hors plage [-180, 180]")
+    if not (-90.0 <= lat <= 90.0):
+        raise ValidationError("latitude hors plage [-90, 90]")
+
+    sd = str(short_desc).strip()
+    ld = str(long_desc).strip()
+
+    return lon, lat, sd, ld
+
+
+
+@appFlaskMySQL.route("/api/v5/pointRemarquable", methods=['POST'])
+def create_pointRemarquable():
+    try:
+        longitude, latitude, short_desc, long_desc = get_payloadPointRemarquable_from_request()
+
+        new_id = insertPointRemarquable(longitude, latitude, short_desc, long_desc)
+
+        resp = jsonify({"status": "created", "id": new_id})
+        resp.status_code = 201
+        resp.headers["Location"] = f"/api/v5/pointRemarquable/{new_id}"
+        return resp
+
+    except AppError as e:
+        return jsonify({"status": e.http_status, "message": e.code}), e.http_status
+    except Exception as e:
+        # log détaillé côté serveur
+        logger.error("Unhandled error:", e)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
+
 
 @appFlaskMySQL.route("/api/v5/people/lookup", methods=['GET'])
 def get_idPerson():

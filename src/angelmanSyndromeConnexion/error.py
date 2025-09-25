@@ -31,3 +31,7 @@ class InvalidMimeTypeError(AppError):
 class DuplicateEmailError(AppError):
     code = "duplicate_email"
     http_status = 409  # Conflict
+
+class ValidationError(AppError):
+    code = "validation_error"
+    http_status = 400

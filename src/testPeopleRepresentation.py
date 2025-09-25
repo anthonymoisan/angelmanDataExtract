@@ -4,7 +4,7 @@ from pathlib import Path
 import sys,os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from logger import setup_logger
-from angelmanSyndromeConnexion.peopleRepresentation import insertData, giveId, getRecordsMapRepresentation
+from angelmanSyndromeConnexion.peopleRepresentation import insertData, giveId, getRecordsPeople
 import time
 from angelmanSyndromeConnexion import error
 
@@ -58,7 +58,7 @@ def main():
         
         _insertDataFrame()
         findId("gustave.faivre@yahoo.fr")
-        df = getRecordsMapRepresentation()
+        df = getRecordsPeople()
         logger.info(df.head())
         
         elapsed = time.time() - start
