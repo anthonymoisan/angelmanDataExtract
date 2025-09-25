@@ -1,24 +1,22 @@
 from flask import Flask, jsonify,request, Response, abort
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 import os
 from configparser import ConfigParser
 import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from databaseSQLAngelmanSyndromeConnection import getRecordsMapRepresentation,giveId,fetch_photo,fetch_person_decrypted, insertData,DuplicateEmailError
+from angelmanSyndromeConnexion.peopleRepresentation import getRecordsMapRepresentation,giveId,fetch_photo,fetch_person_decrypted, insertData
 import json
 from datetime import datetime
 from logger import setup_logger
 from flask_cors import CORS
-from utilsTools import _run_query
 import base64
 from datetime import date, datetime
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import RequestEntityTooLarge
-from error import (
-    AppError, MissingFieldError, BadDateFormatError, FutureDateError,
-    PhotoTooLargeError, InvalidMimeTypeError, DuplicateEmailError
+from angelmanSyndromeConnexion.error import (
+    AppError, MissingFieldError, DuplicateEmailError
 )
 
 # Set up logger
@@ -218,7 +216,7 @@ def home():
     <ul>
     <li>API in order for reading data from the first picture : <a href="./api/v5/people/1/photo">./api/v5/people/1/photo</a></li>
     <li>API in order for reading data from the first info : <a href="./api/v5/people/1/info">./api/v5/people/1/info</a></li>
-    <li>API in order for reading a record from emailAddress : <a href="./api/v5/people/lookup?emailAddress=ben@example.com">./api/v5/api/v5/people/lookup?emailAddress=ben@example.com</a></li>
+    <li>API in order for reading a record from emailAddress : <a href="./api/v5/people/lookup?emailAddress=mathys.rob@gmail.com">./api/v5/api/v5/people/lookup?emailAddress=mathys.rob@gmail.com</a></li>
     <li>API in order for reading records for MapRepresentation : <a href="./api/v5/peopleMapRepresentation">./api/v5/peopleMapRepresentation</a></li>
     </ul>
     
@@ -633,7 +631,6 @@ def create_person():
     try:
         fn, ln, email, dob, gt, photo_bytes, city = get_payload_from_request()
 
-        # Appel de TA fonction (Option B : elle chiffre et insère)
         new_id = insertData(fn, ln, email, dob, gt, photo_bytes, city)
 
         return jsonify({
