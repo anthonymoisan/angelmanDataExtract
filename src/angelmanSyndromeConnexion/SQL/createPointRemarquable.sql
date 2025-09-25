@@ -4,9 +4,9 @@ CREATE TABLE IF NOT EXISTS T_PointRemarquable (
   latitude      DECIMAL(8,6)  NOT NULL,  -- [-90, 90]
   short_desc    VARCHAR(160)  NOT NULL,
   long_desc     TEXT          NOT NULL,
-  -- Colonne spatiale générée (SRID 4326 = WGS84)
-  geom POINT SRID 4326
-       GENERATED ALWAYS AS (ST_SRID(POINT(longitude, latitude), 4326)) STORED,
+
+  -- Colonne spatiale classique (SRID 4326 = WGS84)
+  geom POINT SRID 4326 NOT NULL,
 
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
