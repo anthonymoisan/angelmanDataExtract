@@ -1,4 +1,5 @@
 import hashlib
+from typing import Union
 from cryptography.fernet import Fernet
 import sys, os
 from configparser import ConfigParser
@@ -36,6 +37,24 @@ def email_sha256(e: str) -> bytes:
 
 def encrypt_str(s: str) -> bytes:
     return cipher.encrypt(s.encode("utf-8"))  # -> bytes pour VARBINARY
+
+def encrypt_number(n) -> bytes | None:
+    if n is None:
+        return None
+    # on sérialise en str pour rester cohérent
+    return cipher.encrypt(str(n).encode("utf-8"))
+
+def decrypt_number(b: bytes | memoryview | None) -> float | None:
+    if b is None:
+        return None
+    if isinstance(b, memoryview):
+        b = b.tobytes()
+    try:
+        s = cipher.decrypt(b).decode("utf-8")
+        return float(s)
+    except Exception:
+        return None
+
 
 def encrypt_date_like(d) -> bytes:
     # accepte date / datetime / pandas.Timestamp / str
@@ -117,13 +136,22 @@ def normalize_mime(mime: str | None) -> str | None:
         return None
     return ALIASES.get(mime, mime)
 
-# Déchiffrement bytes -> str (UTF-8)
-def decrypt_bytes_to_str(b: bytes | memoryview | None) -> str | None:
+class DecryptError(Exception):
+    pass
+
+def decrypt_bytes_to_str_strict(b: Union[bytes, memoryview, str]) -> str:
     if b is None:
-        return None
+        raise DecryptError("Valeur None non déchiffrable")
+    if isinstance(b, str):
+        return b
     if isinstance(b, memoryview):
         b = b.tobytes()
-    return cipher.decrypt(b).decode("utf-8")
+    if not isinstance(b, (bytes, bytearray)) or len(b) == 0:
+        raise DecryptError("Type/longueur invalide pour déchiffrement")
+    try:
+        return cipher.decrypt(bytes(b)).decode("utf-8")
+    except Exception as e:
+        raise DecryptError(f"Échec de déchiffrement: {e}") from e
 
 def dropTable(table_name):
     safe_table = table_name.replace("`", "``")

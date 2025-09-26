@@ -4,7 +4,7 @@ from pathlib import Path
 import sys,os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from logger import setup_logger
-from angelmanSyndromeConnexion.peopleRepresentation import insertData, giveId, getRecordsPeople
+from angelmanSyndromeConnexion.peopleRepresentation import insertData, giveId, getRecordsPeople,fetch_person_decrypted
 import time
 from angelmanSyndromeConnexion import error
 
@@ -57,10 +57,11 @@ def main():
     try:
         
         _insertDataFrame()
-        findId("gustave.faivre@yahoo.fr")
-        df = getRecordsPeople()
-        logger.info(df.head())
-        
+        #findId("gustave.faivre@yahoo.fr")
+        #df = getRecordsPeople()
+        #logger.info(df.head())
+        dictRes = fetch_person_decrypted(2)
+        logger.info(dictRes)
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

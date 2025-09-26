@@ -7,7 +7,10 @@ CREATE TABLE IF NOT EXISTS T_ASPeople (
   emailAddress     VARBINARY(1024) NOT NULL,
   dateOfBirth      VARBINARY(256)  NOT NULL,
   genotype         VARBINARY(1024) NOT NULL,
-  city             VARBINARY(1024) NULL,
+  city             VARBINARY(1024) NOT NULL,
+  age              VARBINARY(256)  NOT NULL,
+  longitude        VARBINARY(256)  NOT NULL,
+  latitude         VARBINARY(256)  NOT NULL,
 
   -- Unicité déterministe (email normalisé: strip+lower)
   email_sha        BINARY(32)      NOT NULL,
