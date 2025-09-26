@@ -11,7 +11,7 @@ from angelmanSyndromeConnexion import error
 # Set up logger
 logger = setup_logger(debug=False)
 
-def _insertDataFrame():
+def _insertDataFrame(firstRow=False):
 
     utils.dropTable("T_ASPeople")
     
@@ -21,14 +21,24 @@ def _insertDataFrame():
 
     BASE = Path(__file__).resolve().parent / ".." / "data" / "Picture"
 
+    if (firstRow):
+        loop = 1
+    else:
+        loop = 1000
+
+    countloop = 0
+
     for row in df.itertuples(index=False):
+        
         firstName   = getattr(row, "Firstname")
         lastName    = getattr(row, "Lastname")
         emailAdress = getattr(row, "Email")
         dateOfBirth = getattr(row, "DateOfBirth")
         genotype    = getattr(row, "Genotype")
         fileName    = getattr(row, "File")
-        city        = getattr(row, "City")
+        longitude   = getattr(row, "Longitude")
+        latitude    = getattr(row, "Latitude")
+
         
         img_path = BASE / str(fileName)
         photo_data = None
@@ -45,7 +55,14 @@ def _insertDataFrame():
         except Exception:
             logger.exception("Erreur lecture photo: %s", img_path)
 
-        insertData(firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, city)
+        insertData(firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude)
+
+        countloop += 1
+
+        logger.info("Deal with line %d",countloop)
+
+        if(countloop == loop):
+            break
     
 
 def findId(email):
@@ -56,12 +73,12 @@ def main():
     start = time.time()
     try:
         
-        _insertDataFrame()
+        #_insertDataFrame(firstRow=False)
         #findId("gustave.faivre@yahoo.fr")
-        #df = getRecordsPeople()
-        #logger.info(df.head())
-        dictRes = fetch_person_decrypted(2)
-        logger.info(dictRes)
+        df = getRecordsPeople()
+        logger.info(df.head())
+        #dictRes = fetch_person_decrypted(1)
+        #logger.info(dictRes)
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

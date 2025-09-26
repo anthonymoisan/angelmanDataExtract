@@ -6,27 +6,15 @@ from sqlalchemy import bindparam,text
 from datetime import date
 from datetime import datetime, timezone
 from sqlalchemy.exc import IntegrityError
-from geopy.geocoders import Nominatim
-from geopy.extra.rate_limiter import RateLimiter
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from logger import setup_logger
 from utilsTools import _run_query,_insert_data
+import requests
+from geopy.geocoders import Nominatim
 
 # Set up logger
 logger = setup_logger(debug=False)
 
-
-
-geolocator = Nominatim(user_agent="ASConnect/1.0 (contact: contact@fastfrance.org)")
-# Respecte le rate limit public (1 req/s typique)
-geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
-
-def city_to_latlon(city, country=None, lang="fr"):
-    q = f"{city}, {country}" if country else city
-    loc = geocode(q, language=lang, addressdetails=False)
-    if not loc:
-        return None
-    return float(loc.latitude), float(loc.longitude)
 
 def age_years(dob, on_date=None):
     """
@@ -44,7 +32,15 @@ def age_years(dob, on_date=None):
         years -= 1
     return years
 
-def insertData(firstname, lastname, emailAddress, dateOfBirth, genotype, photo, city):
+def getCity(longitude, latitude):
+    geolocator = Nominatim(user_agent="your_app_name")  # mettez un UA parlant
+    location = geolocator.reverse((longitude, latitude), language="fr")
+    ville = location.raw.get("address", {}).get("city") or \
+            location.raw.get("address", {}).get("town") or \
+            location.raw.get("address", {}).get("village")
+    return ville
+
+def insertData(firstname, lastname, emailAddress, dateOfBirth, genotype, photo, longitude,latitude):
     try:
             
         # 1) validations applicatives minimum
@@ -61,9 +57,11 @@ def insertData(firstname, lastname, emailAddress, dateOfBirth, genotype, photo, 
         if photo and photo_mime not in {"image/jpeg","image/jpg","image/png","image/webp"}:
             raise error.InvalidMimeTypeError(f"MIME non autorisé: {photo_mime}")
         
-        lon, lat = city_to_latlon(city.strip())
-
         age = age_years(dateOfBirth)
+
+        city = getCity(longitude,latitude)
+
+        logger.info(city)
 
         # 2) chiffrement des champs
         fn_enc   = utils.encrypt_str(firstname)
@@ -71,10 +69,10 @@ def insertData(firstname, lastname, emailAddress, dateOfBirth, genotype, photo, 
         em_enc   = utils.encrypt_str(emailAddress)  # bytes
         dob_enc  = utils.encrypt_date_like(dateOfBirth)
         gt_enc   = utils.encrypt_str(genotype)
-        ci_enc = utils.encrypt_str(city.strip()) if isinstance(city, str) and city.strip() else None
+        ci_enc = utils.encrypt_str(city.strip())
         age_enc = utils.encrypt_number(age) 
-        lon_enc = utils.encrypt_number(lon) 
-        lat_enc = utils.encrypt_number(lat)
+        lon_enc = utils.encrypt_number(longitude) 
+        lat_enc = utils.encrypt_number(latitude)
 
         # hash déterministe pour unicité
         em_sha  = utils.email_sha256(emailAddress)
@@ -148,6 +146,7 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
     long = utils.decrypt_number(r[8])
     lat = utils.decrypt_number(r[9])
     age = utils.decrypt_number(r[10])
+
     return {
         "id": r[0],
         "firstname": fn,
@@ -183,7 +182,7 @@ def getRecordsPeople():
             "longitude" : person["longitude"],
             "latitude" : person["latitude"]
         })
-    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","genotype","longitude","latitude"])
+    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","age","genotype","longitude","latitude"])
     return df
     
 def giveId(email_real):
