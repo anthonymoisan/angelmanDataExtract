@@ -1,3 +1,4 @@
+# utilsTools.py
 import os
 import time
 import smtplib
@@ -11,56 +12,39 @@ from datetime import datetime
 import logging
 from logger import setup_logger
 
-# Set up logger
+# ----- Logger -----
 logger = setup_logger(debug=True)
 
-# SSH & DB configuration
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "../angelman_viz_keys/Config2.ini")
-CONFIG_GMAIL_PATH = os.path.join(os.path.dirname(__file__), "../angelman_viz_keys/Config4.ini")
+# ----- Config paths -----
+BASE_DIR = os.path.dirname(__file__)
+CONFIG_PATH = os.path.join(BASE_DIR, "../angelman_viz_keys/Config2.ini")
+CONFIG_GMAIL_PATH = os.path.join(BASE_DIR, "../angelman_viz_keys/Config4.ini")
 
-# Détection automatique de l'environnement
+# Détection du contexte (local vs PythonAnywhere)
 LOCAL_CONNEXION = not os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower().startswith("pythonanywhere")
 
-def load_config(filepath):
+# ----- Config helpers -----
+def load_config(filepath: str) -> ConfigParser:
     config = ConfigParser()
     if config.read(filepath):
         return config
-    else:
-        raise FileNotFoundError(f"Config file not found: {filepath}")
+    raise FileNotFoundError(f"Config file not found: {filepath}")
 
 def get_db_params():
-    config = load_config(CONFIG_PATH)
+    cfg = load_config(CONFIG_PATH)
     return {
-        "ssh_host": config['SSH']['SSH_HOST'],
-        "ssh_user": config['SSH']['SSH_USERNAME'],
-        "ssh_pass": config['SSH']['SSH_PASSWORD'],
-        "db_host": config['MySQL']['DB_HOST'],
-        "db_user": config['MySQL']['DB_USERNAME'],
-        "db_pass": config['MySQL']['DB_PASSWORD'],
-        "db_name": config['MySQL']['DB_NAME']
+        "ssh_host": cfg['SSH']['SSH_HOST'],
+        "ssh_user": cfg['SSH']['SSH_USERNAME'],
+        "ssh_pass": cfg['SSH']['SSH_PASSWORD'],
+        "db_host":  cfg['MySQL']['DB_HOST'],
+        "db_user":  cfg['MySQL']['DB_USERNAME'],
+        "db_pass":  cfg['MySQL']['DB_PASSWORD'],
+        "db_name":  cfg['MySQL']['DB_NAME'],
     }
 
-def send_email_alert(table_name, previous, current):
-    config = load_config(CONFIG_GMAIL_PATH)
-    msg = EmailMessage()
-    msg["Subject"] = f"Alert about the Table {table_name}"
-    msg["From"] = "fastfrancecontact@gmail.com"
-    msg["To"] = "anthonymoisan@yahoo.fr"
-    msg.set_content(
-        f"Hi,\n\nWe decided to keep the previous database.\nCurrent Version lines: {current}\nPrevious Version Lines: {previous}"
-    )
-
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login("fastfrancecontact", config['Gmail']['PASSWORD'])
-            server.send_message(msg)
-            logger.info("Email sent successfully.")
-    except Exception as e:
-        logger.error("Failed to send email: %s", e)
-
-def send_email_alert(title, message):
-    config = load_config(CONFIG_GMAIL_PATH)
+# ----- Email -----
+def send_email_alert(title: str, message: str) -> None:
+    cfg = load_config(CONFIG_GMAIL_PATH)
     msg = EmailMessage()
     msg["Subject"] = title
     msg["From"] = "fastfrancecontact@gmail.com"
@@ -70,34 +54,50 @@ def send_email_alert(title, message):
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
-            server.login("fastfrancecontact", config['Gmail']['PASSWORD'])
+            server.login("fastfrancecontact", cfg['Gmail']['PASSWORD'])
             server.send_message(msg)
             logger.info("Email sent successfully.")
     except Exception as e:
         logger.error("Failed to send email: %s", e)
 
+# ----- DB URL / Engine -----
+def _build_db_url(params, local_port=None) -> str:
+    host = "127.0.0.1" if local_port else params["db_host"]
+    port = local_port if local_port else 3306
+    return f"mysql+pymysql://{params['db_user']}:{params['db_pass']}@{host}:{port}/{params['db_name']}"
 
-def _execute_sql(DATABASE_URL, query, return_result=False, params = None):
-    engine = create_engine(DATABASE_URL)
+def _execute_sql(DATABASE_URL, query, *, return_result=False, scalar=False, params=None):
+    """
+    Exécute une requête SQLAlchemy text() ou str.
+    - return_result=True -> fetchall()
+    - scalar=True -> scalar_one_or_none() (ou scalar())
+    """
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
     try:
         with engine.begin() as conn:
-            logger.info("Connected to database.")
+            logger.debug("Connected to database.")
             stmt = text(query) if isinstance(query, str) else query
-            result = conn.execute(stmt, params or {})
+            res = conn.execute(stmt, params or {})
+            if scalar:
+                # SQLAlchemy 1.4/2.0 compat
+                try:
+                    return res.scalar_one_or_none()
+                except Exception:
+                    return res.scalar()
             if return_result:
-                data = result.fetchall()
-                return data
+                return res.fetchall()
+            return None
     except Exception as e:
         logger.error("Execution error: %s", e)
         raise
     finally:
         engine.dispose()
-        logger.info("Database connection closed.")
+        logger.debug("Database connection closed.")
 
 def _insert_df(DATABASE_URL, table_name, df, if_exists='replace'):
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
     try:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             df.to_sql(table_name, con=conn, if_exists=if_exists, index=False)
             logger.info("Inserted values into %s", table_name)
     except Exception as e:
@@ -106,28 +106,30 @@ def _insert_df(DATABASE_URL, table_name, df, if_exists='replace'):
     finally:
         engine.dispose()
 
-def _build_db_url(params, local_port=None):
-    host = "127.0.0.1" if local_port else params["db_host"]
-    port = local_port if local_port else 3306
-    return f"mysql+pymysql://{params['db_user']}:{params['db_pass']}@{host}:{port}/{params['db_name']}"
-
-def _run_query(query, return_result=False, max_retries=3, paramsSQL=None):
-    params = get_db_params()
+# ----- Public helpers -----
+def _run_query(query, *, return_result=False, scalar=False, max_retries=3, params=None):
+    """
+    Exécute une requête avec gestion du tunnel SSH si nécessaire.
+    - params: dict des bind params
+    - return_result: fetchall()
+    - scalar: scalar()
+    """
+    cfg = get_db_params()
     attempt = 0
     while attempt < max_retries:
         try:
             if LOCAL_CONNEXION:
                 with SSHTunnelForwarder(
-                    (params["ssh_host"]),
-                    ssh_username=params["ssh_user"],
-                    ssh_password=params["ssh_pass"],
-                    remote_bind_address=(params["db_host"], 3306)
+                    (cfg["ssh_host"]),
+                    ssh_username=cfg["ssh_user"],
+                    ssh_password=cfg["ssh_pass"],
+                    remote_bind_address=(cfg["db_host"], 3306),
                 ) as tunnel:
-                    db_url = _build_db_url(params, tunnel.local_bind_port)
-                    return _execute_sql(db_url, query, return_result, paramsSQL)
+                    db_url = _build_db_url(cfg, tunnel.local_bind_port)
+                    return _execute_sql(db_url, query, return_result=return_result, scalar=scalar, params=params)
             else:
-                db_url = _build_db_url(params)
-                return _execute_sql(db_url, query, return_result, paramsSQL)
+                db_url = _build_db_url(cfg)
+                return _execute_sql(db_url, query, return_result=return_result, scalar=scalar, params=params)
         except Exception as e:
             attempt += 1
             logger.error("[Attempt %d] Query failed: %s", attempt, e)
@@ -137,25 +139,24 @@ def _run_query(query, return_result=False, max_retries=3, paramsSQL=None):
             else:
                 raise
 
-def _insert_data(df, table_name,if_exists='replace'):
-    params = get_db_params()
+def _insert_data(df, table_name, if_exists='replace'):
+    cfg = get_db_params()
     max_retries = 3
     attempt = 0
     while attempt < max_retries:
         try:
             if LOCAL_CONNEXION:
                 with SSHTunnelForwarder(
-                    (params["ssh_host"]),
-                    ssh_username=params["ssh_user"],
-                    ssh_password=params["ssh_pass"],
-                    remote_bind_address=(params["db_host"], 3306)
+                    (cfg["ssh_host"]),
+                    ssh_username=cfg["ssh_user"],
+                    ssh_password=cfg["ssh_pass"],
+                    remote_bind_address=(cfg["db_host"], 3306),
                 ) as tunnel:
-                    db_url = _build_db_url(params, tunnel.local_bind_port)
-                    return _insert_df(db_url, table_name, df,if_exists)
-
+                    db_url = _build_db_url(cfg, tunnel.local_bind_port)
+                    return _insert_df(db_url, table_name, df, if_exists)
             else:
-                db_url = _build_db_url(params)
-                return _insert_df(db_url, table_name, df,if_exists)
+                db_url = _build_db_url(cfg)
+                return _insert_df(db_url, table_name, df, if_exists)
         except Exception as e:
             attempt += 1
             logger.error("[Attempt %d] Insert failed: %s", attempt, e)
@@ -163,129 +164,148 @@ def _insert_data(df, table_name,if_exists='replace'):
                 logger.info("Retrying insert in 3 seconds...")
                 time.sleep(3)
             else:
-                logger.error("Insert failed after %d attempts", max_retries)
+                logger.error("Insert failed after %d attempts")
                 raise
 
-
-def _log_table_update(table_name):
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    logger.info(f"Trying to log update for {table_name} at {now}")
-    
-    resultQuery = f"""
-                    SELECT COUNT(*) FROM update_log 
-                    WHERE table_name = '{table_name}'
-                    """
-    result = _run_query(resultQuery,return_result=True)
-    if result == 0:
-        insertQuery = f"""
-                            INSERT INTO update_log (table_name, updated_at)
-                            VALUES ('{table_name}', '{now}')
-                        """
-        _run_query(insertQuery)
-        logger.info(f"Inserted new row for {table_name} in update_log.")
-    else:
-        updateQuery = f"""
-                        UPDATE update_log 
-                        SET updated_at = '{now}' WHERE table_name = '{table_name}'
-                        """
-        _run_query(updateQuery)
-        logger.info(f"Updated row for {table_name} in update_log.")
-        
-
+# ----- update_log utilitaires -----
 def _create_update_log_table_if_not_exists():
     query = """
-            CREATE TABLE IF NOT EXISTS update_log (
-            table_name VARCHAR(255) PRIMARY KEY,
-            updated_at DATETIME
-            )
-            """
-    _run_query(query=query, return_result=False)
+    CREATE TABLE IF NOT EXISTS update_log (
+      table_name VARCHAR(255) PRIMARY KEY,
+      updated_at DATETIME
+    )
+    """
+    _run_query(query)
     logger.info("Create Table `update_log` if not exists.")
-    
 
+def _log_table_update(table_name: str):
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    logger.info("Trying to log update for %s at %s", table_name, now)
+
+    # Vérifie si la ligne existe
+    exists_sql = text("""
+        SELECT COUNT(*) FROM update_log WHERE table_name = :t
+    """)
+    count = _run_query(exists_sql, scalar=True, params={"t": table_name}) or 0
+
+    if count == 0:
+        insert_sql = text("""
+            INSERT INTO update_log (table_name, updated_at)
+            VALUES (:t, :ts)
+        """)
+        _run_query(insert_sql, params={"t": table_name, "ts": now})
+        logger.info("Inserted new row for %s in update_log.", table_name)
+    else:
+        update_sql = text("""
+            UPDATE update_log SET updated_at = :ts WHERE table_name = :t
+        """)
+        _run_query(update_sql, params={"ts": now, "t": table_name})
+        logger.info("Updated row for %s in update_log.", table_name)
+
+# ----- Export générique -----
 def export_Table(table_name, sql_script, reader):
+    """
+    - reader.readData() -> DataFrame
+    - sql_script: nom de fichier SQL à exécuter pour (re)créer la table
+    """
     try:
         start = time.time()
         logger.info("--- Reading data for %s", table_name)
         df = reader.readData()
+
+        # Normalisations simples
         df = df.replace([np.inf, -np.inf], np.nan)
-        df = df.astype({col: 'object' for col in df.select_dtypes(include='category').columns})
-
+        # pandas >= 2 : categories -> object avant to_sql
         for col in df.columns:
-            if df[col].dtype == 'float64':
+            if pd.api.types.is_categorical_dtype(df[col]):
+                df[col] = df[col].astype('object')
+
+        # Remplissages
+        for col in df.columns:
+            if pd.api.types.is_float_dtype(df[col]):
                 df[col] = df[col].fillna(0.0)
-            elif df[col].dtype == 'object':
-                df[col] = df[col].fillna("None")
-            elif pd.api.types.is_categorical_dtype(df[col]):
+            elif pd.api.types.is_object_dtype(df[col]):
                 df[col] = df[col].fillna("None")
 
-        current_count = df.shape[0]
+        current_count = int(df.shape[0])
 
-        check_query = f"""
-            SELECT COUNT(*) FROM information_schema.tables 
-            WHERE table_schema = DATABASE() AND table_name = '{table_name}'
-        """
-        table_exists = _run_query(check_query, return_result=True)
-
-        previous_countSQL = (
-            _run_query(f"SELECT COUNT(*) FROM {table_name}", return_result=True)
-            if table_exists else 0
+        # Table existe ?
+        table_exists = bool(
+            _run_query(
+                text("""
+                    SELECT COUNT(*) FROM information_schema.tables 
+                    WHERE table_schema = DATABASE() AND table_name = :t
+                """),
+                scalar=True,
+                params={"t": table_name},
+            ) or 0
         )
 
-        previous_count= int(previous_countSQL[0][0])
+        previous_count = 0
+        if table_exists:
+            previous_count = int(
+                _run_query(
+                    text(f"SELECT COUNT(*) FROM `{table_name}`"),
+                    scalar=True,
+                ) or 0
+            )
 
-        #logger.info("type previous count :", type(previous_count))
-
-        if current_count < 0.9 * previous_count:
+        if table_exists and current_count < 0.9 * previous_count:
             logger.warning("--- Data check failed. Keeping previous version.")
-            send_email_alert(table_name, previous_count, current_count)
+            send_email_alert(
+                f"Alert about the Table {table_name}",
+                f"Hi,\n\nWe decided to keep the previous database.\nCurrent Version lines: {current_count}\nPrevious Version Lines: {previous_count}",
+            )
         else:
             logger.info("--- Data validated.")
+            # (Re)crée la table à partir du script
             if table_exists:
                 logger.info("--- Drop Table.")
-                _run_query(f"DROP TABLE {table_name}")
-            script_path = os.path.join(os.path.dirname(__file__), "SQLScript", sql_script)
-            with open(script_path, "r", encoding="utf-8") as file:
+                _run_query(text(f"DROP TABLE `{table_name}`"))
+
+            script_path = os.path.join(BASE_DIR, "SQLScript", sql_script)
+            with open(script_path, "r", encoding="utf-8") as f:
                 logger.info("--- Create Table.")
-                _run_query(file.read())
+                _run_query(f.read())
+
             logger.info("--- Insert data into Table.")
             _insert_data(df, table_name)
+
             _create_update_log_table_if_not_exists()
             logger.info("--- Update Log")
             _log_table_update(table_name)
 
             logger.info("Execution time for %s: %.2fs", table_name, time.time() - start)
+
     except Exception as e:
         logger.error("An error occurred in export_Table for %s: %s", table_name, e)
         raise
 
+# ----- Debug -----
 def _debug_database_name(DATABASE_URL):
     try:
-        engine = create_engine(DATABASE_URL)
+        engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
         with engine.connect() as conn:
             db_name = conn.execute(text("SELECT DATABASE()")).scalar()
-            logger.info(f"Connected to database: {db_name}")
+            logger.info("Connected to database: %s", db_name)
     except Exception as e:
-        logger.error(f"Could not fetch database name: {e}")
+        logger.error("Could not fetch database name: %s", e)
     finally:
         engine.dispose()
 
-def readTable(table_name):
+# ----- Lecture simple -----
+def readTable(table_name: str) -> pd.DataFrame:
     try:
         logger.info("Read Table %s", table_name)
-        query = f"SELECT * FROM {table_name}"
-        rows = _run_query(query, return_result=True)
-
+        rows = _run_query(text(f"SELECT * FROM `{table_name}`"), return_result=True)
         if not rows:
             return pd.DataFrame()
-
+        # Compat SQLAlchemy 1.4 / 2.0
         try:
             data = [row._mapping for row in rows]
         except AttributeError:
             data = [dict(row) for row in rows]
-
         return pd.DataFrame(data)
-
     except Exception as e:
         logger.error("Erreur lors de la lecture de la table %s: %s", table_name, e)
         return pd.DataFrame()

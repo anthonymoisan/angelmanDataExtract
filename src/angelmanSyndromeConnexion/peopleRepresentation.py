@@ -13,6 +13,7 @@ from utilsTools import _run_query,_insert_data
 import requests
 from geopy.geocoders import Nominatim
 import json
+from .geo_utils import get_city
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -34,14 +35,6 @@ def age_years(dob, on_date=None):
         years -= 1
     return years
 
-def getCity(longitude, latitude):
-    geolocator = Nominatim(user_agent="ASConnect")  # mettez un UA parlant
-    location = geolocator.reverse((latitude,longitude), language="fr")
-    ville = location.raw.get("address", {}).get("city") or \
-            location.raw.get("address", {}).get("town") or \
-            location.raw.get("address", {}).get("village")
-    return ville
-
 
 def insertData(
     firstname,
@@ -57,101 +50,107 @@ def insertData(
     reponseSecrete     # str (sera chiffrée)
 ):
     try:
-        # 0) validations simples de présence
-        if not firstname or not lastname:
-            raise error.ValidationError("Firstname et Lastname sont requis")
-        if not isinstance(questionSecrete, int) or not (1 <= questionSecrete <= 3):
-            raise error.ValidationError("questionSecrete doit être un entier entre 1 et 3")
-        if not isinstance(reponseSecrete, str) or not reponseSecrete.strip():
-            raise error.ValidationError("La réponse à la question secrète est requise")
-        if not password or not isinstance(password, str):
-            raise error.ValidationError("Le mot de passe est requis")
-
-        # 1) validations applicatives existantes
+        # -------- 1) Validations minimales --------
         if not isinstance(dateOfBirth, date):
+            # Si on te passe un str, convertis-le côté appelant avant d'arriver ici
             raise TypeError("dateOfBirth doit être un datetime.date")
+
         dob = utils.coerce_to_date(dateOfBirth)
         if dob > date.today():
             raise error.FutureDateError("dateOfBirth ne peut pas être dans le futur")
-        if photo is not None and len(photo) > 4 * 1024 * 1024:
-            raise error.PhotoTooLargeError("Photo > 4 MiB")
 
-        detected   = utils.detect_mime_from_bytes(photo) if photo else None
-        photo_mime = utils.normalize_mime(detected or "image/jpeg") if photo else None
-        if photo and photo_mime not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
-            raise error.InvalidMimeTypeError(f"MIME non autorisé: {photo_mime}")
+        if photo is not None:
+            if len(photo) > 4 * 1024 * 1024:
+                raise error.PhotoTooLargeError("Photo > 4 MiB")
+            detected = utils.detect_mime_from_bytes(photo)
+            photo_mime = utils.normalize_mime(detected or "image/jpeg")
+            if photo_mime not in {"image/jpeg","image/jpg","image/png","image/webp"}:
+                raise error.InvalidMimeTypeError(f"MIME non autorisé: {photo_mime}")
+        else:
+            photo_mime = None  # doit matcher la contrainte: photo NULL => photo_mime NULL
 
-        # 1.b) Politique mot de passe (min 8, 1 maj, 1 chiffre, 1 spécial)
-        pwd = password.strip()
-        has_min = len(pwd) >= 8
-        has_upper = bool(re.search(r"[A-Z]", pwd))
-        has_digit = bool(re.search(r"\d", pwd))
-        has_spec  = bool(re.search(r'[!@#\$%^&*(),.?":{}|<>_\-+=~;\\/\[\]]', pwd))
-        if not (has_min and has_upper and has_digit and has_spec):
-            raise error.ValidationError(
-                "Mot de passe trop faible (Min.8, 1 majuscule, 1 chiffre, 1 caractère spécial)"
-            )
-
-        # 2) dérivation champs calculés
+        # -------- 2) Dérivations applicatives --------
         age = age_years(dob)
-        city = getCity(longitude, latitude)
-        logger.info(city)
 
-        # 3) chiffrement / hachage
+        # Reverse géocoding best-effort (NE DOIT PAS planter l'insert)
+        # NB: get_city attend (lat, lon)
+        city_str = get_city(latitude, longitude) or ""  # fallback vide
+
+        logger.info(city_str)
+
+        # -------- 3) Chiffrement --------
         fn_enc  = utils.encrypt_str(firstname)
         ln_enc  = utils.encrypt_str(lastname)
-        em_enc  = utils.encrypt_str(emailAddress)      # bytes chiffrés
+        em_enc  = utils.encrypt_str(emailAddress)
         dob_enc = utils.encrypt_date_like(dob)
         gt_enc  = utils.encrypt_str(genotype)
-        ci_enc  = utils.encrypt_str((city or "").strip())
+        ci_enc  = utils.encrypt_str(city_str.strip())
+
         age_enc = utils.encrypt_number(age)
         lon_enc = utils.encrypt_number(longitude)
         lat_enc = utils.encrypt_number(latitude)
 
-        # hachage déterministe pour unicité
-        em_sha  = utils.email_sha256(emailAddress)     # BINARY(32)
+        em_sha  = utils.email_sha256(emailAddress)
 
-        # mot de passe : Argon2id (format PHC en bytes) + meta JSON
-        # -> adapte si ton util renvoie autre chose
-        pwd_hash_bytes, pwd_meta = utils.hash_password_argon2(pwd)
-        pwd_algo = "argon2id"
+        # --- Secret Q/A ---
+        # questionSecrete: entier 1..3 (assuré côté appelant)
+        try:
+            secret_q = int(questionSecrete)
+        except Exception:
+            raise error.ValidationError("questionSecrete doit être un entier 1..3")
+        if secret_q not in (1, 2, 3):
+            raise error.ValidationError("questionSecrete doit être 1, 2 ou 3")
+        secret_ans_enc = utils.encrypt_str(reponseSecrete)
+
+        # -------- 4) Hachage mot de passe (Argon2id) --------
+        # utils.hash_password_argon2(password) -> (hash_bytes, meta_dict)
+        pwd_hash_bytes, pwd_meta = utils.hash_password_argon2(password)
         pwd_meta_json = json.dumps(pwd_meta, separators=(",", ":"))
-        pwd_updated_at = datetime.now(timezone.utc).replace(tzinfo=None)  # TIMESTAMP (naive UTC)
+        pwd_updated_at = datetime.now(timezone.utc).replace(tzinfo=None)  # DATETIME sans TZ
 
-        # question secrète (entier) + réponse secrète chiffrée
-        secret_q = int(questionSecrete)
-        secret_ans_enc = utils.encrypt_str(reponseSecrete.strip())
+        # Cohérence photo / mime (contrainte SQL):
+        if photo is None:
+            photo_mime = None
 
-        # 4) préparation DataFrame
-        rowData = {
-            "firstname":      [fn_enc],
-            "lastname":       [ln_enc],
-            "emailAddress":   [em_enc],
-            "dateOfBirth":    [dob_enc],
-            "genotype":       [gt_enc],
-            "longitude":      [lon_enc],
-            "latitude":       [lat_enc],
-            "photo":          [photo],
-            "photo_mime":     [photo_mime],
-            "city":           [ci_enc],
-            "age":            [age_enc],
-            "email_sha":      [em_sha],
+        # -------- 5) INSERT SQL paramétré --------
+        sql = text("""
+        INSERT INTO `T_ASPeople`
+        (firstname, lastname, `emailAddress`, `dateOfBirth`, genotype,
+         longitude, latitude, photo, photo_mime, city, age, email_sha,
+         password_hash, password_algo, password_meta, password_updated_at,
+         secret_question, secret_answer)
+        VALUES
+        (:fn, :ln, :em, :dob, :gt,
+         :lon, :lat, :photo, :photo_mime, :city, :age, :email_sha,
+         :pwd_hash, :pwd_algo, CAST(:pwd_meta AS JSON), :pwd_updated_at,
+         :secret_q, :secret_ans)
+        """)
 
-            # Nouveaux champs auth
-            "password_hash":      [pwd_hash_bytes],
-            "password_algo":      [pwd_algo],
-            "password_meta":      [pwd_meta_json],
-            "password_updated_at":[pwd_updated_at],   # TIMESTAMP
-
-            "secret_question":    [secret_q],         # TINYINT UNSIGNED
-            "secret_answer":      [secret_ans_enc],   # VARBINARY (chiffré)
+        params = {
+            "fn": fn_enc,
+            "ln": ln_enc,
+            "em": em_enc,
+            "dob": dob_enc,
+            "gt": gt_enc,
+            "lon": lon_enc,
+            "lat": lat_enc,
+            "photo": photo,               # bytes ou None
+            "photo_mime": photo_mime,     # str ou None
+            "city": ci_enc,
+            "age": age_enc,
+            "email_sha": em_sha,          # 32 bytes
+            "pwd_hash": pwd_hash_bytes,   # bytes (la string $argon2id$… en bytes)
+            "pwd_algo": "argon2id",
+            "pwd_meta": pwd_meta_json,    # CHAÎNE JSON, castée côté SQL
+            "pwd_updated_at": pwd_updated_at,
+            "secret_q": secret_q,
+            "secret_ans": secret_ans_enc,
         }
-
-        df = pd.DataFrame.from_dict(rowData)
 
         # 5) insertion
         try:
-            _insert_data(df, "T_ASPeople", if_exists="append")
+            # Exécution
+            _run_query(sql, params=params)
         except IntegrityError as ie:
             # clé unique sur email_sha
             raise error.DuplicateEmailError(
@@ -176,7 +175,7 @@ def fetch_photo(person_id: int):
     rows = _run_query(
         text("SELECT photo, photo_mime FROM T_ASPeople WHERE id=:id"),
         return_result=True,
-        paramsSQL={"id": person_id},
+        params={"id": person_id},
     )
 
     if not rows:
@@ -187,16 +186,30 @@ def fetch_photo(person_id: int):
 def get_email(person_id: int) -> str | None:
     row = _run_query(
         text("""SELECT emailAddress FROM T_ASPeople WHERE id=:id"""),
-        return_result=True, paramsSQL={"id": person_id}
+        return_result=True, params={"id": person_id}
     )
     return str(utils.decrypt_bytes_to_str_strict(row[0][0]))
 
 def get_email2(firstName,lastName, age, city):
-    row = _run_query(
-        text("""SELECT emailAddress FROM T_ASPeople WHERE firstname=:firstname AND lastname=:lastname AND age:=age AND city:=city"""),
-        return_result=True, paramsSQL={"firstname": firstName, "lastname" : lastName, age:"age", city:"city"}
-    )
-    return str(utils.decrypt_bytes_to_str_strict(row[0][0]))
+     # chiffrer avec TES helpers existants
+    fn_enc  = utils.encrypt_str(firstName)
+    ln_enc  = utils.encrypt_str(lastName)
+    age_enc = utils.encrypt_number(age)
+    ci_enc  = utils.encrypt_str(city.strip())
+
+    sql = text("""
+        SELECT emailAddress
+        FROM T_ASPeople
+        WHERE firstname = :fn
+          AND lastname  = :ln
+          AND age       = :age
+          AND city      = :city
+        LIMIT 1
+    """)
+    params = {"fn": fn_enc, "ln": ln_enc, "age": age_enc, "city": ci_enc}
+
+    rows = _run_query(sql, return_result=True, params=params)
+    return rows[0][0] if rows else None
 
 
 def fetch_person_decrypted(person_id: int) -> dict | None:
@@ -204,7 +217,7 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
         text("""SELECT id, firstname, lastname, emailAddress, dateOfBirth,
                        genotype, photo_mime, city, longitude, latitude, age
                 FROM T_ASPeople WHERE id=:id"""),
-        return_result=True, paramsSQL={"id": person_id}
+        return_result=True, params={"id": person_id}
     )
 
     if not row:
@@ -264,7 +277,7 @@ def giveId(email_real):
     row = _run_query(
         text("SELECT id FROM T_ASPeople WHERE email_sha = :sha LIMIT 1"),
         return_result=True,
-        paramsSQL={"sha": sha},
+        params={"sha": sha},
     )
     return int(row[0][0]) if row else None
 
