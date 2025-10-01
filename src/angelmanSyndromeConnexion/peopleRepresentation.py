@@ -18,6 +18,68 @@ from .geo_utils import get_city
 # Set up logger
 logger = setup_logger(debug=False)
 
+def _to_bytes_phc(x) -> bytes:
+    """S'assure que le hash PHC est bien en bytes pour utils.verify_password_argon2."""
+    if isinstance(x, (bytes, bytearray)):
+        return bytes(x)
+    # parfois certains drivers retournent déjà une str
+    return str(x).encode("utf-8", "strict")
+
+
+def authenticate_email_password(email: str, password: str) -> bool:
+    """
+    Retourne True si (email, mot de passe) est valide, sinon False.
+    """
+    try:
+        sha = utils.email_sha256(email)  # 32 bytes, lookup déterministe
+        row = _run_query(
+            text("""
+                SELECT password_hash
+                FROM T_ASPeople
+                WHERE email_sha = :sha
+                LIMIT 1
+            """),
+            return_result=True,
+            params={"sha": sha},
+        )
+        if not row:
+            return False
+
+        stored_hash_bytes = _to_bytes_phc(row[0][0])
+        return bool(utils.verify_password_argon2(password, stored_hash_bytes))
+    except Exception as e:
+        logger.error("authenticate_email_password failed: %s", e, exc_info=True)
+        return False
+
+
+def authenticate_and_get_id(email: str, password: str) -> int | None:
+    """
+    Retourne l'ID si (email, mot de passe) est valide, sinon None.
+    """
+    try:
+        sha = utils.email_sha256(email)
+        row = _run_query(
+            text("""
+                SELECT id, password_hash
+                FROM T_ASPeople
+                WHERE email_sha = :sha
+                LIMIT 1
+            """),
+            return_result=True,
+            params={"sha": sha},
+        )
+        if not row:
+            return None
+
+        pid, pwd_hash_db = row[0]
+        stored_hash_bytes = _to_bytes_phc(pwd_hash_db)
+
+        if utils.verify_password_argon2(password, stored_hash_bytes):
+            return int(pid)
+        return None
+    except Exception as e:
+        logger.error("authenticate_and_get_id failed: %s", e, exc_info=True)
+        return None
 
 def age_years(dob, on_date=None):
     """
@@ -182,34 +244,6 @@ def fetch_photo(person_id: int):
         return None, None
     photo, mime = rows[0]
     return photo, mime or "image/jpeg"
-  
-def get_email(person_id: int) -> str | None:
-    row = _run_query(
-        text("""SELECT emailAddress FROM T_ASPeople WHERE id=:id"""),
-        return_result=True, params={"id": person_id}
-    )
-    return str(utils.decrypt_bytes_to_str_strict(row[0][0]))
-
-def get_email2(firstName,lastName, age, city):
-     # chiffrer avec TES helpers existants
-    fn_enc  = utils.encrypt_str(firstName)
-    ln_enc  = utils.encrypt_str(lastName)
-    age_enc = utils.encrypt_number(age)
-    ci_enc  = utils.encrypt_str(city.strip())
-
-    sql = text("""
-        SELECT emailAddress
-        FROM T_ASPeople
-        WHERE firstname = :fn
-          AND lastname  = :ln
-          AND age       = :age
-          AND city      = :city
-        LIMIT 1
-    """)
-    params = {"fn": fn_enc, "ln": ln_enc, "age": age_enc, "city": ci_enc}
-
-    rows = _run_query(sql, return_result=True, params=params)
-    return rows[0][0] if rows else None
 
 
 def fetch_person_decrypted(person_id: int) -> dict | None:

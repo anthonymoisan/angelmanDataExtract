@@ -6,7 +6,7 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from angelmanSyndromeConnexion.peopleRepresentation import getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData
+from angelmanSyndromeConnexion.peopleRepresentation import getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
 from angelmanSyndromeConnexion.pointRemarquable import getRecordsPointsRemarquables,insertPointRemarquable
 import json
 from datetime import datetime
@@ -472,65 +472,6 @@ def safe_get(data, key, default=""):
     """Retourne la valeur du champ ou une valeur par défaut."""
     return data.get(key) if data.get(key) not in [None, ""] else default
 
-'''
-@appFlaskMySQL.route('/webhook', methods=['POST'])
-def webhook():
-    raw_data = request.data
-    try:
-        json_str = raw_data.decode('utf-8')
-    except UnicodeDecodeError:
-        json_str = raw_data.decode('latin-1')
-    data = json.loads(json_str)
-    #print(data)
-
-    form_data_mapping = {
-    "emailAdress": "email_2",
-    "firstName": "name_1",
-    "lastName": "name_2",
-    "genotype": "select_2",
-    "gender": "radio_1",
-    "age": "number_1",
-    "country": "select_1",
-    "region": "select_3"  # si tu en as un
-    }
-
-    emailAdress = safe_get(data, "email_2")
-    firstName = safe_get(data, "name_1")
-    lastName = safe_get(data, "name_2")
-    genotype = safe_get(data, "select_2")
-    gender = safe_get(data, "radio_1")
-    country = safe_get(data, "select_1")
-    region = safe_get(data, "select_3")
-
-    # Calcul de l’âge
-    birth_year_raw = safe_get(data, "number_1")
-    try:
-        birth_year = int(birth_year_raw)
-        age = datetime.now().year - birth_year
-        if age < 0 or age > 120:  # sécurité sur plage valide
-            age = None
-    except ValueError:
-        age = None
-
-    if age < 4:
-        groupAge = "<4 years"
-    elif age < 8:
-        groupAge = "4-8 years"
-    elif age < 12:
-        groupAge = "8-12 years"
-    elif age < 18:
-        groupAge = "12-17 years"
-    else:
-        groupAge = ">18 years"
-
-    try:
-        insertData(emailAdress, firstName, lastName, genotype, gender, age, groupAge, country, region)
-        logger.info("Insertion Data is OK !")
-        return {"status": "OK"}, 200
-    except Exception as e:
-        logger.error("Erreur d'insertion : %s", e)
-        return {"status": "error", "message": str(e)}, 500
-'''
 
 @appFlaskMySQL.route('/api/v5/people/<int:person_id>/photo', methods=['GET'])
 def person_photo(person_id):
@@ -543,6 +484,41 @@ def person_photo(person_id):
 def person_info(person_id):
     result = fetch_person_decrypted(person_id)
     return jsonify(result)
+
+
+@appFlaskMySQL.route('/api/v5/auth/login', methods=['POST'])
+def auth_login():
+    # 1) Essaie JSON
+    data = request.get_json(silent=True)
+
+    # 2) Si pas de JSON, tente le form (x-www-form-urlencoded / multipart)
+    if not isinstance(data, dict) or not data:
+        data = request.form.to_dict(flat=True)
+
+    # 3) Fallback ultime : query string (utile pour tests)
+    if not data:
+        data = request.args.to_dict(flat=True)
+
+    email = (data.get("email") or "").strip()
+    password = data.get("password") or ""
+
+
+    if not email or not password:
+        return jsonify({"error": "email et password sont requis"}), 400
+
+    try:
+        person_id = authenticate_and_get_id(email, password)
+    except Exception as e:
+        # Évite de logger le mot de passe !
+        appFlaskMySQL.logger.exception("Erreur d'authentification")
+        return jsonify({"error": "erreur serveur"}), 500
+
+    if person_id is None:
+        return jsonify({"ok": False, "message": "identifiants invalides"}), 401
+
+    return jsonify({"ok": True, "id": person_id}), 200
+
+
 
 @appFlaskMySQL.route('/api/v5/peopleMapRepresentation', methods=['GET'])
 def peopleMapRepresentation():
@@ -600,7 +576,11 @@ def get_payloadPeople_from_request():
         emailAddress = form.get("emailAddress")
         dob_str      = form.get("dateOfBirth")
         genotype     = form.get("genotype")
-        city         = form.get("city")
+        long         = form.get("longitude")
+        lat          = form.get("latitude")
+        password     = form.get("password")
+        qSec         = form.get("qSecrete")
+        rSec         = form.get("rSecrete")
         file = request.files.get("photo")
         photo_bytes = file.read() if file else None
     else:
@@ -610,7 +590,11 @@ def get_payloadPeople_from_request():
         emailAddress = data.get("emailAddress")
         dob_str      = data.get("dateOfBirth")
         genotype     = data.get("genotype")
-        city         = data.get("city")
+        long         = data.get("longitude")
+        lat          = data.get("latitude")
+        password     = data.get("password")
+        qSec         = data.get("qSecrete")
+        rSec         = data.get("rSecrete")
         # photo en base64 optionnelle
         photo_b64    = data.get("photo_base64")
         if photo_b64:
@@ -621,8 +605,22 @@ def get_payloadPeople_from_request():
         else:
             photo_bytes = None
 
+    # normalisation / conversion
+    try:
+        # gère "," décimale (FR)
+        longC = float(str(long).replace(",", "."))
+        latC = float(str(lat).replace(",", "."))
+    except ValueError:
+        raise ValidationError("longitude/latitude doivent être numériques")
+
+    # bornes WGS84
+    if not (-180.0 <= longC <= 180.0):
+        raise ValidationError("longitude hors plage [-180, 180]")
+    if not (-90.0 <= latC <= 90.0):
+        raise ValidationError("latitude hors plage [-90, 90]")
+    
     # Champs requis
-    required = ["firstname","lastname","emailAddress","dateOfBirth","genotype"]
+    required = ["firstname","lastname","emailAddress","dateOfBirth","genotype","longitude", "latitude", "password", "qSecrete", "rSecrete"]
     # Considère vide / espaces comme manquant
     def is_missing(v): return v is None or (isinstance(v, str) and v.strip() == "")
     missing = [k for k in required if is_missing(src.get(k))]
@@ -635,15 +633,15 @@ def get_payloadPeople_from_request():
         return {k: src[k] for k in required}
 
     dob = parse_date_any(dob_str)
-    return firstname, lastname, emailAddress, dob, genotype, photo_bytes, city
+    return firstname, lastname, emailAddress, dob, genotype, photo_bytes, longC, latC, password, qSec, rSec
 
 
 @appFlaskMySQL.route("/api/v5/people", methods=['POST'])
 def create_person():
     try:
-        fn, ln, email, dob, gt, photo_bytes, city = get_payloadPeople_from_request()
+        fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec = get_payloadPeople_from_request()
 
-        new_id = insertData(fn, ln, email, dob, gt, photo_bytes, city)
+        new_id = insertData(fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec )
 
         return jsonify({
             "status": "created",
