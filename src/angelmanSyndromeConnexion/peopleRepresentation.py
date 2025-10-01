@@ -2,6 +2,7 @@ from . import utils
 from . import error
 import pandas as pd
 import sys,os
+import re
 from sqlalchemy import bindparam,text
 from datetime import date
 from datetime import datetime, timezone
@@ -11,6 +12,7 @@ from logger import setup_logger
 from utilsTools import _run_query,_insert_data
 import requests
 from geopy.geocoders import Nominatim
+import json
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -40,10 +42,32 @@ def getCity(longitude, latitude):
             location.raw.get("address", {}).get("village")
     return ville
 
-def insertData(firstname, lastname, emailAddress, dateOfBirth, genotype, photo, longitude,latitude):
+
+def insertData(
+    firstname,
+    lastname,
+    emailAddress,
+    dateOfBirth,
+    genotype,
+    photo,
+    longitude,
+    latitude,
+    password,
+    questionSecrete,   # int 1..3
+    reponseSecrete     # str (sera chiffrée)
+):
     try:
-            
-        # 1) validations applicatives minimum
+        # 0) validations simples de présence
+        if not firstname or not lastname:
+            raise error.ValidationError("Firstname et Lastname sont requis")
+        if not isinstance(questionSecrete, int) or not (1 <= questionSecrete <= 3):
+            raise error.ValidationError("questionSecrete doit être un entier entre 1 et 3")
+        if not isinstance(reponseSecrete, str) or not reponseSecrete.strip():
+            raise error.ValidationError("La réponse à la question secrète est requise")
+        if not password or not isinstance(password, str):
+            raise error.ValidationError("Le mot de passe est requis")
+
+        # 1) validations applicatives existantes
         if not isinstance(dateOfBirth, date):
             raise TypeError("dateOfBirth doit être un datetime.date")
         dob = utils.coerce_to_date(dateOfBirth)
@@ -51,66 +75,102 @@ def insertData(firstname, lastname, emailAddress, dateOfBirth, genotype, photo, 
             raise error.FutureDateError("dateOfBirth ne peut pas être dans le futur")
         if photo is not None and len(photo) > 4 * 1024 * 1024:
             raise error.PhotoTooLargeError("Photo > 4 MiB")
-        
-        detected = utils.detect_mime_from_bytes(photo) if photo else None
+
+        detected   = utils.detect_mime_from_bytes(photo) if photo else None
         photo_mime = utils.normalize_mime(detected or "image/jpeg") if photo else None
-        if photo and photo_mime not in {"image/jpeg","image/jpg","image/png","image/webp"}:
+        if photo and photo_mime not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
             raise error.InvalidMimeTypeError(f"MIME non autorisé: {photo_mime}")
-        
-        age = age_years(dateOfBirth)
 
-        city = getCity(longitude,latitude)
+        # 1.b) Politique mot de passe (min 8, 1 maj, 1 chiffre, 1 spécial)
+        pwd = password.strip()
+        has_min = len(pwd) >= 8
+        has_upper = bool(re.search(r"[A-Z]", pwd))
+        has_digit = bool(re.search(r"\d", pwd))
+        has_spec  = bool(re.search(r'[!@#\$%^&*(),.?":{}|<>_\-+=~;\\/\[\]]', pwd))
+        if not (has_min and has_upper and has_digit and has_spec):
+            raise error.ValidationError(
+                "Mot de passe trop faible (Min.8, 1 majuscule, 1 chiffre, 1 caractère spécial)"
+            )
 
+        # 2) dérivation champs calculés
+        age = age_years(dob)
+        city = getCity(longitude, latitude)
         logger.info(city)
 
-        # 2) chiffrement des champs
-        fn_enc   = utils.encrypt_str(firstname)
-        ln_enc   = utils.encrypt_str(lastname)
-        em_enc   = utils.encrypt_str(emailAddress)  # bytes
-        dob_enc  = utils.encrypt_date_like(dateOfBirth)
-        gt_enc   = utils.encrypt_str(genotype)
-        ci_enc = utils.encrypt_str(city.strip())
-        age_enc = utils.encrypt_number(age) 
-        lon_enc = utils.encrypt_number(longitude) 
+        # 3) chiffrement / hachage
+        fn_enc  = utils.encrypt_str(firstname)
+        ln_enc  = utils.encrypt_str(lastname)
+        em_enc  = utils.encrypt_str(emailAddress)      # bytes chiffrés
+        dob_enc = utils.encrypt_date_like(dob)
+        gt_enc  = utils.encrypt_str(genotype)
+        ci_enc  = utils.encrypt_str((city or "").strip())
+        age_enc = utils.encrypt_number(age)
+        lon_enc = utils.encrypt_number(longitude)
         lat_enc = utils.encrypt_number(latitude)
 
-        # hash déterministe pour unicité
-        em_sha  = utils.email_sha256(emailAddress)
+        # hachage déterministe pour unicité
+        em_sha  = utils.email_sha256(emailAddress)     # BINARY(32)
 
+        # mot de passe : Argon2id (format PHC en bytes) + meta JSON
+        # -> adapte si ton util renvoie autre chose
+        pwd_hash_bytes, pwd_meta = utils.hash_password_argon2(pwd)
+        pwd_algo = "argon2id"
+        pwd_meta_json = json.dumps(pwd_meta, separators=(",", ":"))
+        pwd_updated_at = datetime.now(timezone.utc).replace(tzinfo=None)  # TIMESTAMP (naive UTC)
+
+        # question secrète (entier) + réponse secrète chiffrée
+        secret_q = int(questionSecrete)
+        secret_ans_enc = utils.encrypt_str(reponseSecrete.strip())
+
+        # 4) préparation DataFrame
         rowData = {
-            "firstname": [fn_enc],
-            "lastname": [ln_enc],
-            "emailAddress": [em_enc],
-            "dateOfBirth": [dob_enc],
-            "genotype" : [gt_enc],
-            "longitude" : [lon_enc],
-            "latitude" : [lat_enc],
-            "photo": [photo],
-            "photo_mime": [photo_mime], 
-            "city": [ci_enc],
-            "age" : [age_enc],
-            "email_sha" : [em_sha]
+            "firstname":      [fn_enc],
+            "lastname":       [ln_enc],
+            "emailAddress":   [em_enc],
+            "dateOfBirth":    [dob_enc],
+            "genotype":       [gt_enc],
+            "longitude":      [lon_enc],
+            "latitude":       [lat_enc],
+            "photo":          [photo],
+            "photo_mime":     [photo_mime],
+            "city":           [ci_enc],
+            "age":            [age_enc],
+            "email_sha":      [em_sha],
+
+            # Nouveaux champs auth
+            "password_hash":      [pwd_hash_bytes],
+            "password_algo":      [pwd_algo],
+            "password_meta":      [pwd_meta_json],
+            "password_updated_at":[pwd_updated_at],   # TIMESTAMP
+
+            "secret_question":    [secret_q],         # TINYINT UNSIGNED
+            "secret_answer":      [secret_ans_enc],   # VARBINARY (chiffré)
         }
 
         df = pd.DataFrame.from_dict(rowData)
-        
+
+        # 5) insertion
         try:
             _insert_data(df, "T_ASPeople", if_exists="append")
         except IntegrityError as ie:
-            # MySQL duplicate unique key -> 1062
-            # selon driver, on peut aussi tester: if "1062" in str(ie.orig)
-            raise error.DuplicateEmailError("Un enregistrement avec cet email existe déjà") from ie
+            # clé unique sur email_sha
+            raise error.DuplicateEmailError(
+                "Un enregistrement avec cet email existe déjà"
+            ) from ie
 
+        # 6) retourner un indicateur (ex: nb total ou id)
         lastRowId = _run_query(
-        text("SELECT COUNT(*) FROM T_ASPeople"),
-        return_result=True)
-
+            text("SELECT COUNT(*) FROM T_ASPeople"),
+            return_result=True
+        )
         return lastRowId[0][0]
+
     except error.AppError as e:
-        raise(e)
-    except Exception:
-        logger.error("Insert failed in T_ASPeople")
         raise
+    except Exception:
+        logger.error("Insert failed in T_ASPeople", exc_info=True)
+        raise
+
 
 def fetch_photo(person_id: int):
     rows = _run_query(

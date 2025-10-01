@@ -15,7 +15,7 @@ def _insertDataFrame(firstRow=False):
 
     utils.dropTable("T_ASPeople")
     wkdir = os.path.dirname(__file__)
-    df = pd.read_excel(f"{wkdir}/../data/Picture/AS_people_sample_dates3.xlsx")
+    df = pd.read_excel(f"{wkdir}/../data/Picture/DataAngelman.xlsx")
     
     utils.createTable("createASPeople.sql")
 
@@ -38,6 +38,9 @@ def _insertDataFrame(firstRow=False):
         fileName    = getattr(row, "File")
         longitude   = getattr(row, "Longitude")
         latitude    = getattr(row, "Latitude")
+        password    = getattr(row, "Password")
+        questionSecrete = getattr(row, "QuestionSecrete")
+        reponseSecrete = getattr(row, "ReponseSecrete")
 
         
         img_path = BASE / str(fileName)
@@ -55,7 +58,7 @@ def _insertDataFrame(firstRow=False):
         except Exception:
             logger.exception("Erreur lecture photo: %s", img_path)
 
-        insertData(firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude)
+        insertData(firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude, password, questionSecrete, reponseSecrete)
 
         countloop += 1
 
@@ -73,7 +76,7 @@ def main():
     start = time.time()
     try:
         
-        _insertDataFrame(firstRow=True)
+        _insertDataFrame(firstRow=False)
         #findId("gustave.faivre@yahoo.fr")
         df = getRecordsPeople()
         #logger.info(df.head())

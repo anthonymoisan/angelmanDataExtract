@@ -1,3 +1,6 @@
+from __future__ import annotations
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHash
 import hashlib
 from typing import Union
 from cryptography.fernet import Fernet
@@ -29,6 +32,69 @@ key = config['CleChiffrement']['KEY']
 cipher = Fernet(key)
 
 # --- helpers ---
+
+# utils.py — extrait à ajouter
+
+
+# Paramètres raisonnables (à ajuster selon tes contraintes perf/sécu)
+# - time_cost (t) : nombre d’itérations
+# - memory_cost (m) : en KiB (ex. 19456 KiB ≈ 19 Mo)
+# - parallelism (p) : parallélisme
+_ph = PasswordHasher(
+    time_cost=2,       # t
+    memory_cost=19456, # m (KiB)
+    parallelism=1,     # p
+)
+
+def hash_password_argon2(password: str) -> tuple[bytes, dict]:
+    """
+    Retourne (password_hash_bytes, password_meta_dict)
+    - password_hash_bytes : la chaîne PHC Argon2id encodée en UTF-8 (bytes)
+      ex: b"$argon2id$v=19$m=19456,t=2,p=1$...$..."
+    - password_meta_dict : paramètres utiles stockables en JSON
+    """
+    if not isinstance(password, str) or not password:
+        raise ValueError("password doit être une chaîne non vide")
+
+    phc = _ph.hash(password)  # str PHC
+    meta = {
+        "algo": "argon2id",
+        "v": 19,        # version
+        "t": _ph.time_cost,
+        "m": _ph.memory_cost,
+        "p": _ph.parallelism,
+    }
+    return phc.encode("utf-8"), meta
+
+
+def verify_password_argon2(password: str, stored_hash_bytes: bytes) -> bool:
+    """
+    Vérifie un mot de passe contre un hash PHC (bytes).
+    Retourne True/False.
+    """
+    if not isinstance(stored_hash_bytes, (bytes, bytearray)):
+        raise ValueError("stored_hash_bytes doit être bytes")
+    try:
+        stored_phc = stored_hash_bytes.decode("utf-8")
+        _ph.verify(stored_phc, password)
+        return True
+    except (VerifyMismatchError, VerificationError, InvalidHash):
+        return False
+
+
+def password_needs_rehash(stored_hash_bytes: bytes) -> bool:
+    """
+    Indique si le hash devrait être recalculé (paramètres devenus insuffisants).
+    Pratique pour migrer progressivement vers des paramètres plus forts.
+    """
+    if not isinstance(stored_hash_bytes, (bytes, bytearray)):
+        return True
+    try:
+        stored_phc = stored_hash_bytes.decode("utf-8")
+        return _ph.check_needs_rehash(stored_phc)
+    except InvalidHash:
+        return True
+
 def norm_email(e: str) -> str:
     return e.strip().lower()
 

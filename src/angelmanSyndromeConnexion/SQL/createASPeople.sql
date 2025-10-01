@@ -16,9 +16,30 @@ CREATE TABLE IF NOT EXISTS T_ASPeople (
   email_sha        BINARY(32)      NOT NULL,
   CONSTRAINT uq_aspeople_emailsha UNIQUE (email_sha),
 
+  -- Authentification (mot de passe haché, format PHC recommandé)
+  password_hash    VARBINARY(255)  NOT NULL,
+  password_algo    VARCHAR(32)     NOT NULL DEFAULT 'argon2id',
+  password_meta    JSON            NULL,
+  password_updated_at TIMESTAMP    NULL DEFAULT NULL,
+
+  -- Question secrète : entier 1..3
+  -- 1 = "Nom de naissance de la maman ?"
+  -- 2 = "Acteur/actrice de cinéma favori ?"
+  -- 3 = "Animal de compagnie favori ?"
+  secret_question  TINYINT UNSIGNED NOT NULL,
+  CONSTRAINT ck_aspeople_secret_q_range
+    CHECK (secret_question BETWEEN 1 AND 3),
+
+  -- Réponse secrète (chiffrée)
+  secret_answer    VARBINARY(2048) NOT NULL,
+
   -- Photo et méta non chiffrées
   photo            MEDIUMBLOB NULL,
   photo_mime       VARCHAR(100) NULL,
+
+  -- Métadonnées
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
   CONSTRAINT pk_aspeople PRIMARY KEY (id),
 
