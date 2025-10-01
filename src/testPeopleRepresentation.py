@@ -4,7 +4,7 @@ from pathlib import Path
 import sys,os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from logger import setup_logger
-from angelmanSyndromeConnexion.peopleRepresentation import insertData, giveId, getRecordsPeople,fetch_person_decrypted
+from angelmanSyndromeConnexion.peopleRepresentation import insertData, giveId, getRecordsPeople,fetch_person_decrypted, get_email, get_email2
 import time
 from angelmanSyndromeConnexion import error
 
@@ -14,8 +14,8 @@ logger = setup_logger(debug=False)
 def _insertDataFrame(firstRow=False):
 
     utils.dropTable("T_ASPeople")
-    
-    df = pd.read_excel("./../data/Picture/DataAngelman.xlsx")
+    wkdir = os.path.dirname(__file__)
+    df = pd.read_excel(f"{wkdir}/../data/Picture/AS_people_sample_dates3.xlsx")
     
     utils.createTable("createASPeople.sql")
 
@@ -73,12 +73,14 @@ def main():
     start = time.time()
     try:
         
-        #_insertDataFrame(firstRow=False)
+        _insertDataFrame(firstRow=True)
         #findId("gustave.faivre@yahoo.fr")
         df = getRecordsPeople()
-        logger.info(df.head())
+        #logger.info(df.head())
         #dictRes = fetch_person_decrypted(1)
         #logger.info(dictRes)
+        #logger.info("email address : %s", get_email(1))
+        #logger.info(get_email2("Heloise","Moisan", "9", "Boulogne-Billancourt"))
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

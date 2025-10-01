@@ -33,8 +33,8 @@ def age_years(dob, on_date=None):
     return years
 
 def getCity(longitude, latitude):
-    geolocator = Nominatim(user_agent="your_app_name")  # mettez un UA parlant
-    location = geolocator.reverse((longitude, latitude), language="fr")
+    geolocator = Nominatim(user_agent="ASConnect")  # mettez un UA parlant
+    location = geolocator.reverse((latitude,longitude), language="fr")
     ville = location.raw.get("address", {}).get("city") or \
             location.raw.get("address", {}).get("town") or \
             location.raw.get("address", {}).get("village")
@@ -124,6 +124,20 @@ def fetch_photo(person_id: int):
     photo, mime = rows[0]
     return photo, mime or "image/jpeg"
   
+def get_email(person_id: int) -> str | None:
+    row = _run_query(
+        text("""SELECT emailAddress FROM T_ASPeople WHERE id=:id"""),
+        return_result=True, paramsSQL={"id": person_id}
+    )
+    return str(utils.decrypt_bytes_to_str_strict(row[0][0]))
+
+def get_email2(firstName,lastName, age, city):
+    row = _run_query(
+        text("""SELECT emailAddress FROM T_ASPeople WHERE firstname=:firstname AND lastname=:lastname AND age:=age AND city:=city"""),
+        return_result=True, paramsSQL={"firstname": firstName, "lastname" : lastName, age:"age", city:"city"}
+    )
+    return str(utils.decrypt_bytes_to_str_strict(row[0][0]))
+
 
 def fetch_person_decrypted(person_id: int) -> dict | None:
     row = _run_query(
