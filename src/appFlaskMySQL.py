@@ -9,7 +9,7 @@ import time
 from angelmanSyndromeConnexion.peopleRepresentation import getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
 from angelmanSyndromeConnexion.pointRemarquable import getRecordsPointsRemarquables,insertPointRemarquable
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from logger import setup_logger
 from flask_cors import CORS
 import base64
@@ -19,6 +19,15 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from angelmanSyndromeConnexion.error import (
     AppError, MissingFieldError, DuplicateEmailError, ValidationError
 )
+
+#imports pour SMTP
+from functools import wraps
+import ssl
+from email.message import EmailMessage
+import smtplib
+import re  
+from time import monotonic
+
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -52,6 +61,17 @@ sshtunnel.TUNNEL_TIMEOUT = 10.0
 
 # Limite d'upload (4 MiB + petite marge)
 appFlaskMySQL.config["MAX_CONTENT_LENGTH"] = 4 * 1024 * 1024 + 16 * 1024
+
+# ----------- Config via variables d'environnement -----------
+filePath = f"{wkdir}/../angelman_viz_keys/Config5.ini"
+config.read(filePath)
+SMTP_HOST = config['SMTP_HOST']['SMTP']          # ex: "smtp.gmail.com" / "smtp.fastfrance.org"
+SMTP_PORT = int(config['SMTP_PORT']['PORT'])         # 587 (STARTTLS) ou 465 (SSL)
+SMTP_USER = config['SMTP_USER']['USER']          # ex: "no-reply@fastfrance.org"
+SMTP_PASS = config['SMTP_PASS']['PASS']
+MAIL_TO   = "contact@fastfrance.org"            # destinataire final
+MAIL_FROM = "asconnect@fastfrance.org"
+
 
 @appFlaskMySQL.errorhandler(AppError)
 def handle_app_error(e: AppError):
@@ -471,6 +491,84 @@ def api_MapIndonesia_Ind():
 def safe_get(data, key, default=""):
     """Retourne la valeur du champ ou une valeur par défaut."""
     return data.get(key) if data.get(key) not in [None, ""] else default
+
+
+
+MAX_SUBJECT = 140
+MAX_BODY    = 5000
+
+def sanitize_subject(s: str) -> str:
+    s = (s or "").strip()
+    # supprime retours à la ligne dans l'objet
+    s = re.sub(r'[\r\n]+', ' ', s)
+    return s[:MAX_SUBJECT]
+
+def sanitize_body(s: str) -> str:
+    s = (s or "").strip()
+    return s[:MAX_BODY]
+
+_last_hit = {}  # {ip: last_call_time}
+
+def ratelimit(seconds: float = 5.0):
+    def deco(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            ip = request.headers.get("X-Forwarded-For", request.remote_addr) or "anon"
+            now = monotonic()
+            last = _last_hit.get(ip, 0.0)
+            if now - last < seconds:
+                return jsonify({"error": "Trop de requêtes, réessaie dans quelques secondes."}), 429
+            _last_hit[ip] = now
+            return f(*args, **kwargs)
+        return wrapped
+    return deco
+
+@appFlaskMySQL.post("/api/v5/contact")
+@ratelimit(5)
+def relay_contact():
+    data = request.get_json(force=True, silent=True) or {}
+    subject = sanitize_subject(data.get("subject", ""))
+    body    = sanitize_body(data.get("body", ""))
+
+    if not subject or not body:
+        return jsonify({"error": "subject et body requis"}), 400
+
+    # --- lecture config + sécurités ---
+    try:
+        port = int(SMTP_PORT)   # IMPORTANT : cast en int
+    except Exception:
+        return jsonify({"error": "SMTP_PORT invalide"}), 500
+    if not SMTP_HOST or not SMTP_USER or not SMTP_PASS:
+        return jsonify({"error": "SMTP non configuré côté serveur"}), 500
+
+    # --- message ---
+    msg = EmailMessage()
+    msg["Subject"] = subject if subject.startswith("AS Connect - ") else f"AS Connect - {subject}"
+    msg["From"] = SMTP_USER           # OVH : From = compte authentifié
+    msg["Reply-To"] = MAIL_FROM       # pour que les réponses aillent à ton adresse “contact@fastfrance.org” si besoin
+    msg["To"] = MAIL_TO
+    msg.set_content(body)
+
+    # --- envoi OVH ---
+    try:
+        if port == 465:
+            # SSL/TLS direct
+            with smtplib.SMTP_SSL(SMTP_HOST, port, context=ssl.create_default_context(), timeout=12) as s:
+                s.login(SMTP_USER, SMTP_PASS)
+                s.send_message(msg)
+        else:
+            # STARTTLS (587)
+            with smtplib.SMTP(SMTP_HOST, port, timeout=12) as s:
+                s.ehlo()
+                s.starttls(context=ssl.create_default_context())
+                s.ehlo()
+                s.login(SMTP_USER, SMTP_PASS)
+                s.send_message(msg)
+    except Exception as e:
+        appFlaskMySQL.logger.exception("Erreur SMTP (OVH)")
+        return jsonify({"error": f"envoi impossible: {e}"}), 502
+
+    return jsonify({"ok": True})
 
 
 @appFlaskMySQL.route('/api/v5/people/<int:person_id>/photo', methods=['GET'])
