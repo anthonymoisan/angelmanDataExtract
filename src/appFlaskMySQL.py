@@ -25,7 +25,7 @@ from functools import wraps
 import ssl
 from email.message import EmailMessage
 import smtplib
-import re  
+import re
 from time import monotonic
 
 
@@ -222,7 +222,7 @@ def home():
     <li> API in order for reading data from MapIndia_English : <a href="/api/v4/resources/India/MapIndia_English">./api/v4/resources/India/MapIndia_English</a>
     <li> API in order for reading data from MapIndia_Hindi : <a href="/api/v4/resources/India/MapIndia_Hindi">./api/v4/resources/India/MapIndia_Hindi</a>
     </ul>
-    
+
     API Indonesia
     <ul>
     <li> API in order for reading data from MapIndonesia_English : <a href="/api/v4/resources/Indonesia/MapIndonesia_English">./api/v4/resources/India/MapIndonesia_English</a>
@@ -241,7 +241,7 @@ def home():
     <li>API in order for reading records for People : <a href="./api/v5/peopleMapRepresentation">./api/v5/peopleMapRepresentation</a></li>
     <li>API in order for reading records for PointRemarquable : <a href="./api/v5/pointRemarquableRepresentation">./api/v5/pointRemarquableRepresentation</a></li>
     </ul>
-    
+
     API Health Data Hub
     <ul>
     <li>API in order for reading data from HDH for pharmaceutical offices : <a href="./api/v6/resources/PharmaceuticalOffice">./api/v6/resources/PharmaceuticalOffice</a></li>
@@ -251,7 +251,7 @@ def home():
     <li>API in order for reading data from HDH for camps : <a href="./api/v6/resources/Camps">./api/v6/resources/Camps</a></li>
     <li>API in order for reading data from HDH for mdph : <a href="./api/v6/resources/Mdph">./api/v6/resources/Mdph</a></li>
     </ul>
-    
+
     '''
 
 
@@ -530,6 +530,27 @@ def relay_contact():
     subject = sanitize_subject(data.get("subject", ""))
     body    = sanitize_body(data.get("body", ""))
 
+    # --- VALIDATION CAPTCHA ---
+    captcha_token = (data.get("captcha_token") or "").strip()
+    captcha_answer = data.get("captcha_answer")
+
+    # token attendu: "<timestamp_ms>:<a>x<b>"
+    try:
+        ts_str, ab = captcha_token.split(":")
+        a_str, b_str = ab.split("x")
+        a = int(a_str); b = int(b_str)
+        client = int(captcha_answer)
+        # 1) somme correcte
+        if a + b != client:
+            return jsonify({"error": "captcha invalide"}), 400
+        # 2) pas trop vieux (ex: 5 minutes)
+        ts_ms = int(ts_str)
+        age_ms = int(datetime.now(timezone.utc).timestamp() * 1000) - ts_ms
+        if age_ms > 5 * 60 * 1000:
+            return jsonify({"error": "captcha expiré"}), 400
+    except Exception:
+        return jsonify({"error": "captcha manquant/incorrect"}), 400
+    # --- fin captcha ---
     if not subject or not body:
         return jsonify({"error": "subject et body requis"}), 400
 
@@ -716,7 +737,7 @@ def get_payloadPeople_from_request():
         raise ValidationError("longitude hors plage [-180, 180]")
     if not (-90.0 <= latC <= 90.0):
         raise ValidationError("latitude hors plage [-90, 90]")
-    
+
     # Champs requis
     required = ["firstname","lastname","emailAddress","dateOfBirth","genotype","longitude", "latitude", "password", "qSecrete", "rSecrete"]
     # Considère vide / espaces comme manquant
@@ -822,7 +843,7 @@ def create_pointRemarquable():
 @appFlaskMySQL.route("/api/v5/people/lookup", methods=['GET'])
 def get_idPerson():
     try:
-        
+
         email = request.args.get("email") or request.args.get("emailAddress")
         if not email or not email.strip():
             raise MissingFieldError("email (query param) manquant", {"missing": ["email"]})
