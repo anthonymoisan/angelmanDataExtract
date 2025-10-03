@@ -247,6 +247,197 @@ def insertData(
         raise
 
 
+def updateData(
+    email_address : str,
+    *,
+    firstname=None,
+    lastname=None,
+    dateOfBirth=None,    # datetime.date | str ISO | None
+    emailNewAddress = None,
+    genotype=None,
+    photo=None,          # bytes | None
+    longitude=None,      # float | None
+    latitude=None,       # float | None
+    city=None,           # str | None (si None et lat/lon changent => reverse geocoding best-effort)
+    password=None,       # str | None (si fourni => re-hash)
+    questionSecrete=None,# int | None (1..3)
+    reponseSecrete=None, # str | None
+    delete_photo: bool=False,  # True => met photo = NULL, photo_mime = NULL
+):
+    """
+    Met à jour T_ASPeople(id=person_id) de façon *partielle*.
+    Seuls les champs non-None sont pris en compte. Si delete_photo=True, la photo est supprimée.
+    Retourne le nombre de lignes affectées (0 ou 1).
+    """
+    try:
+        try:
+            pid = giveId(email_address)
+        except:
+            raise error.ValidationError("email address invalide")
+        
+        set_clauses = []
+        params = {"id": pid}
+
+        # ---- 1) Prénom / Nom / Génotype ----
+        if firstname is not None:
+            set_clauses.append("firstname = :fn")
+            params["fn"] = utils.encrypt_str(firstname)
+
+        if lastname is not None:
+            set_clauses.append("lastname = :ln")
+            params["ln"] = utils.encrypt_str(lastname)
+
+        if genotype is not None:
+            set_clauses.append("genotype = :gt")
+            params["gt"] = utils.encrypt_str(genotype)
+
+        # ---- 2) Email ----
+        if emailNewAddress is not None:
+            # chiffré + sha unique
+            em_enc = utils.encrypt_str(emailNewAddress)
+            em_sha = utils.email_sha256(emailNewAddress)
+            set_clauses.append("`emailAddress` = :em")
+            set_clauses.append("email_sha = :email_sha")
+            params["em"] = em_enc
+            params["email_sha"] = em_sha
+
+        # ---- 3) Date de naissance (+age) ----
+        if dateOfBirth is not None:
+            # accepte date | str
+            if isinstance(dateOfBirth, date):
+                dob = utils.coerce_to_date(dateOfBirth)
+            else:
+                dob = utils.coerce_to_date(dateOfBirth)  # doit savoir parser ISO 'YYYY-MM-DD'
+            if dob > date.today():
+                raise error.FutureDateError("dateOfBirth ne peut pas être dans le futur")
+
+            age_val = age_years(dob)
+            set_clauses.append("`dateOfBirth` = :dob")
+            set_clauses.append("age = :age")
+            params["dob"]  = utils.encrypt_date_like(dob)
+            params["age"]  = utils.encrypt_number(age_val)
+
+        # ---- 4) Long/Lat (+ ville best-effort) ----
+        lat_changed = (latitude is not None)
+        lon_changed = (longitude is not None)
+        if lon_changed:
+            set_clauses.append("longitude = :lon")
+            params["lon"] = utils.encrypt_number(float(longitude))
+        if lat_changed:
+            set_clauses.append("latitude = :lat")
+            params["lat"] = utils.encrypt_number(float(latitude))
+
+        # Ville : si explicitement fournie -> on la prend. Sinon, si lat/lon changés -> reverse geocoding best-effort.
+        if city is not None:
+            set_clauses.append("city = :city")
+            params["city"] = utils.encrypt_str(city.strip())
+        elif lat_changed or lon_changed:
+            try:
+                # get_city attend (lat, lon)
+                lat_for_city = float(latitude) if latitude is not None else None
+                lon_for_city = float(longitude) if longitude is not None else None
+                # Si un seul fourni, on ne tente pas un reverse partiel
+                if lat_for_city is not None and lon_for_city is not None:
+                    city_str = get_city(lat_for_city, lon_for_city) or ""
+                    set_clauses.append("city = :city")
+                    params["city"] = utils.encrypt_str(city_str.strip())
+            except Exception as e:
+                logger.warning("Reverse geocoding ignoré: %s", e)
+
+        # ---- 5) Secret Q/A ----
+        if questionSecrete is not None:
+            try:
+                q = int(questionSecrete)
+            except Exception:
+                raise error.ValidationError("questionSecrete doit être un entier 1..3")
+            if q not in (1, 2, 3):
+                raise error.ValidationError("questionSecrete doit être 1, 2 ou 3")
+            set_clauses.append("secret_question = :secret_q")
+            params["secret_q"] = utils.encrypt_number(q)
+
+        if reponseSecrete is not None:
+            set_clauses.append("secret_answer = :secret_ans")
+            params["secret_ans"] = utils.encrypt_str(reponseSecrete)
+
+        # ---- 6) Mot de passe ----
+        if password is not None:
+            if not isinstance(password, str) or len(password) == 0:
+                raise error.ValidationError("password ne doit pas être vide")
+            pwd_hash_bytes, pwd_meta = utils.hash_password_argon2(password)
+            pwd_meta_json = json.dumps(pwd_meta, separators=(",", ":"))
+            pwd_updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            set_clauses.append( "password_hash = :pwd_hash")
+            set_clauses.append( "password_algo = :pwd_algo")
+            set_clauses.append("password_meta = CAST(:pwd_meta AS JSON)")
+            set_clauses.append("password_updated_at = :pwd_updated_at")
+            
+            params.update({
+                "pwd_hash": pwd_hash_bytes,
+                "pwd_algo": "argon2id",
+                "pwd_meta": pwd_meta_json,
+                "pwd_updated_at": pwd_updated_at,
+            })
+
+        # ---- 7) Photo ----
+        if delete_photo:
+            set_clauses.append("photo = NULL")
+            set_clauses.append("photo_mime = NULL")
+        elif photo is not None:
+            # détection/recompression comme dans l'insert
+            detected_mime = utils.detect_mime_from_bytes(photo)
+            src_mime = utils.normalize_mime(detected_mime or "image/jpeg")
+            if src_mime not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
+                raise error.InvalidMimeTypeError(f"MIME non autorisé: {src_mime}")
+
+            try:
+                new_blob, new_mime = utils.recompress_image(photo)
+            except Exception as e:
+                logger.warning("Recompression échouée: %s", e, exc_info=True)
+                new_blob, new_mime = None, None
+
+            if new_blob and len(new_blob) < len(photo):
+                photo_blob_final = new_blob
+                photo_mime_final = utils.normalize_mime(new_mime or src_mime)
+            else:
+                photo_blob_final = photo
+                photo_mime_final = src_mime
+
+            if len(photo_blob_final) > 4 * 1024 * 1024:
+                raise error.PhotoTooLargeError("Photo > 4 MiB après recompression")
+
+            set_clauses.append("photo = :photo")
+            set_clauses.append("photo_mime = :photo_mime")
+            params["photo"] = photo_blob_final
+            params["photo_mime"] = photo_mime_final
+
+        # ---- 8) Rien à mettre à jour ? ----
+        if not set_clauses:
+            logger.warning("Aucun champ à mettre à jour")
+            raise
+
+        # ---- 9) UPDATE SQL ----
+        sql = text(f"""
+            UPDATE `T_ASPeople`
+            SET {", ".join(set_clauses)}
+            WHERE id = :id
+            LIMIT 1
+        """)
+
+        try:
+            affected = _run_query(sql, params=params)
+        except IntegrityError as ie:
+            # collision de email_sha (unique)
+            raise error.DuplicateEmailError(
+                "Un enregistrement avec cet email existe déjà"
+            ) from ie
+
+        return affected  # nombre de lignes affectées (0 ou 1)
+
+    except error.AppError:
+        raise
+    except Exception:
+        logger.error("Update failed in T_ASPeople", exc_info=True)
+        raise
 
 def fetch_photo(person_id: int):
     rows = _run_query(
@@ -302,6 +493,44 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
         "secret_answer" : secret_ans,
     }
 
+def fetch_person_decrypted_simple(person_id: int) -> dict | None:
+    row = _run_query(
+        text("""SELECT id, firstname, lastname, emailAddress, dateOfBirth,
+                       genotype, photo_mime, city, longitude, latitude, age 
+                FROM T_ASPeople WHERE id=:id"""),
+        return_result=True, params={"id": person_id}
+    )
+
+    if not row:
+        return None
+    
+    r = row[0]
+    fn  = utils.decrypt_bytes_to_str_strict(r[1])
+    ln  = utils.decrypt_bytes_to_str_strict(r[2])
+    em  = utils.decrypt_bytes_to_str_strict(r[3])
+    dob = utils.decrypt_bytes_to_str_strict(r[4])
+    gt  = utils.decrypt_bytes_to_str_strict(r[5])
+    ci  = utils.decrypt_bytes_to_str_strict(r[7])
+    long = utils.decrypt_number(r[8])
+    lat = utils.decrypt_number(r[9])
+    age = utils.decrypt_number(r[10])
+    
+
+    return {
+        "id": r[0],
+        "firstname": fn,
+        "lastname": ln,
+        "email": em,
+        "dateOfBirth": date.fromisoformat(dob) if dob else None,
+        "genotype": gt,
+        "photo_mime": r[6],
+        "city" : ci,
+        "age" : age,
+        "longitude" : long,
+        "latitude" : lat,
+    }
+
+
 def getRecordsPeople():
     data = []
     #Only need City, Id, Firstname, LastName, Genotype
@@ -310,7 +539,7 @@ def getRecordsPeople():
         return_result=True)
 
     for (pid,) in rows:               # chaque row est un tuple (id,)
-        person = fetch_person_decrypted(pid)   # ta fonction existante
+        person = fetch_person_decrypted_simple(pid)   # ta fonction existante
         if not person:
             continue
         data.append({

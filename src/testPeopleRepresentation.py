@@ -4,7 +4,7 @@ from pathlib import Path
 import sys,os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from logger import setup_logger
-from angelmanSyndromeConnexion.peopleRepresentation import insertData, giveId, getRecordsPeople,fetch_person_decrypted, authenticate_and_get_id, authenticate_email_password
+from angelmanSyndromeConnexion.peopleRepresentation import updateData,insertData, giveId, getRecordsPeople,fetch_person_decrypted, authenticate_and_get_id, authenticate_email_password
 import time
 from angelmanSyndromeConnexion import error
 
@@ -76,7 +76,7 @@ def main():
     start = time.time()
     try:
         
-        _insertDataFrame(firstRow=False)
+        #_insertDataFrame(firstRow=False)
         #findId("gustave.faivre@yahoo.fr")
         #df = getRecordsPeople()
         #logger.info(df.head())
@@ -85,7 +85,7 @@ def main():
         #id = authenticate_and_get_id("louise.richard1@fastfrance.org", "Mmas&37814" ) 
         #logger.info("Id : %d", id)
         #logger.info("Authentification : %d", authenticate_email_password("mal.legrand2@mail.fr", "Mmas&37815"))
-        
+        #updateData("anthonymoisan@yahoo.fr", password="Mmas|3783",delete_photo=True)
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

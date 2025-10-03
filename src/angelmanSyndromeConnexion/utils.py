@@ -36,9 +36,6 @@ cipher = Fernet(key)
 
 # --- helpers ---
 
-# utils.py — extrait à ajouter
-
-
 MAX_SIDE = 1080
 TARGET_FORMAT = "WEBP"  # ou "JPEG"
 QUALITY = 80
@@ -88,6 +85,8 @@ def recompress_image(blob, target_format=TARGET_FORMAT, quality=QUALITY):
 
     return out.getvalue(), mime
 
+'''
+# Il fait toute la base
 SQL_SELECT = text("""
     SELECT id, photo, photo_mime
     FROM T_ASPeople
@@ -110,7 +109,7 @@ for pid, blob, mime in rows:
         logger.warning("Blob non image ignoré (id=%s)", pid)
     except Exception as e:
         logger.warning("[WARN] id=%s: %s", pid, e, exc_info=True)
-
+'''
 
 # Paramètres raisonnables (à ajuster selon tes contraintes perf/sécu)
 # - time_cost (t) : nombre d’itérations
