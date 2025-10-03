@@ -76,15 +76,16 @@ def main():
     start = time.time()
     try:
         
-        #_insertDataFrame(firstRow=True)
+        _insertDataFrame(firstRow=False)
         #findId("gustave.faivre@yahoo.fr")
         #df = getRecordsPeople()
         #logger.info(df.head())
         #dictRes = fetch_person_decrypted(1)
         #logger.info(dictRes)
-        id = authenticate_and_get_id("louise.richard1@fastfrance.org", "Mmas&37814" ) 
-        logger.info("Id : %d", id)
-        logger.info("Authentification : %d", authenticate_email_password("mal.legrand2@mail.fr", "Mmas&37815"))
+        #id = authenticate_and_get_id("louise.richard1@fastfrance.org", "Mmas&37814" ) 
+        #logger.info("Id : %d", id)
+        #logger.info("Authentification : %d", authenticate_email_password("mal.legrand2@mail.fr", "Mmas&37815"))
+        
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

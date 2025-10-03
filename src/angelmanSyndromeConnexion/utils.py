@@ -11,6 +11,9 @@ import numpy as np
 from datetime import datetime,date
 from tkinter import Image
 from sqlalchemy import text
+from PIL import Image, ImageOps
+from PIL import UnidentifiedImageError
+
 from .  import error
 import io
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -34,6 +37,79 @@ cipher = Fernet(key)
 # --- helpers ---
 
 # utils.py — extrait à ajouter
+
+
+MAX_SIDE = 1080
+TARGET_FORMAT = "WEBP"  # ou "JPEG"
+QUALITY = 80
+
+# Compat Pillow
+RESAMPLE = getattr(getattr(Image, "Resampling", Image), "LANCZOS", Image.BICUBIC)
+
+def recompress_image(blob, target_format=TARGET_FORMAT, quality=QUALITY):
+    if not blob:
+        return None, None
+
+    im = Image.open(io.BytesIO(blob))
+    im = ImageOps.exif_transpose(im)
+
+    # Redimension proportionnel si nécessaire
+    w, h = im.size
+    scale = min(1.0, MAX_SIDE / max(w, h))
+    if scale < 1.0:
+        im = im.resize((int(w * scale), int(h * scale)), RESAMPLE)
+
+    # Gestion alpha selon format cible
+    tf = target_format.upper()
+    if tf == "WEBP":
+        # WebP supporte l'alpha
+        if im.mode in ("RGBA", "LA"):
+            im = im.convert("RGBA")
+        else:
+            im = im.convert("RGB")
+    elif tf == "JPEG":
+        # JPEG ne gère pas l'alpha -> aplatir sur blanc
+        if im.mode in ("RGBA", "LA"):
+            bg = Image.new("RGB", im.size, (255, 255, 255))
+            bg.paste(im, mask=im.split()[-1])
+            im = bg
+        else:
+            im = im.convert("RGB")
+    else:
+        raise ValueError("Format non géré")
+
+    out = io.BytesIO()
+    if tf == "WEBP":
+        im.save(out, format="WEBP", quality=quality, method=6)  # method=6 = plus efficace
+        mime = "image/webp"
+    elif tf == "JPEG":
+        im.save(out, format="JPEG", quality=quality, optimize=True, progressive=True)
+        mime = "image/jpeg"
+
+    return out.getvalue(), mime
+
+SQL_SELECT = text("""
+    SELECT id, photo, photo_mime
+    FROM T_ASPeople
+    WHERE photo IS NOT NULL
+""")
+rows = _run_query(SQL_SELECT, return_result=True)
+
+for pid, blob, mime in rows:
+    try:
+        new_blob, new_mime = recompress_image(blob)
+        if new_blob and len(new_blob) < len(blob):
+            SQL_UPDATE = text("""
+                UPDATE T_ASPeople
+                SET photo = :p, photo_mime = :m
+                WHERE id = :id
+            """)
+            params = {"p": new_blob, "m": new_mime, "id": pid}
+            _run_query(SQL_UPDATE, params=params)
+    except UnidentifiedImageError:
+        logger.warning("Blob non image ignoré (id=%s)", pid)
+    except Exception as e:
+        logger.warning("[WARN] id=%s: %s", pid, e, exc_info=True)
 
 
 # Paramètres raisonnables (à ajuster selon tes contraintes perf/sécu)

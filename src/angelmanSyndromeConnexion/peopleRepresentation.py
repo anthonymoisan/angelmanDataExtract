@@ -97,39 +97,61 @@ def age_years(dob, on_date=None):
         years -= 1
     return years
 
-
 def insertData(
     firstname,
     lastname,
     emailAddress,
     dateOfBirth,
     genotype,
-    photo,
+    photo,           # bytes | None
     longitude,
     latitude,
     password,
-    questionSecrete,   # int 1..3
-    reponseSecrete     # str (sera chiffrée)
+    questionSecrete, # int 1..3
+    reponseSecrete   # str (sera chiffrée)
 ):
     try:
         # -------- 1) Validations minimales --------
         if not isinstance(dateOfBirth, date):
-            # Si on te passe un str, convertis-le côté appelant avant d'arriver ici
+            # Convertir côté appelant si nécessaire pour garantir un datetime.date
             raise TypeError("dateOfBirth doit être un datetime.date")
 
         dob = utils.coerce_to_date(dateOfBirth)
         if dob > date.today():
             raise error.FutureDateError("dateOfBirth ne peut pas être dans le futur")
 
+        # -------- 1bis) Photo : recompression et choix final --------
+        photo_blob_final = None
+        photo_mime_final = None
+
         if photo is not None:
-            if len(photo) > 4 * 1024 * 1024:
-                raise error.PhotoTooLargeError("Photo > 4 MiB")
-            detected = utils.detect_mime_from_bytes(photo)
-            photo_mime = utils.normalize_mime(detected or "image/jpeg")
-            if photo_mime not in {"image/jpeg","image/jpg","image/png","image/webp"}:
-                raise error.InvalidMimeTypeError(f"MIME non autorisé: {photo_mime}")
+            # Détection MIME robuste (indépendant de l'extension)
+            detected_mime = utils.detect_mime_from_bytes(photo)  # p.ex. "image/jpeg"
+            src_mime = utils.normalize_mime(detected_mime or "image/jpeg")
+            if src_mime not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
+                raise error.InvalidMimeTypeError(f"MIME non autorisé: {src_mime}")
+
+            # Tenter une recompression (doit renvoyer (blob, mime) ou (None, None))
+            try:
+                new_blob, new_mime = utils.recompress_image(photo)
+            except Exception as e:
+                logger.warning("Recompression échouée: %s", e, exc_info=True)
+                new_blob, new_mime = None, None
+
+            # Choisir la meilleure version (garder original si pas plus petit)
+            if new_blob and len(new_blob) < len(photo):
+                photo_blob_final = new_blob
+                photo_mime_final = utils.normalize_mime(new_mime or src_mime)
+            else:
+                photo_blob_final = photo
+                photo_mime_final = src_mime
+
+            # Contrôle de taille APRÈS recompression/fallback (contrainte DB)
+            if len(photo_blob_final) > 4 * 1024 * 1024:
+                raise error.PhotoTooLargeError("Photo > 4 MiB après recompression")
         else:
-            photo_mime = None  # doit matcher la contrainte: photo NULL => photo_mime NULL
+            photo_blob_final = None
+            photo_mime_final = None  # cohérence avec vos CHECK
 
         # -------- 2) Dérivations applicatives --------
         age = age_years(dob)
@@ -137,7 +159,6 @@ def insertData(
         # Reverse géocoding best-effort (NE DOIT PAS planter l'insert)
         # NB: get_city attend (lat, lon)
         city_str = get_city(latitude, longitude) or ""  # fallback vide
-
         logger.info(city_str)
 
         # -------- 3) Chiffrement --------
@@ -155,24 +176,19 @@ def insertData(
         em_sha  = utils.email_sha256(emailAddress)
 
         # --- Secret Q/A ---
-        # questionSecrete: entier 1..3 (assuré côté appelant)
         try:
             secret_q = int(questionSecrete)
         except Exception:
             raise error.ValidationError("questionSecrete doit être un entier 1..3")
         if secret_q not in (1, 2, 3):
             raise error.ValidationError("questionSecrete doit être 1, 2 ou 3")
-        secret_ans_enc = utils.encrypt_str(reponseSecrete)
+        secret_que_enc = utils.encrypt_number(secret_q)      # VARBINARY dans le schéma
+        secret_ans_enc = utils.encrypt_str(reponseSecrete)   # chiffrée
 
         # -------- 4) Hachage mot de passe (Argon2id) --------
-        # utils.hash_password_argon2(password) -> (hash_bytes, meta_dict)
         pwd_hash_bytes, pwd_meta = utils.hash_password_argon2(password)
         pwd_meta_json = json.dumps(pwd_meta, separators=(",", ":"))
         pwd_updated_at = datetime.now(timezone.utc).replace(tzinfo=None)  # DATETIME sans TZ
-
-        # Cohérence photo / mime (contrainte SQL):
-        if photo is None:
-            photo_mime = None
 
         # -------- 5) INSERT SQL paramétré --------
         sql = text("""
@@ -196,41 +212,40 @@ def insertData(
             "gt": gt_enc,
             "lon": lon_enc,
             "lat": lat_enc,
-            "photo": photo,               # bytes ou None
-            "photo_mime": photo_mime,     # str ou None
+            "photo": photo_blob_final,          # bytes ou None
+            "photo_mime": photo_mime_final,     # str ou None
             "city": ci_enc,
             "age": age_enc,
-            "email_sha": em_sha,          # 32 bytes
-            "pwd_hash": pwd_hash_bytes,   # bytes (la string $argon2id$… en bytes)
+            "email_sha": em_sha,                # 32 bytes
+            "pwd_hash": pwd_hash_bytes,         # bytes ($argon2id$… en bytes)
             "pwd_algo": "argon2id",
-            "pwd_meta": pwd_meta_json,    # CHAÎNE JSON, castée côté SQL
+            "pwd_meta": pwd_meta_json,          # CHAÎNE JSON, castée côté SQL
             "pwd_updated_at": pwd_updated_at,
-            "secret_q": secret_q,
-            "secret_ans": secret_ans_enc,
+            "secret_q": secret_que_enc,         # chiffrée (VARBINARY)
+            "secret_ans": secret_ans_enc,       # chiffrée (VARBINARY)
         }
 
-        # 5) insertion
         try:
-            # Exécution
             _run_query(sql, params=params)
         except IntegrityError as ie:
-            # clé unique sur email_sha
+            # Clé unique sur email_sha
             raise error.DuplicateEmailError(
                 "Un enregistrement avec cet email existe déjà"
             ) from ie
 
-        # 6) retourner un indicateur (ex: nb total ou id)
+        # -------- 6) Retour indicatif --------
         lastRowId = _run_query(
             text("SELECT COUNT(*) FROM T_ASPeople"),
             return_result=True
         )
         return lastRowId[0][0]
 
-    except error.AppError as e:
+    except error.AppError:
         raise
     except Exception:
         logger.error("Insert failed in T_ASPeople", exc_info=True)
         raise
+
 
 
 def fetch_photo(person_id: int):
@@ -249,7 +264,8 @@ def fetch_photo(person_id: int):
 def fetch_person_decrypted(person_id: int) -> dict | None:
     row = _run_query(
         text("""SELECT id, firstname, lastname, emailAddress, dateOfBirth,
-                       genotype, photo_mime, city, longitude, latitude, age
+                       genotype, photo_mime, city, longitude, latitude, age, 
+                       secret_question, secret_answer 
                 FROM T_ASPeople WHERE id=:id"""),
         return_result=True, params={"id": person_id}
     )
@@ -267,6 +283,8 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
     long = utils.decrypt_number(r[8])
     lat = utils.decrypt_number(r[9])
     age = utils.decrypt_number(r[10])
+    secret_quest = (int)(utils.decrypt_number(r[11]))
+    secret_ans = utils.decrypt_bytes_to_str_strict(r[12])
 
     return {
         "id": r[0],
@@ -280,6 +298,8 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
         "age" : age,
         "longitude" : long,
         "latitude" : lat,
+        "secret_question" : secret_quest,
+        "secret_answer" : secret_ans,
     }
 
 def getRecordsPeople():

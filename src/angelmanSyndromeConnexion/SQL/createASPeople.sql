@@ -26,10 +26,8 @@ CREATE TABLE IF NOT EXISTS T_ASPeople (
   -- 1 = "Nom de naissance de la maman ?"
   -- 2 = "Acteur/actrice de cinéma favori ?"
   -- 3 = "Animal de compagnie favori ?"
-  secret_question  TINYINT UNSIGNED NOT NULL,
-  CONSTRAINT ck_aspeople_secret_q_range
-    CHECK (secret_question BETWEEN 1 AND 3),
-
+  secret_question  VARBINARY(256)  NOT NULL,
+  
   -- Réponse secrète (chiffrée)
   secret_answer    VARBINARY(2048) NOT NULL,
 
