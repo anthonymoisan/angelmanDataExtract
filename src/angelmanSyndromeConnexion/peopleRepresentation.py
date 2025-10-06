@@ -578,34 +578,30 @@ def giveId(email_real):
     )
     return int(row[0][0]) if row else None
 
-def deleteData(email_real):
-    sha = utils.email_sha256(email_real)
-    row = _run_query(
-        text("DELETE FROM T_ASPeople WHERE email_sha = :sha"),
-        params={"sha": sha},
+from sqlalchemy import text
+# ... import/engine/_run_query selon ton projet
+
+def deleteDataById(person_id: int) -> int:
+    """
+    Supprime une personne par ID et renvoie le nombre de lignes supprimées (0 ou 1).
+    Fallback: si l’enregistrement existait mais que rowcount est indéterminé,
+    on renvoie 1.
+    """
+    pid = int(person_id)
+
+    # 1) Vérifier existence
+    exists_rows = _run_query(
+        text("SELECT 1 FROM T_ASPeople WHERE id = :id LIMIT 1"),
+        params={"id": pid},
+        return_result=True
+    )
+    if not exists_rows or not exists_rows[0]:
+        return 0  # rien à supprimer
+
+    # 2) Supprimer
+    res = _run_query(
+        text("DELETE FROM T_ASPeople WHERE id = :id"),
+        params={"id": pid}
     )
 
-def giveEmail(person_id: int) -> str | None:
-    """
-    Retourne l'email déchiffré pour l'id donné, ou None si introuvable.
-    """
-    try:
-        row = _run_query(
-            text("SELECT `emailAddress` FROM `T_ASPeople` WHERE id = :id LIMIT 1"),
-            params={"id": int(person_id)},
-            return_result=True
-        )
-        if not row:
-            return None
 
-        email_cipher = row[0][0]  # VARBINARY chiffré
-        if not email_cipher:
-            return None
-
-        # Déchiffre (même primitive que pour firstname/lastname)
-        email_plain = utils.decrypt_bytes_to_str_strict(email_cipher)
-        return email_plain
-
-    except Exception:
-        logger.exception("giveEmail(%s) failed", person_id)
-        raise AppError("read_failed", "Impossible de lire l'email")

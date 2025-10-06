@@ -6,7 +6,7 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from angelmanSyndromeConnexion.peopleRepresentation import giveEmail,deleteData, updateData, getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
+from angelmanSyndromeConnexion.peopleRepresentation import deleteDataById, updateData, getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
 from angelmanSyndromeConnexion.pointRemarquable import getRecordsPointsRemarquables,insertPointRemarquable
 import json
 from datetime import datetime, timezone
@@ -740,96 +740,22 @@ def auth_login():
 
     return jsonify({"ok": True, "id": person_id}), 200
 
-@appFlaskMySQL.route("/api/v5/people/delete", methods=["DELETE"])
+
+@appFlaskMySQL.route("/api/v5/people/delete/<int:person_id>", methods=["DELETE"])
 @ratelimit(3)
-def api_delete_person():
-    """
-    Supprime une personne par email (emailAddress), en s'appuyant sur deleteData(email_real)
-    qui efface la ligne via email_sha. Les FK en base doivent être ON DELETE CASCADE
-    pour supprimer automatiquement les enregistrements enfants.
-    """
+def api_delete_person_by_id(person_id: int):
     try:
-        # Unifie la source (JSON, form, ou query string)
-        src = _get_src() or {}
-
-        email_current = (
-            (src.get("emailAddress") if isinstance(src, dict) else None)
-            or request.args.get("emailAddress")
-            or (src.get("email") if isinstance(src, dict) else None)
-            or request.args.get("email")
-            or ""
-        ).strip()
-
-        if not email_current:
-            # cohérent avec tes autres handlers
-            raise MissingFieldError("emailAddress manquant", {"missing": ["emailAddress"]})
-
-        # Appel métier : doit retourner le nombre de lignes affectées
-        try:
-            affected = deleteData(email_current)
-        except Exception as e:
-            appFlaskMySQL.logger.exception("Erreur deleteData")
-            return jsonify({"error": f"erreur serveur: {e}"}), 500
-
-        # Selon ton _run_query, 'affected' peut être un int ou un objet ; sécurisons:
-        try:
-            affected_int = int(affected)
-        except Exception:
-            affected_int = 0 if not affected else 1  # fallback
-
-        if affected_int == 0:
-            # Rien supprimé => not found
-            return jsonify({"ok": False, "deleted": 0, "message": "Aucun utilisateur avec cet email."}), 404
-
-        return jsonify({"ok": True, "deleted": affected_int}), 200
+        deleteDataById(person_id)
+        
+        return jsonify({"ok": True, "deleted": person_id}), 200
 
     except AppError as e:
         return handle_app_error(e)
     except Exception as e:
-        appFlaskMySQL.logger.exception("Erreur API delete person")
+        appFlaskMySQL.logger.exception("Erreur suppression par id")
         return jsonify({"error": f"erreur serveur: {e}"}), 500
 
-def _mask_email(s: str | None) -> str:
-    if not s or "@" not in s:
-        return ""
-    user, domain = s.split("@", 1)
-    if len(user) <= 2:
-        masked_user = user[:1] + "****"
-    else:
-        masked_user = user[:1] + "****" + user[-1:]
-    return f"{masked_user}@{domain}"
-
-@appFlaskMySQL.route("/api/v5/people/<int:person_id>/email", methods=["GET"])
-@ratelimit(3)
-def api_get_email(person_id: int):
-    """
-    Retourne l'email (déchiffré) de la personne.
-    Query param optionnel: ?masked=1 pour retourner une version masquée.
-      - 200: {"id": <id>, "email": "<email | masked>"}
-      - 404: {"status":"not_found"}
-    """
-    try:
-        masked = (request.args.get("masked", "").strip().lower() in {"1","true","yes","on"})
-        email_plain = giveEmail(person_id)
-
-        if not email_plain:
-            return jsonify({"status": "not_found"}), 404
-
-        # log léger, sans données perso en clair
-        appFlaskMySQL.logger.info("people/%s/email fetched (masked=%s)", person_id, masked)
-
-        return jsonify({
-            "id": person_id,
-            "email": _mask_email(email_plain) if masked else email_plain
-        }), 200
-
-    except AppError as e:
-        return handle_app_error(e)
-    except Exception as e:
-        appFlaskMySQL.logger.exception("Erreur lecture email pour id=%s", person_id)
-        return jsonify({"error": f"erreur serveur: {e}"}), 500
-
-
+    
 @appFlaskMySQL.route('/api/v5/peopleMapRepresentation', methods=['GET'])
 def peopleMapRepresentation():
     df = getRecordsPeople()
