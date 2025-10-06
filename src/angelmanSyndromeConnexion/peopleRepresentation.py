@@ -585,4 +585,27 @@ def deleteData(email_real):
         params={"sha": sha},
     )
 
-    
+def giveEmail(person_id: int) -> str | None:
+    """
+    Retourne l'email déchiffré pour l'id donné, ou None si introuvable.
+    """
+    try:
+        row = _run_query(
+            text("SELECT `emailAddress` FROM `T_ASPeople` WHERE id = :id LIMIT 1"),
+            params={"id": int(person_id)},
+            return_result=True
+        )
+        if not row:
+            return None
+
+        email_cipher = row[0][0]  # VARBINARY chiffré
+        if not email_cipher:
+            return None
+
+        # Déchiffre (même primitive que pour firstname/lastname)
+        email_plain = utils.decrypt_bytes_to_str_strict(email_cipher)
+        return email_plain
+
+    except Exception:
+        logger.exception("giveEmail(%s) failed", person_id)
+        raise AppError("read_failed", "Impossible de lire l'email")

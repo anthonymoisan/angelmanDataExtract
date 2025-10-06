@@ -6,7 +6,7 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from angelmanSyndromeConnexion.peopleRepresentation import deleteData, updateData, getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
+from angelmanSyndromeConnexion.peopleRepresentation import giveEmail,deleteData, updateData, getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
 from angelmanSyndromeConnexion.pointRemarquable import getRecordsPointsRemarquables,insertPointRemarquable
 import json
 from datetime import datetime, timezone
@@ -787,6 +787,46 @@ def api_delete_person():
         return handle_app_error(e)
     except Exception as e:
         appFlaskMySQL.logger.exception("Erreur API delete person")
+        return jsonify({"error": f"erreur serveur: {e}"}), 500
+
+def _mask_email(s: str | None) -> str:
+    if not s or "@" not in s:
+        return ""
+    user, domain = s.split("@", 1)
+    if len(user) <= 2:
+        masked_user = user[:1] + "****"
+    else:
+        masked_user = user[:1] + "****" + user[-1:]
+    return f"{masked_user}@{domain}"
+
+@appFlaskMySQL.route("/api/v5/people/<int:person_id>/email", methods=["GET"])
+@ratelimit(3)
+def api_get_email(person_id: int):
+    """
+    Retourne l'email (déchiffré) de la personne.
+    Query param optionnel: ?masked=1 pour retourner une version masquée.
+      - 200: {"id": <id>, "email": "<email | masked>"}
+      - 404: {"status":"not_found"}
+    """
+    try:
+        masked = (request.args.get("masked", "").strip().lower() in {"1","true","yes","on"})
+        email_plain = giveEmail(person_id)
+
+        if not email_plain:
+            return jsonify({"status": "not_found"}), 404
+
+        # log léger, sans données perso en clair
+        appFlaskMySQL.logger.info("people/%s/email fetched (masked=%s)", person_id, masked)
+
+        return jsonify({
+            "id": person_id,
+            "email": _mask_email(email_plain) if masked else email_plain
+        }), 200
+
+    except AppError as e:
+        return handle_app_error(e)
+    except Exception as e:
+        appFlaskMySQL.logger.exception("Erreur lecture email pour id=%s", person_id)
         return jsonify({"error": f"erreur serveur: {e}"}), 500
 
 
