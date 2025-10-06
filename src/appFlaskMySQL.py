@@ -6,7 +6,7 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from angelmanSyndromeConnexion.peopleRepresentation import getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
+from angelmanSyndromeConnexion.peopleRepresentation import deleteData, updateData, getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
 from angelmanSyndromeConnexion.pointRemarquable import getRecordsPointsRemarquables,insertPointRemarquable
 import json
 from datetime import datetime, timezone
@@ -591,7 +591,110 @@ def relay_contact():
 
     return jsonify({"ok": True})
 
+@appFlaskMySQL.route("/api/v5/people/update", methods=["PATCH", "PUT"])
+@ratelimit(3)
+def api_update_person():
+    try:
+        # -------- Helpers conversions robustes --------
+        def _to_bool(v):
+            if isinstance(v, bool): return v
+            if isinstance(v, (int, float)): return v != 0
+            if isinstance(v, str): return v.strip().lower() in {"1","true","yes","on"}
+            return False
 
+        def _to_float_or_none(v):
+            if v in (None, "", "null"): return None
+            try: return float(str(v).replace(",", "."))
+            except: return None
+
+        def _to_int_or_none(v):
+            if v in (None, "", "null"): return None
+            try: return int(str(v).strip())
+            except: return None
+
+        # -------- Unifier la source (JSON ou form) --------
+        src = _get_src() or {}
+
+        # -------- Email courant OBLIGATOIRE --------
+        email_current = (
+            (src.get("emailAddress") if isinstance(src, dict) else None)
+            or request.args.get("emailAddress")
+            or (src.get("email") if isinstance(src, dict) else None)
+            or request.args.get("email")
+            or ""
+        ).strip()
+        if not email_current:
+            raise MissingFieldError("emailAddress manquant", {"missing": ["emailAddress"]})
+
+        # -------- Construire kwargs dynamiquement (ne rien passer à None) --------
+        kwargs = {}
+
+        # Simples textes
+        for key_src, key_dst in [
+            ("firstname", "firstname"),
+            ("lastname", "lastname"),
+            ("genotype", "genotype"),
+            ("city", "city"),
+            ("password", "password"),
+            ("emailNewAddress", "emailNewAddress"),
+            ("newEmail", "emailNewAddress"),     # alias
+            ("reponseSecrete", "reponseSecrete")
+        ]:
+            val = src.get(key_src)
+            if isinstance(val, str):
+                val = val.strip()
+            if val not in (None, ""):
+                kwargs[key_dst] = val
+
+        # Date (optionnelle)
+        if src.get("dateOfBirth"):
+            kwargs["dateOfBirth"] = parse_date_any(src.get("dateOfBirth"))
+
+        # Float optionnels
+        lon = _to_float_or_none(src.get("longitude"))
+        lat = _to_float_or_none(src.get("latitude"))
+        if lon is not None: kwargs["longitude"] = lon
+        if lat is not None: kwargs["latitude"] = lat
+
+        # Int optionnel (NE PAS PASSER si None)
+        qsec = _to_int_or_none(src.get("questionSecrete"))
+        if qsec is not None:
+            kwargs["questionSecrete"] = qsec
+
+        # Bool optionnel
+        if "delete_photo" in src:
+            kwargs["delete_photo"] = _to_bool(src.get("delete_photo"))
+
+        # Photo (multipart OU base64)
+        photo_bytes = None
+        if request.content_type and request.content_type.startswith("multipart/form-data"):
+            f = request.files.get("photo")
+            if f and f.filename:
+                photo_bytes = f.read()
+        else:
+            b64 = src.get("photo_base64")
+            if b64:
+                if "," in b64:
+                    b64 = b64.split(",", 1)[1]
+                photo_bytes = base64.b64decode(b64)
+
+        if photo_bytes is not None:
+            kwargs["photo"] = photo_bytes
+
+        # -------- Appel métier: on passe UNIQUEMENT des kwargs non-None --------
+        affected = updateData(email_address=email_current, **kwargs)
+
+        if affected == 0:
+            return jsonify({"ok": True, "updated": 0, "message": "Aucune modification appliquée."}), 200
+        return jsonify({"ok": True, "updated": int(affected)}), 200
+
+    except AppError as e:
+        return handle_app_error(e)
+    except Exception as e:
+        appFlaskMySQL.logger.exception("Erreur update person")
+        return jsonify({"error": f"erreur serveur: {e}"}), 500
+
+    
 @appFlaskMySQL.route('/api/v5/people/<int:person_id>/photo', methods=['GET'])
 def person_photo(person_id):
     photo, mime = fetch_photo(person_id)
@@ -637,6 +740,54 @@ def auth_login():
 
     return jsonify({"ok": True, "id": person_id}), 200
 
+@appFlaskMySQL.route("/api/v5/people/delete", methods=["DELETE"])
+@ratelimit(3)
+def api_delete_person():
+    """
+    Supprime une personne par email (emailAddress), en s'appuyant sur deleteData(email_real)
+    qui efface la ligne via email_sha. Les FK en base doivent être ON DELETE CASCADE
+    pour supprimer automatiquement les enregistrements enfants.
+    """
+    try:
+        # Unifie la source (JSON, form, ou query string)
+        src = _get_src() or {}
+
+        email_current = (
+            (src.get("emailAddress") if isinstance(src, dict) else None)
+            or request.args.get("emailAddress")
+            or (src.get("email") if isinstance(src, dict) else None)
+            or request.args.get("email")
+            or ""
+        ).strip()
+
+        if not email_current:
+            # cohérent avec tes autres handlers
+            raise MissingFieldError("emailAddress manquant", {"missing": ["emailAddress"]})
+
+        # Appel métier : doit retourner le nombre de lignes affectées
+        try:
+            affected = deleteData(email_current)
+        except Exception as e:
+            appFlaskMySQL.logger.exception("Erreur deleteData")
+            return jsonify({"error": f"erreur serveur: {e}"}), 500
+
+        # Selon ton _run_query, 'affected' peut être un int ou un objet ; sécurisons:
+        try:
+            affected_int = int(affected)
+        except Exception:
+            affected_int = 0 if not affected else 1  # fallback
+
+        if affected_int == 0:
+            # Rien supprimé => not found
+            return jsonify({"ok": False, "deleted": 0, "message": "Aucun utilisateur avec cet email."}), 404
+
+        return jsonify({"ok": True, "deleted": affected_int}), 200
+
+    except AppError as e:
+        return handle_app_error(e)
+    except Exception as e:
+        appFlaskMySQL.logger.exception("Erreur API delete person")
+        return jsonify({"error": f"erreur serveur: {e}"}), 500
 
 
 @appFlaskMySQL.route('/api/v5/peopleMapRepresentation', methods=['GET'])
