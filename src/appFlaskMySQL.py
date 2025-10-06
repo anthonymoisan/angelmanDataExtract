@@ -6,7 +6,7 @@ import sshtunnel
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
-from angelmanSyndromeConnexion.peopleRepresentation import deleteDataById, updateData, getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
+from angelmanSyndromeConnexion.peopleRepresentation import verifySecretAnswer,getQuestionSecrete,deleteDataById, updateData, getRecordsPeople,giveId,fetch_photo,fetch_person_decrypted, insertData,authenticate_and_get_id
 from angelmanSyndromeConnexion.pointRemarquable import getRecordsPointsRemarquables,insertPointRemarquable
 import json
 from datetime import datetime, timezone
@@ -694,7 +694,120 @@ def api_update_person():
         appFlaskMySQL.logger.exception("Erreur update person")
         return jsonify({"error": f"erreur serveur: {e}"}), 500
 
-    
+# Dans ton fichier API Flask (où appFlaskMySQL est défini)
+from flask import request, jsonify
+from sqlalchemy import text
+
+# Dictionnaire des libellés (mêmes codes que côté app)
+SECRET_QUESTION_LABELS = {
+    1: "Nom de naissance de votre maman ?",
+    2: "Nom de votre acteur de cinéma favori ?",
+    3: "Nom de votre animal de compagnie favori ?",
+}
+
+@appFlaskMySQL.route("/api/v5/people/secret-question", methods=["GET"])
+@ratelimit(3)
+def api_get_secret_question():
+    """
+    GET /api/v5/people/secret-question?email=...
+    Retourne le code de la question secrète et son libellé associé.
+    Ne renvoie PAS la réponse secrète.
+    """
+    try:
+        # --- 1) Récupérer l'email depuis query string (ou JSON si besoin) ---
+        email = (request.args.get("email") or "").strip()
+        if not email:
+            # Si tu as déjà une classe d'erreur appli *MissingFieldError*, utilise-la
+            return jsonify({
+                "status": "error",
+                "code": "missing_field",
+                "message": "email manquant",
+                "details": {"missing": ["email"]}
+            }), 400
+
+        # --- 2) Retrouver l'id de la personne ---
+        # Si tu as déjà une fonction utilitaire giveId(email), utilise-la :
+        try:
+            person_id = giveId(email)   # doit lever si introuvable
+        except Exception:
+            # Personne non trouvée
+            return jsonify({"ok": False, "message": "Utilisateur introuvable"}), 404
+
+        # --- 3) Lire la question & réponse chiffrées puis ne retourner que la question ---
+        qr = getQuestionSecrete(person_id)  # -> (code_question:int, reponse:str) ou None
+        if not qr:
+            return jsonify({"ok": False, "message": "Question secrète introuvable"}), 404
+
+
+        # --- 4) Mapper vers un libellé convivial ---
+        label = SECRET_QUESTION_LABELS.get(int(qr), "Question inconnue")
+
+        return jsonify({
+            "ok": True,
+            "question": int(qr),
+            "label": label
+        }), 200
+
+    except AppError as e:  # si tu as une hiérarchie d’erreurs appli
+        return handle_app_error(e)   # ta fonction standard de sérialisation d’erreurs
+    except Exception as e:
+        appFlaskMySQL.logger.exception("Erreur API secret-question")
+        return jsonify({"error": f"erreur serveur: {e}"}), 500
+
+@appFlaskMySQL.route("/api/v5/people/secret-answer/verify", methods=["POST"])
+@ratelimit(5)
+def api_verify_secret_answer():
+    """
+    Vérifie la réponse secrète d'un utilisateur.
+    Entrée (JSON ou form):
+      - email (string) OU id (int)
+      - answer (string)  <-- requis
+    Sortie:
+      { "ok": true }  si la réponse correspond
+      { "ok": false } sinon (y compris si le compte n'existe pas)
+    """
+    try:
+        # Unifie la source
+        src = _get_src() or {}
+
+        # Récupère identifiants & réponse
+        email = (src.get("email") or request.args.get("email") or "").strip()
+        # autoriser aussi "emailAddress" si besoin
+        if not email:
+            email = (src.get("emailAddress") or request.args.get("emailAddress") or "").strip()
+
+        id_raw = src.get("id") or request.args.get("id")
+        try:
+            person_id = int(id_raw) if id_raw not in (None, "", "null") else None
+        except Exception:
+            person_id = None
+
+        answer = (src.get("answer") or request.args.get("answer") or "").strip()
+
+        # answer est obligatoire
+        if not answer:
+            # Ne renvoyez pas trop d'info; vous pouvez aussi lever MissingFieldError si vous utilisez ce pattern
+            return jsonify({"ok": False}), 200
+
+        # Il faut au moins email OU id
+        if not email and person_id is None:
+            return jsonify({"ok": False}), 200
+
+        ok = verifySecretAnswer(email=email if email else None,
+                                person_id=person_id,
+                                answer=answer)
+
+        # Toujours 200, ok true/false (pas d'info sur existence du compte)
+        return jsonify({"ok": bool(ok)}), 200
+
+    except AppError as e:
+        # Si vous préférez rester homogène avec votre gestion d'erreurs applicatives
+        return handle_app_error(e)
+    except Exception as e:
+        appFlaskMySQL.logger.exception("Erreur verify secret answer")
+        # Pour éviter la disclosure, on peut rester générique
+        return jsonify({"ok": False}), 200
+
 @appFlaskMySQL.route('/api/v5/people/<int:person_id>/photo', methods=['GET'])
 def person_photo(person_id):
     photo, mime = fetch_photo(person_id)

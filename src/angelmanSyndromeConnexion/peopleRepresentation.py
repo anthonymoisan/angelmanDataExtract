@@ -600,4 +600,95 @@ def deleteDataById(person_id: int) -> int:
         params={"id": pid}
     )
 
+def getQuestionSecrete(person_id: int):
+    """
+    Retourne (question_code:int, reponse_claire:str) pour l'id donné,
+    ou None si introuvable.
+    """
+    try:
+        rows = _run_query(
+            text("""
+                SELECT secret_question
+                FROM T_ASPeople
+                WHERE id = :id
+                LIMIT 1
+            """),
+            params={"id": int(person_id)},
+            return_result=True,
+        )
+    except Exception as e:
+        logger.exception("SQL error in getQuestionAndReponseSecrete(id=%s)", person_id)
+        raise
+
+    if not rows:
+        return None
+
+    sq_enc = rows[0][0]  # VARBINARY/bytes chiffrés
+    # Déchiffre selon tes utilitaires
+    try:
+        secret_quest = int(utils.decrypt_number(sq_enc))
+    except Exception:
+        # si decrypt_number renvoie déjà un int, enlève le int(...)
+        secret_quest = utils.decrypt_number(sq_enc)
+
+    return secret_quest
+
+# services/people.py (ou où se trouve votre logique métier)
+import unicodedata
+from sqlalchemy import text
+
+# suppose que vous avez déjà :
+# - _run_query(sql, params=..., return_result=True|False)
+# - utils.email_sha256(...)
+# - utils.decrypt_bytes_to_str_strict(...)
+# - vos classes d'erreurs AppError / MissingFieldError si besoin
+
+def _norm(s: str) -> str:
+    """Normalise pour comparaison: trim, NFKC, lower()."""
+    if s is None:
+        return ""
+    return unicodedata.normalize("NFKC", s).strip().lower()
+
+def verifySecretAnswer(*, email: str | None = None, person_id: int | None = None, answer: str) -> bool:
+    """
+    Vérifie la réponse secrète.
+    - On n'expose JAMAIS la réponse.
+    - Retourne True si ça correspond, False sinon.
+    - Si l'utilisateur n'existe pas: retourne False (évite l'énumération de comptes).
+    """
+    if not answer or not isinstance(answer, str):
+        # on laisse l'API gérer les messages, ici on renvoie simplement False
+        return False
+
+    # Construction SQL selon l'identifiant fourni
+    params = {}
+    if email:
+        sha = utils.email_sha256(email)
+        where = "email_sha = :sha"
+        params["sha"] = sha
+    elif person_id is not None:
+        where = "id = :id"
+        params["id"] = int(person_id)
+    else:
+        # pas d'identifiant -> échec silencieux
+        return False
+
+    rowset = _run_query(
+        text(f"SELECT secret_answer FROM T_ASPeople WHERE {where} LIMIT 1"),
+        params=params,
+        return_result=True
+    )
+    if not rowset or not rowset[0]:
+        # utilisateur introuvable -> renvoyer False (ne rien divulguer)
+        return False
+
+    enc_ans = rowset[0][0]  # VARBINARY chiffré
+    try:
+        stored = utils.decrypt_bytes_to_str_strict(enc_ans)  # str
+    except Exception:
+        # si déchiffrement impossible -> on considère faux
+        return False
+
+    return _norm(answer) == _norm(stored)
+
 

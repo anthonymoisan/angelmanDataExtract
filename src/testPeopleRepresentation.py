@@ -4,7 +4,7 @@ from pathlib import Path
 import sys,os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from logger import setup_logger
-from angelmanSyndromeConnexion.peopleRepresentation import deleteDataById,updateData,insertData, giveId, getRecordsPeople,fetch_person_decrypted, authenticate_and_get_id, authenticate_email_password
+from angelmanSyndromeConnexion.peopleRepresentation import verifySecretAnswer,getQuestionSecrete,deleteDataById,updateData,insertData, giveId, getRecordsPeople,fetch_person_decrypted, authenticate_and_get_id, authenticate_email_password
 import time
 from angelmanSyndromeConnexion import error
 
@@ -86,7 +86,10 @@ def main():
         #logger.info("Id : %d", id)
         #logger.info("Authentification : %d", authenticate_email_password("mal.legrand2@mail.fr", "Mmas&37815"))
         #updateData("anthonymoisan@yahoo.fr", firstname="Robert", password="Mmas|3783",delete_photo=True)
-        deleteDataById(5)
+        #deleteDataById(5)
+        #logger.info(getQuestionSecrete(11))
+        logger.info(verifySecretAnswer(email="anthonymoisan@yahoo.fr",answer="di caprio"))
+
         
         elapsed = time.time() - start
         
