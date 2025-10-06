@@ -439,19 +439,15 @@ def updateData(
             LIMIT 1
         """)
         try:
-            affected = _run_query(sql, params=params)
-        except IntegrityError as ie:
-            raise error.DuplicateEmailError(
-                "Un enregistrement avec cet email existe déjà"
-            ) from ie
-
-        return affected
-
+             _run_query(sql, params=params)
+        except Exception:
+            return 0
+        return 1
     except error.AppError:
-        raise
+        return 0
     except Exception:
         logger.error("Update failed in T_ASPeople", exc_info=True)
-        raise
+        return 0
 
 def fetch_photo(person_id: int):
     rows = _run_query(
