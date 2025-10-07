@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 import os
 from configparser import ConfigParser
 import sshtunnel
+import unicodedata
 from sshtunnel import SSHTunnelForwarder
 import pandas as pd
 import time
@@ -19,6 +20,9 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from angelmanSyndromeConnexion.error import (
     AppError, MissingFieldError, DuplicateEmailError, ValidationError
 )
+from angelmanSyndromeConnexion.utils import email_sha256,decrypt_number, decrypt_bytes_to_str_strict
+from sqlalchemy import text
+from utilsTools import _run_query
 
 #imports pour SMTP
 from functools import wraps
@@ -27,6 +31,7 @@ from email.message import EmailMessage
 import smtplib
 import re
 from time import monotonic
+
 
 
 # Set up logger
@@ -694,65 +699,81 @@ def api_update_person():
         appFlaskMySQL.logger.exception("Erreur update person")
         return jsonify({"error": f"erreur serveur: {e}"}), 500
 
-# Dans ton fichier API Flask (où appFlaskMySQL est défini)
-from flask import request, jsonify
-from sqlalchemy import text
+# --- helpers (mêmes règles qu'à l'insert) ---
+def _normalize_email(email: str) -> str:
+    return (email or "").strip().lower()
 
-# Dictionnaire des libellés (mêmes codes que côté app)
-SECRET_QUESTION_LABELS = {
+_SECRET_QUESTION_LABELS = {
     1: "Nom de naissance de votre maman ?",
     2: "Nom de votre acteur de cinéma favori ?",
     3: "Nom de votre animal de compagnie favori ?",
 }
 
 @appFlaskMySQL.route("/api/v5/people/secret-question", methods=["GET"])
-@ratelimit(3)
+@ratelimit(5)
 def api_get_secret_question():
-    """
-    GET /api/v5/people/secret-question?email=...
-    Retourne le code de la question secrète et son libellé associé.
-    Ne renvoie PAS la réponse secrète.
-    """
     try:
-        # --- 1) Récupérer l'email depuis query string (ou JSON si besoin) ---
-        email = (request.args.get("email") or "").strip()
+        # 1) Récup email (querystring ou JSON / form)
+        src = _get_src() or {}
+        email = (
+            request.args.get("email")
+            or request.args.get("emailAddress")
+            or (src.get("email") if isinstance(src, dict) else None)
+            or (src.get("emailAddress") if isinstance(src, dict) else None)
+            or ""
+        ).strip()
+
         if not email:
-            # Si tu as déjà une classe d'erreur appli *MissingFieldError*, utilise-la
-            return jsonify({
-                "status": "error",
-                "code": "missing_field",
-                "message": "email manquant",
-                "details": {"missing": ["email"]}
-            }), 400
+            raise MissingFieldError("email manquant", {"missing": ["email"]})
 
-        # --- 2) Retrouver l'id de la personne ---
-        # Si tu as déjà une fonction utilitaire giveId(email), utilise-la :
+        email_norm = _normalize_email(email)
+        sha = email_sha256(email_norm)
+
+        # 2) Lecture en base
+        row = _run_query(
+            text("""
+                SELECT secret_question
+                FROM T_ASPeople
+                WHERE email_sha = :sha
+                LIMIT 1
+            """),
+            params={"sha": sha},
+            return_result=True
+        )
+
+        if not row:
+            # On ne révèle pas si l'email existe: renvoyer 404 est OK (ou 200 {"ok":false})
+            return jsonify({"ok": False}), 404
+
+        enc_q = row[0][0]  # peut être NULL
+        if enc_q is None:
+            # Pas de question enregistrée
+            return jsonify({"ok": False}), 404
+
+        # 3) Déchiffrement sécurisé
         try:
-            person_id = giveId(email)   # doit lever si introuvable
+            q_val = decrypt_number(enc_q)  # selon ton util, renvoie int ou str ou None
         except Exception:
-            # Personne non trouvée
-            return jsonify({"ok": False, "message": "Utilisateur introuvable"}), 404
+            return jsonify({"ok": False}), 500
 
-        # --- 3) Lire la question & réponse chiffrées puis ne retourner que la question ---
-        qr = getQuestionSecrete(person_id)  # -> (code_question:int, reponse:str) ou None
-        if not qr:
-            return jsonify({"ok": False, "message": "Question secrète introuvable"}), 404
+        # Convertit proprement
+        try:
+            q_int = int(q_val)
+        except Exception:
+            # valeur incohérente en base
+            return jsonify({"ok": False}), 500
 
+        label = _SECRET_QUESTION_LABELS.get(q_int, "Question secrète")
 
-        # --- 4) Mapper vers un libellé convivial ---
-        label = SECRET_QUESTION_LABELS.get(int(qr), "Question inconnue")
+        # 4) Réponse (on NE renvoie PAS la réponse secrète !)
+        return jsonify({"question": q_int, "label": label}), 200
 
-        return jsonify({
-            "ok": True,
-            "question": int(qr),
-            "label": label
-        }), 200
-
-    except AppError as e:  # si tu as une hiérarchie d’erreurs appli
-        return handle_app_error(e)   # ta fonction standard de sérialisation d’erreurs
+    except AppError as e:
+        return handle_app_error(e)
     except Exception as e:
-        appFlaskMySQL.logger.exception("Erreur API secret-question")
+        appFlaskMySQL.logger.exception("Erreur secret-question")
         return jsonify({"error": f"erreur serveur: {e}"}), 500
+
 
 @appFlaskMySQL.route("/api/v5/people/secret-answer/verify", methods=["POST"])
 @ratelimit(5)
@@ -807,6 +828,128 @@ def api_verify_secret_answer():
         appFlaskMySQL.logger.exception("Erreur verify secret answer")
         # Pour éviter la disclosure, on peut rester générique
         return jsonify({"ok": False}), 200
+
+
+# ----------------------- Normalisations & règles -----------------------
+
+def _strip_accents_lower(s: str) -> str:
+    s = (s or "").strip().lower()
+    s = unicodedata.normalize("NFD", s)
+    return "".join(ch for ch in s if not unicodedata.combining(ch))
+
+def _pwd_ok(p: str) -> bool:
+    if not isinstance(p, str):
+        return False
+    p = p.strip()
+    if len(p) < 8:
+        return False
+    if not any(c.isupper() for c in p):
+        return False
+    specials = r'!@#$%^&*(),.?":{}|<>_-+=~;\/[]'
+    if not any(c in specials for c in p):
+        return False
+    return True
+
+# ----------------------- Vérification Q/R secrètes -----------------------
+
+def verify_secret_answer(email: str, question: int, answer: str) -> bool:
+    """
+    Retourne True si la question et la réponse secrètes correspondent à l’email.
+    Normalise fortement la comparaison de réponse (accents/casse/espaces).
+    """
+    try:
+        sha = email_sha256(email)
+        row = _run_query(
+            text("""
+                SELECT secret_question, secret_answer
+                FROM T_ASPeople
+                WHERE email_sha = :sha
+                LIMIT 1
+            """),
+            params={"sha": sha},
+            return_result=True
+        )
+        if not row:
+            return False
+
+        db_q_enc, db_a_enc = row[0]
+        db_q = int(decrypt_number(db_q_enc))
+        db_ans = decrypt_bytes_to_str_strict(db_a_enc)
+
+        if db_q != int(question):
+            return False
+
+        return _strip_accents_lower(db_ans) == _strip_accents_lower(answer)
+    except Exception:
+        # par sécurité ne révèle rien
+        return False
+
+# ----------------------- Endpoint Reset Password -----------------------
+
+@appFlaskMySQL.route("/api/v5/auth/reset-password", methods=["POST"])
+@ratelimit(3)
+def api_reset_password():
+    try:
+        # Unifie la source (JSON, form, x-www-form-urlencoded)
+        src = _get_src() or {}
+
+        # ---- Champs requis
+        email = (
+            (src.get("emailAddress") if isinstance(src, dict) else None)
+            or src.get("email")
+            or ""
+        ).strip()
+        if not email:
+            raise MissingFieldError("emailAddress manquant", {"missing": ["emailAddress"]})
+
+        # questionSecrete entier 1..3
+        q_raw = src.get("questionSecrete")
+        try:
+            question = int(str(q_raw).strip())
+        except Exception:
+            raise ValidationError("questionSecrete doit être un entier 1..3")
+        if question not in (1, 2, 3):
+            raise ValidationError("questionSecrete doit être 1, 2 ou 3")
+
+        # réponse secrète
+        answer = src.get("reponseSecrete")
+        if not isinstance(answer, str) or not answer.strip():
+            raise MissingFieldError("reponseSecrete manquante ou vide", {"missing": ["reponseSecrete"]})
+
+        # nouveau mot de passe
+        new_pwd = src.get("newPassword")
+        if not isinstance(new_pwd, str) or not new_pwd.strip():
+            raise MissingFieldError("newPassword manquant", {"missing": ["newPassword"]})
+        if not _pwd_ok(new_pwd):
+            return jsonify({
+                "ok": False,
+                "code": "weak_password",
+                "message": "Mot de passe trop faible (≥8 caractères, ≥1 majuscule, ≥1 caractère spécial)."
+            }), 400
+
+        # ---- Vérification Q/R via helper
+        if not verify_secret_answer(email, question, answer):
+            # Ne pas révéler si l'email existe → 401 générique
+            return jsonify({"ok": False}), 401
+
+        # ---- Tout est OK → mise à jour du mot de passe
+        affected = updateData(
+            email_address=email,
+            password=new_pwd
+        )
+
+        # affected devrait valoir 1 si tout s’est bien passé
+        if affected:
+            return ("", 204)
+        else:
+            return jsonify({"ok": False}), 401
+
+    except AppError as e:
+        return handle_app_error(e)
+    except Exception as e:
+        appFlaskMySQL.logger.exception("Erreur reset password")
+        return jsonify({"error": f"erreur serveur: {e}"}), 500
+
 
 @appFlaskMySQL.route('/api/v5/people/<int:person_id>/photo', methods=['GET'])
 def person_photo(person_id):

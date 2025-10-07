@@ -88,7 +88,7 @@ def main():
         #updateData("anthonymoisan@yahoo.fr", firstname="Robert", password="Mmas|3783",delete_photo=True)
         #deleteDataById(5)
         #logger.info(getQuestionSecrete(11))
-        logger.info(verifySecretAnswer(email="anthonymoisan@yahoo.fr",answer="di caprio"))
+        logger.info(verifySecretAnswer(email="sarah.boyer200@mail.fr",answer="Chun"))
 
         
         elapsed = time.time() - start
