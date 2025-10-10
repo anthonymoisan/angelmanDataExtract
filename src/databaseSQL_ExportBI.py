@@ -14,6 +14,7 @@ import exportBI.exportGermany as expGermany
 import exportBI.exportBrazil as expBrazil
 import exportBI.exportIndia as expIndia
 import exportBI.exportIndonesia as expIndonesia
+import exportBI.exportGreece as expGreece
 
 from utilsTools import export_Table, send_email_alert
 import time
@@ -148,6 +149,14 @@ def export_mapIndonesia_Ind():
     reader = expIndonesia.T_MapIndonesia_IN()
     export_Table("T_MapIndonesia_Ind", "Indonesia/createMapIndonesia_Ind.sql", reader)
 
+def export_mapGreece_English():
+    reader = expGreece.T_MapGreece_EN()
+    export_Table("T_MapGreece_English", "Greece/createMapGreece_English.sql", reader)
+
+def export_mapGreece_Greek():
+    reader = expGreece.T_MapGreece_GR()
+    export_Table("T_MapGreece_Greek", "Greece/createMapGreece_Greek.sql", reader)
+
 def export_mapGlobal():
     reader = expGlobal.T_MapGlobal()
     export_Table("T_MapGlobal", "Global/createMapGlobal.sql", reader)
@@ -163,6 +172,7 @@ def safe_export(export_func, label):
 def main():
     start = time.time()
     try:
+        
         safe_export(export_DifficultiesSA_English, "DifficultiesSA EN")
         safe_export(export_capabilities_English, "Capabilities FR")
         safe_export(export_mapFrance_French, "Map France FR")
@@ -173,6 +183,7 @@ def main():
         safe_export(export_mapLatam_Spanish, "Map Latam ES")
         safe_export(export_mapLatam_English, "Map Latam EN")
         safe_export(export_capabilities_Latam_English, "Capabilities Latam EN")
+
         '''
         safe_export(export_mapPoland_Polish, "Map Poland PL")
         safe_export(export_mapPoland_English, "Map Poland EN")
@@ -189,10 +200,15 @@ def main():
         safe_export(export_mapBrazil_English, "Map Brazil EN")
         safe_export(export_mapBrazil_Portuguese, "Map Brazil PT")
         '''
+
+        
         safe_export(export_mapIndia_English, "Map India EN")
         safe_export(export_mapIndia_Hindi, "Map India HI")
         safe_export(export_mapIndonesia_English, "Map Indonesia EN")
         safe_export(export_mapIndonesia_Ind, "Map Indonesia IN")
+        
+        safe_export(export_mapGreece_English, "Map Greece EN")
+        safe_export(export_mapGreece_Greek, "Map Greece GR")
         safe_export(export_mapGlobal, "Map Global")
         elapsed = time.time() - start
         logger.info(f"\n✅ All exports are ok with an execution time in {elapsed:.2f} secondes.")

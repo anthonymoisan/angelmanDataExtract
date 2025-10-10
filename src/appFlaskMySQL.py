@@ -234,6 +234,13 @@ def home():
     <li> API in order for reading data from MapIndonesia_Ind : <a href="/api/v4/resources/Indonesia/MapIndonesia_Ind">./api/v4/resources/Indonesia/MapIndonesia_Ind</a>
     </ul>
 
+    API Greece
+    <ul>
+    <li> API in order for reading data from MapGreece_English : <a href="/api/v4/resources/Greece/MapGreece_English">./api/v4/resources/Greece/MapGreece_English</a>
+    <li> API in order for reading data from MapGreece_Greek : <a href="/api/v4/resources/Greece/MapGreece_Greek">./api/v4/resources/Greece/MapGreece_Greek</a>
+    </ul>
+    
+
     API MAP Global
     API in order for reading data from Map Global : <a href="./api/v3/resources/Map_Global">./api/v3/resources/Map_Global</a>
     <br><br>
@@ -492,6 +499,20 @@ def api_MapIndonesia_Ind():
     API to expose the results from Map Indonesia in Ind in English with the specific table from the database
     """
     return __api_Table('T_MapIndonesia_Ind')
+
+@appFlaskMySQL.route('/api/v4/resources/Greece/MapGreece_English', methods=['GET'])
+def api_MapGreece_English():
+    """
+    API to expose the results from Map Greece in English with the specific table from the database
+    """
+    return __api_Table('T_MapGreece_English')
+
+@appFlaskMySQL.route('/api/v4/resources/Greece/MapGreece_Greek', methods=['GET'])
+def api_MapGreece_Greek():
+    """
+    API to expose the results from Map Greece in Greek with the specific table from the database
+    """
+    return __api_Table('T_MapGreece_Greek')
 
 def safe_get(data, key, default=""):
     """Retourne la valeur du champ ou une valeur par défaut."""
