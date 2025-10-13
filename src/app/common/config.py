@@ -11,9 +11,11 @@ def load_db_config():
     Retourne un dict avec les paramètres DB et SSH.
     """
     # __file__ = src/app/common/config.py
-    app_dir = os.path.dirname(os.path.dirname(__file__))  # -> src/app
-    cfg_path = os.path.join(app_dir, "..\..", "angelman_viz_keys", "Config2.ini")
-    cfg_path = os.path.abspath(cfg_path)
+    common_dir = os.path.dirname(__file__)          # .../src/app/common
+    app_dir    = os.path.dirname(common_dir)        # .../src/app
+    src_dir    = os.path.dirname(app_dir)           # .../src
+    proj_root  = os.path.dirname(src_dir)           # .../
+    cfg_path   = os.path.join(proj_root, "angelman_viz_keys", "Config2.ini")
 
     cfg = ConfigParser()
     if not cfg.read(cfg_path):
