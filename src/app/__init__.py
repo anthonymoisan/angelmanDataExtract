@@ -25,8 +25,15 @@ def create_app():
     from app.v4.routes import bp as v4
     app.register_blueprint(v4, url_prefix="/api/v4")
 
-    from app.v5.routes import bp as v5
-    app.register_blueprint(v5, url_prefix="/api/v5")
+    from app.v5.auth import bp as v5_auth
+    from app.v5.mail import bp as v5_mail
+    from app.v5.people import bp as v5_people
+
+    app.register_blueprint(v5_auth,   url_prefix="/api/v5")
+    app.register_blueprint(v5_mail,   url_prefix="/api/v5")
+    app.register_blueprint(v5_people, url_prefix="/api/v5")
+    #from app.v5.routes import bp as v5
+    #app.register_blueprint(v5, url_prefix="/api/v5")
 
     from app.v6.routes import bp as v6
     app.register_blueprint(v6, url_prefix="/api/v6")

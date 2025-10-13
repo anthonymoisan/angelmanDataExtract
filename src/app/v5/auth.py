@@ -17,7 +17,7 @@ from .common import (
 )
 
 bp = Blueprint("v5_auth", __name__)
-from .common import register_error_handlers; register_error_handlers(bp)
+from app.common import register_error_handlers; register_error_handlers(bp)
 
 @bp.post("/auth/login")
 def auth_login():
