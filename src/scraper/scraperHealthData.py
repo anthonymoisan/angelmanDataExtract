@@ -3,8 +3,8 @@ import sys
 import time
 import requests
 import json
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from logger import setup_logger
+
+from tools.logger import setup_logger
 
 # Set up logger
 logger = setup_logger( debug=False)

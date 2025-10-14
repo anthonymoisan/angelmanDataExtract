@@ -1,5 +1,10 @@
 import sys, os
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+from pathlib import Path
+# met le *parent* du script (souvent .../src) dans sys.path
+SRC_DIR = Path(__file__).resolve().parents[1]  # .../src
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 from tools.utilsTools import send_email_alert, _run_query,readTable,_insert_data
 import time
 import logging
@@ -15,17 +20,17 @@ def main():
         elapsed = time.time() - start
         wkdir = os.path.dirname(__file__)
         logger.info(f"🟡 Export : PhamaceuticalOffice.json")
-        scrHealthData.pharmaceuticalOffice(f"{wkdir}/../data/")
+        scrHealthData.pharmaceuticalOffice(f"{wkdir}/../../data/")
         logger.info(f"🟡 Export : Ime.json")
-        scrHealthData.ime(f"{wkdir}/../data/")
+        scrHealthData.ime(f"{wkdir}/../../data/")
         logger.info(f"🟡 Export : Mdph.json")
-        scrHealthData.mdph(f"{wkdir}/../data/")
+        scrHealthData.mdph(f"{wkdir}/../../data/")
         logger.info(f"🟡 Export : Camps.json")
-        scrHealthData.camps(f"{wkdir}/../data/")
+        scrHealthData.camps(f"{wkdir}/../../data/")
         logger.info(f"🟡 Export : Mas.json")
-        scrHealthData.mas(f"{wkdir}/../data/")
+        scrHealthData.mas(f"{wkdir}/../../data/")
         logger.info(f"🟡 Export : Fam.json")
-        scrHealthData.fam(f"{wkdir}/../data/")
+        scrHealthData.fam(f"{wkdir}/../../data/")
         logger.info(f"\n✅ JSon Files for Angelman Connexion are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)
 

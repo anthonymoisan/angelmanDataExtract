@@ -17,8 +17,8 @@ from PIL import UnidentifiedImageError
 from .  import error
 import io
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from logger import setup_logger
-from utilsTools import _run_query
+from tools.logger import setup_logger
+from tools.utilsTools import _run_query
 
 
 

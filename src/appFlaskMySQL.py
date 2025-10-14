@@ -11,7 +11,7 @@ from angelmanSyndromeConnexion.peopleRepresentation import verifySecretAnswer,ge
 from angelmanSyndromeConnexion.pointRemarquable import getRecordsPointsRemarquables,insertPointRemarquable
 import json
 from datetime import datetime, timezone
-from logger import setup_logger
+from tools.logger import setup_logger
 from flask_cors import CORS
 import base64
 from datetime import date, datetime
@@ -22,7 +22,7 @@ from angelmanSyndromeConnexion.error import (
 )
 from angelmanSyndromeConnexion.utils import email_sha256,decrypt_number, decrypt_bytes_to_str_strict
 from sqlalchemy import text
-from utilsTools import _run_query
+from tools.utilsTools import _run_query
 
 #imports pour SMTP
 from functools import wraps

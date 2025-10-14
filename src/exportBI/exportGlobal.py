@@ -1,9 +1,6 @@
 import sys
 import os
-
-# Ajoute src/ au chemin de recherche des modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utilsTools import readTable
+from tools.utilsTools import readTable
 import pandas as pd
 from exportBI.exportTools import T_ReaderAbstract
 from configparser import ConfigParser
@@ -11,7 +8,7 @@ from configparser import ConfigParser
 import time
 import logging
 
-from logger import setup_logger
+from tools.logger import setup_logger
 
 # Set up logger
 logger = setup_logger(debug=False)

@@ -13,8 +13,7 @@ import time
 import numpy as np
 from thefuzz import fuzz, process
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from logger import setup_logger
+from tools.logger import setup_logger
 
 # Set up logger
 logger = setup_logger( debug=False)

@@ -1,6 +1,11 @@
-import os
+import os, sys
+from pathlib import Path
+# met le *parent* du script (souvent .../src) dans sys.path
+SRC_DIR = Path(__file__).resolve().parents[1]  # .../src
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 import time
-import sys
 import numpy as np
 import pandas as pd
 
@@ -11,7 +16,7 @@ import scraper.scraperPopulation as scrPopulation
 import scraper.scraperClinicalTrial as scrClinicalTrial
 from tools.logger import setup_logger
 
-logger = setup_logger(log_file="steve.log", debug=False)
+logger = setup_logger(debug=False)
 
 
 # === READER CLASSES ===
@@ -26,7 +31,7 @@ class ASTrialReader:
 
 class UnPopulationReader:
     def readData(self):
-        config_path = os.path.join(os.path.dirname(__file__), "../angelman_viz_keys/Config3.ini")
+        config_path = os.path.join(os.path.dirname(__file__), "../../angelman_viz_keys/Config3.ini")
         from configparser import ConfigParser
         config = ConfigParser()
         if config.read(config_path):
@@ -37,7 +42,7 @@ class UnPopulationReader:
 
 class ClinicalTrialsReader:
     def readData(self):
-        json_path = os.path.join(os.path.dirname(__file__), "../data/asf_clinics2.json")
+        json_path = os.path.join(os.path.dirname(__file__), "../../data/asf_clinics2.json")
         df = pd.read_json(json_path, orient="index")
         return scrClinicalTrial.trials_clinics_LonLat(df)
 

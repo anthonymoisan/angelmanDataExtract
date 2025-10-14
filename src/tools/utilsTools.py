@@ -17,9 +17,9 @@ logger = setup_logger(debug=True)
 
 # ----- Config paths -----
 BASE_DIR = os.path.dirname(__file__)
-CONFIG_PATH = os.path.join(BASE_DIR, "../angelman_viz_keys/Config2.ini")
-CONFIG_GMAIL_PATH = os.path.join(BASE_DIR, "../angelman_viz_keys/Config4.ini")
-
+CONFIG_PATH = os.path.join(BASE_DIR, "../../angelman_viz_keys/Config2.ini")
+CONFIG_GMAIL_PATH = os.path.join(BASE_DIR, "../../angelman_viz_keys/Config4.ini")
+SQL_DIR = os.path.join(BASE_DIR, "../SQLScript")
 # Détection du contexte (local vs PythonAnywhere)
 LOCAL_CONNEXION = not os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower().startswith("pythonanywhere")
 
@@ -300,7 +300,7 @@ def export_Table(table_name, sql_script, reader):
                 logger.info("--- Drop Table.")
                 _run_query(text(f"DROP TABLE `{table_name}`"))
 
-            script_path = os.path.join(BASE_DIR, "SQLScript", sql_script)
+            script_path = os.path.join(SQL_DIR, sql_script)
             with open(script_path, "r", encoding="utf-8") as f:
                 logger.info("--- Create Table.")
                 _run_query(f.read())

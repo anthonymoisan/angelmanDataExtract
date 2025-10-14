@@ -1,5 +1,10 @@
 import sys, os
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+from pathlib import Path
+# met le *parent* du script (souvent .../src) dans sys.path
+SRC_DIR = Path(__file__).resolve().parents[1]  # .../src
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 import exportBI.exportFrance as expFrance
 import exportBI.exportLatam as expLatam
 import exportBI.exportPoland as expPoland

@@ -10,7 +10,7 @@ from angelmanSyndromeConnexion.utils import email_sha256, decrypt_number
 from angelmanSyndromeConnexion.peopleRepresentation import (
     updateData, authenticate_and_get_id, verifySecretAnswer
 )
-from utilsTools import _run_query
+from tools.utilsTools import _run_query
 
 from .common import (
     ratelimit, _get_src, _pwd_ok, _normalize_email, _SECRET_QUESTION_LABELS
