@@ -1,11 +1,15 @@
-from angelmanSyndromeConnexion import utils
 import sys,os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from logger import setup_logger
 import time
+from pathlib import Path
+# met le *parent* du script (souvent .../src) dans sys.path
+SRC_DIR = Path(__file__).resolve().parents[2]  # .../src
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 from angelmanSyndromeConnexion import error
 from angelmanSyndromeConnexion.pointRemarquable import insertPointRemarquable,getRecordsPointsRemarquables
-
+from tools.logger import setup_logger
+from tools.utilsTools import dropTable,createTable
 # Set up logger
 logger = setup_logger(debug=False)
 
@@ -50,8 +54,10 @@ def _insertDataFrame():
 def main():
     start = time.time()
     try:
-        #utils.dropTable("T_PointRemarquable")
-        #utils.createTable("createPointRemarquable.sql")
+        #dropTable("T_PointRemarquable")
+        wkdir = os.path.dirname(__file__)
+        script_path = os.path.join(f"{wkdir}/../SQL/","createPointRemarquable.sql")
+        #createTable(script_path)
         #_insertDataFrame()
         df = getRecordsPointsRemarquables()
         logger.info(df.head())

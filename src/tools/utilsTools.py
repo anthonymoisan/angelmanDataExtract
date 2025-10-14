@@ -346,3 +346,16 @@ def readTable(table_name: str) -> pd.DataFrame:
     except Exception as e:
         logger.error("Erreur lors de la lecture de la table %s: %s", table_name, e)
         return pd.DataFrame()
+
+# -----------------------------
+#  SQL helpers (DDL)
+# -----------------------------
+def createTable(script_path: str):
+    with open(script_path, "r", encoding="utf-8") as f:
+        logger.info("--- Create Table.")
+        _run_query(f.read())
+
+def dropTable(table_name: str):
+    safe_table = table_name.replace("`", "``")
+    sql = text(f"DROP TABLE IF EXISTS `{safe_table}`")
+    _run_query(sql)

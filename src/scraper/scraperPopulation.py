@@ -12,6 +12,11 @@ import numpy as np
 from configparser import ConfigParser
 import sys
 import os
+from pathlib import Path
+# met le *parent* du script (souvent .../src) dans sys.path
+SRC_DIR = Path(__file__).resolve().parents[1]  # .../src
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 from tools.logger import setup_logger
 
 # Set up logger

@@ -1,24 +1,27 @@
-from angelmanSyndromeConnexion import utils
 import pandas as pd
-from pathlib import Path
 import sys,os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from logger import setup_logger
+from pathlib import Path
+# met le *parent* du script (souvent .../src) dans sys.path
+SRC_DIR = Path(__file__).resolve().parents[2]  # .../src
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from tools.logger import setup_logger
 from angelmanSyndromeConnexion.peopleRepresentation import verifySecretAnswer,getQuestionSecrete,deleteDataById,updateData,insertData, giveId, getRecordsPeople,fetch_person_decrypted, authenticate_and_get_id, authenticate_email_password
 import time
 from angelmanSyndromeConnexion import error
+from tools.utilsTools import dropTable,createTable
 
 # Set up logger
 logger = setup_logger(debug=False)
 
 def _insertDataFrame(firstRow=False):
 
-    utils.dropTable("T_ASPeople")
+    dropTable("T_ASPeople")
     wkdir = os.path.dirname(__file__)
-    df = pd.read_excel(f"{wkdir}/../data/Picture/DataAngelman.xlsx")
-    
-    utils.createTable("createASPeople.sql")
-
+    df = pd.read_excel(f"{wkdir}/../../../data/Picture/DataAngelman.xlsx")
+    script_path = os.path.join(f"{wkdir}/../SQL/","createASPeople.sql")
+    createTable(script_path)
     BASE = Path(__file__).resolve().parent / ".." / "data" / "Picture"
 
     if (firstRow):
@@ -76,12 +79,12 @@ def main():
     start = time.time()
     try:
         
-        #_insertDataFrame(firstRow=False)
-        #findId("gustave.faivre@yahoo.fr")
-        #df = getRecordsPeople()
-        #logger.info(df.head())
-        #dictRes = fetch_person_decrypted(1)
-        #logger.info(dictRes)
+        _insertDataFrame(firstRow=False)
+        findId("gustave.faivre@yahoo.fr")
+        df = getRecordsPeople()
+        logger.info(df.head())
+        dictRes = fetch_person_decrypted(1)
+        logger.info(dictRes)
         #id = authenticate_and_get_id("louise.richard1@fastfrance.org", "Mmas&37814" ) 
         #logger.info("Id : %d", id)
         #logger.info("Authentification : %d", authenticate_email_password("mal.legrand2@mail.fr", "Mmas&37815"))

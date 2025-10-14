@@ -1,10 +1,13 @@
 import sys, os
 from sqlalchemy import text
 import pandas as pd
-from utilsTools import _insert_data
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from logger import setup_logger
-from utilsTools import _run_query
+from pathlib import Path
+# met le *parent* du script (souvent .../src) dans sys.path
+SRC_DIR = Path(__file__).resolve().parents[1]  # .../src
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+from tools.utilsTools import _insert_data, _run_query
+from tools.logger import setup_logger
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -30,7 +33,10 @@ def insertPointRemarquable(longitude, latitude, short_desc, long_desc):
         -- VALUES (:lon, :lat, :sd, :ld, ST_SRID(POINT(:lon, :lat), 4326))
     """)
     try:
-        _run_query(sql, paramsSQL={"lon": lon, "lat": lat, "sd": short_desc, "ld": long_desc, "wkt": wkt})
+        _run_query(
+        sql,
+        params={"lon": lon, "lat": lat, "sd": short_desc, "ld": long_desc, "wkt": wkt}
+    )
     except Exception:
         logger.error("Erreur dans insert T_PointRemarquable")
         raise

@@ -1,5 +1,3 @@
-from . import utils
-from . import error
 import pandas as pd
 import sys,os
 import re
@@ -7,13 +5,20 @@ from sqlalchemy import bindparam,text
 from datetime import date
 from datetime import datetime, timezone
 from sqlalchemy.exc import IntegrityError
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from logger import setup_logger
-from utilsTools import _run_query,_insert_data
+from pathlib import Path
+# met le *parent* du script (souvent .../src) dans sys.path
+SRC_DIR = Path(__file__).resolve().parents[1]  # .../src
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+from tools.logger import setup_logger
+from tools.utilsTools import _run_query,_insert_data
+import tools.crypto_utils
 import requests
 from geopy.geocoders import Nominatim
 import json
-from .geo_utils import get_city
+from angelmanSyndromeConnexion.geo_utils import get_city
+from angelmanSyndromeConnexion.utils_image import coerce_to_date, detect_mime_from_bytes, normalize_mime,recompress_image
+from angelmanSyndromeConnexion.error import AppError
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -31,7 +36,7 @@ def authenticate_email_password(email: str, password: str) -> bool:
     Retourne True si (email, mot de passe) est valide, sinon False.
     """
     try:
-        sha = utils.email_sha256(email)  # 32 bytes, lookup déterministe
+        sha = tools.crypto_utils.email_sha256(email)  # 32 bytes, lookup déterministe
         row = _run_query(
             text("""
                 SELECT password_hash
@@ -46,7 +51,7 @@ def authenticate_email_password(email: str, password: str) -> bool:
             return False
 
         stored_hash_bytes = _to_bytes_phc(row[0][0])
-        return bool(utils.verify_password_argon2(password, stored_hash_bytes))
+        return bool(tools.crypto_utils.verify_password_argon2(password, stored_hash_bytes))
     except Exception as e:
         logger.error("authenticate_email_password failed: %s", e, exc_info=True)
         return False
@@ -57,7 +62,7 @@ def authenticate_and_get_id(email: str, password: str) -> int | None:
     Retourne l'ID si (email, mot de passe) est valide, sinon None.
     """
     try:
-        sha = utils.email_sha256(email)
+        sha = tools.crypto_utils.email_sha256(email)
         row = _run_query(
             text("""
                 SELECT id, password_hash
@@ -74,7 +79,7 @@ def authenticate_and_get_id(email: str, password: str) -> int | None:
         pid, pwd_hash_db = row[0]
         stored_hash_bytes = _to_bytes_phc(pwd_hash_db)
 
-        if utils.verify_password_argon2(password, stored_hash_bytes):
+        if tools.crypto_utils.verify_password_argon2(password, stored_hash_bytes):
             return int(pid)
         return None
     except Exception as e:
@@ -116,7 +121,7 @@ def insertData(
             # Convertir côté appelant si nécessaire pour garantir un datetime.date
             raise TypeError("dateOfBirth doit être un datetime.date")
 
-        dob = utils.coerce_to_date(dateOfBirth)
+        dob = coerce_to_date(dateOfBirth)
         if dob > date.today():
             raise error.FutureDateError("dateOfBirth ne peut pas être dans le futur")
 
@@ -126,14 +131,14 @@ def insertData(
 
         if photo is not None:
             # Détection MIME robuste (indépendant de l'extension)
-            detected_mime = utils.detect_mime_from_bytes(photo)  # p.ex. "image/jpeg"
-            src_mime = utils.normalize_mime(detected_mime or "image/jpeg")
+            detected_mime = detect_mime_from_bytes(photo)  # p.ex. "image/jpeg"
+            src_mime = normalize_mime(detected_mime or "image/jpeg")
             if src_mime not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
                 raise error.InvalidMimeTypeError(f"MIME non autorisé: {src_mime}")
 
             # Tenter une recompression (doit renvoyer (blob, mime) ou (None, None))
             try:
-                new_blob, new_mime = utils.recompress_image(photo)
+                new_blob, new_mime = recompress_image(photo)
             except Exception as e:
                 logger.warning("Recompression échouée: %s", e, exc_info=True)
                 new_blob, new_mime = None, None
@@ -141,7 +146,7 @@ def insertData(
             # Choisir la meilleure version (garder original si pas plus petit)
             if new_blob and len(new_blob) < len(photo):
                 photo_blob_final = new_blob
-                photo_mime_final = utils.normalize_mime(new_mime or src_mime)
+                photo_mime_final = normalize_mime(new_mime or src_mime)
             else:
                 photo_blob_final = photo
                 photo_mime_final = src_mime
@@ -162,18 +167,18 @@ def insertData(
         logger.info(city_str)
 
         # -------- 3) Chiffrement --------
-        fn_enc  = utils.encrypt_str(firstname)
-        ln_enc  = utils.encrypt_str(lastname)
-        em_enc  = utils.encrypt_str(emailAddress)
-        dob_enc = utils.encrypt_date_like(dob)
-        gt_enc  = utils.encrypt_str(genotype)
-        ci_enc  = utils.encrypt_str(city_str.strip())
+        fn_enc  = tools.crypto_utils.encrypt_str(firstname)
+        ln_enc  = tools.crypto_utils.encrypt_str(lastname)
+        em_enc  = tools.crypto_utils.encrypt_str(emailAddress)
+        dob_enc = tools.crypto_utils.encrypt_date_like(dob)
+        gt_enc  = tools.crypto_utils.encrypt_str(genotype)
+        ci_enc  = tools.crypto_utils.encrypt_str(city_str.strip())
 
-        age_enc = utils.encrypt_number(age)
-        lon_enc = utils.encrypt_number(longitude)
-        lat_enc = utils.encrypt_number(latitude)
+        age_enc = tools.crypto_utils.encrypt_number(age)
+        lon_enc = tools.crypto_utils.encrypt_number(longitude)
+        lat_enc = tools.crypto_utils.encrypt_number(latitude)
 
-        em_sha  = utils.email_sha256(emailAddress)
+        em_sha  = tools.crypto_utils.email_sha256(emailAddress)
 
         # --- Secret Q/A ---
         try:
@@ -182,11 +187,11 @@ def insertData(
             raise error.ValidationError("questionSecrete doit être un entier 1..3")
         if secret_q not in (1, 2, 3):
             raise error.ValidationError("questionSecrete doit être 1, 2 ou 3")
-        secret_que_enc = utils.encrypt_number(secret_q)      # VARBINARY dans le schéma
-        secret_ans_enc = utils.encrypt_str(reponseSecrete)   # chiffrée
+        secret_que_enc = tools.crypto_utils.encrypt_number(secret_q)      # VARBINARY dans le schéma
+        secret_ans_enc = tools.crypto_utils.encrypt_str(reponseSecrete)   # chiffrée
 
         # -------- 4) Hachage mot de passe (Argon2id) --------
-        pwd_hash_bytes, pwd_meta = utils.hash_password_argon2(password)
+        pwd_hash_bytes, pwd_meta = tools.crypto_utils.hash_password_argon2(password)
         pwd_meta_json = json.dumps(pwd_meta, separators=(",", ":"))
         pwd_updated_at = datetime.now(timezone.utc).replace(tzinfo=None)  # DATETIME sans TZ
 
@@ -313,7 +318,7 @@ def updateData(
             if isinstance(dateOfBirth, date):
                 dob = dateOfBirth
             else:
-                dob = utils.coerce_to_date(dateOfBirth)
+                dob = coerce_to_date(dateOfBirth)
             if dob > date.today():
                 raise error.FutureDateError("dateOfBirth ne peut pas être dans le futur")
         else:
@@ -322,18 +327,18 @@ def updateData(
         # -------- 1) Prénom / Nom / Génotype --------
         if firstname is not None:
             set_clauses.append("firstname = :fn")
-            params["fn"] = utils.encrypt_str(firstname)
+            params["fn"] = tools.crypto_utils.encrypt_str(firstname)
         if lastname is not None:
             set_clauses.append("lastname = :ln")
-            params["ln"] = utils.encrypt_str(lastname)
+            params["ln"] = tools.crypto_utils.encrypt_str(lastname)
         if genotype is not None:
             set_clauses.append("genotype = :gt")
-            params["gt"] = utils.encrypt_str(genotype)
+            params["gt"] = tools.crypto_utils.encrypt_str(genotype)
 
         # -------- 2) Nouvel email --------
         if emailNewAddress is not None:
-            em_enc = utils.encrypt_str(emailNewAddress)
-            em_sha = utils.email_sha256(emailNewAddress)
+            em_enc = tools.crypto_utils.encrypt_str(emailNewAddress)
+            em_sha = tools.crypto_utils.email_sha256(emailNewAddress)
             set_clauses += ["`emailAddress` = :em", "email_sha = :email_sha"]
             params["em"] = em_enc
             params["email_sha"] = em_sha
@@ -342,28 +347,28 @@ def updateData(
         if dob is not None:
             age_val = age_years(dob)
             set_clauses += ["`dateOfBirth` = :dob", "age = :age"]
-            params["dob"] = utils.encrypt_date_like(dob)
-            params["age"] = utils.encrypt_number(age_val)
+            params["dob"] = tools.crypto_utils.encrypt_date_like(dob)
+            params["age"] = tools.crypto_utils.encrypt_number(age_val)
 
         # -------- 4) Long/Lat + ville --------
         lat_changed = (lat_val is not None)
         lon_changed = (lon_val is not None)
         if lon_changed:
             set_clauses.append("longitude = :lon")
-            params["lon"] = utils.encrypt_number(float(lon_val))
+            params["lon"] = tools.crypto_utils.encrypt_number(float(lon_val))
         if lat_changed:
             set_clauses.append("latitude = :lat")
-            params["lat"] = utils.encrypt_number(float(lat_val))
+            params["lat"] = tools.crypto_utils.encrypt_number(float(lat_val))
 
         if city is not None:
             set_clauses.append("city = :city")
-            params["city"] = utils.encrypt_str(city.strip())
+            params["city"] = tools.crypto_utils.encrypt_str(city.strip())
         elif lat_changed or lon_changed:
             try:
                 if (lat_val is not None) and (lon_val is not None):
                     city_str = get_city(lat_val, lon_val) or ""
                     set_clauses.append("city = :city")
-                    params["city"] = utils.encrypt_str(city_str.strip())
+                    params["city"] = tools.crypto_utils.encrypt_str(city_str.strip())
             except Exception as e:
                 logger.warning("Reverse geocoding ignoré: %s", e)
 
@@ -372,16 +377,16 @@ def updateData(
             if qsec_val not in (1, 2, 3):
                 raise error.ValidationError("questionSecrete doit être 1, 2 ou 3")
             set_clauses.append("secret_question = :secret_q")
-            params["secret_q"] = utils.encrypt_number(qsec_val)
+            params["secret_q"] = tools.crypto_utils.encrypt_number(qsec_val)
         if reponseSecrete is not None:
             set_clauses.append("secret_answer = :secret_ans")
-            params["secret_ans"] = utils.encrypt_str(reponseSecrete)
+            params["secret_ans"] = tools.crypto_utils.encrypt_str(reponseSecrete)
 
         # -------- 6) Mot de passe --------
         if password is not None:
             if not isinstance(password, str) or not password:
                 raise error.ValidationError("password ne doit pas être vide")
-            pwd_hash_bytes, pwd_meta = utils.hash_password_argon2(password)
+            pwd_hash_bytes, pwd_meta = tools.crypto_utils.hash_password_argon2(password)
             pwd_meta_json = json.dumps(pwd_meta, separators=(",", ":"))
             pwd_updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
             set_clauses.append("password_hash = :pwd_hash")
@@ -400,20 +405,20 @@ def updateData(
             set_clauses.append("photo = NULL") 
             set_clauses.append("photo_mime = NULL")
         elif photo is not None:
-            detected_mime = utils.detect_mime_from_bytes(photo)
-            src_mime = utils.normalize_mime(detected_mime or "image/jpeg")
+            detected_mime = detect_mime_from_bytes(photo)
+            src_mime = normalize_mime(detected_mime or "image/jpeg")
             if src_mime not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
                 raise error.InvalidMimeTypeError(f"MIME non autorisé: {src_mime}")
 
             try:
-                new_blob, new_mime = utils.recompress_image(photo)
+                new_blob, new_mime = recompress_image(photo)
             except Exception as e:
                 logger.warning("Recompression échouée: %s", e, exc_info=True)
                 new_blob, new_mime = None, None
 
             if new_blob and len(new_blob) < len(photo):
                 photo_blob_final = new_blob
-                photo_mime_final = utils.normalize_mime(new_mime or src_mime)
+                photo_mime_final = normalize_mime(new_mime or src_mime)
             else:
                 photo_blob_final = photo
                 photo_mime_final = src_mime
@@ -475,17 +480,17 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
         return None
     
     r = row[0]
-    fn  = utils.decrypt_bytes_to_str_strict(r[1])
-    ln  = utils.decrypt_bytes_to_str_strict(r[2])
-    em  = utils.decrypt_bytes_to_str_strict(r[3])
-    dob = utils.decrypt_bytes_to_str_strict(r[4])
-    gt  = utils.decrypt_bytes_to_str_strict(r[5])
-    ci  = utils.decrypt_bytes_to_str_strict(r[7])
-    long = utils.decrypt_number(r[8])
-    lat = utils.decrypt_number(r[9])
-    age = utils.decrypt_number(r[10])
-    secret_quest = (int)(utils.decrypt_number(r[11]))
-    secret_ans = utils.decrypt_bytes_to_str_strict(r[12])
+    fn  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[1])
+    ln  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[2])
+    em  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[3])
+    dob = tools.crypto_utils.decrypt_bytes_to_str_strict(r[4])
+    gt  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[5])
+    ci  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[7])
+    long = tools.crypto_utils.decrypt_number(r[8])
+    lat = tools.crypto_utils.decrypt_number(r[9])
+    age = tools.crypto_utils.decrypt_number(r[10])
+    secret_quest = (int)(tools.crypto_utils.decrypt_number(r[11]))
+    secret_ans = tools.crypto_utils.decrypt_bytes_to_str_strict(r[12])
 
     return {
         "id": r[0],
@@ -515,15 +520,15 @@ def fetch_person_decrypted_simple(person_id: int) -> dict | None:
         return None
     
     r = row[0]
-    fn  = utils.decrypt_bytes_to_str_strict(r[1])
-    ln  = utils.decrypt_bytes_to_str_strict(r[2])
-    em  = utils.decrypt_bytes_to_str_strict(r[3])
-    dob = utils.decrypt_bytes_to_str_strict(r[4])
-    gt  = utils.decrypt_bytes_to_str_strict(r[5])
-    ci  = utils.decrypt_bytes_to_str_strict(r[7])
-    long = utils.decrypt_number(r[8])
-    lat = utils.decrypt_number(r[9])
-    age = utils.decrypt_number(r[10])
+    fn  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[1])
+    ln  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[2])
+    em  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[3])
+    dob = tools.crypto_utils.decrypt_bytes_to_str_strict(r[4])
+    gt  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[5])
+    ci  = tools.crypto_utils.decrypt_bytes_to_str_strict(r[7])
+    long = tools.crypto_utils.decrypt_number(r[8])
+    lat = tools.crypto_utils.decrypt_number(r[9])
+    age = tools.crypto_utils.decrypt_number(r[10])
     
 
     return {
@@ -566,7 +571,7 @@ def getRecordsPeople():
     return df
     
 def giveId(email_real):
-    sha = utils.email_sha256(email_real)
+    sha = tools.crypto_utils.email_sha256(email_real)
     row = _run_query(
         text("SELECT id FROM T_ASPeople WHERE email_sha = :sha LIMIT 1"),
         return_result=True,
@@ -626,10 +631,10 @@ def getQuestionSecrete(person_id: int):
     sq_enc = rows[0][0]  # VARBINARY/bytes chiffrés
     # Déchiffre selon tes utilitaires
     try:
-        secret_quest = int(utils.decrypt_number(sq_enc))
+        secret_quest = int(tools.crypto_utils.decrypt_number(sq_enc))
     except Exception:
         # si decrypt_number renvoie déjà un int, enlève le int(...)
-        secret_quest = utils.decrypt_number(sq_enc)
+        secret_quest = tools.crypto_utils.decrypt_number(sq_enc)
 
     return secret_quest
 
@@ -663,7 +668,7 @@ def verifySecretAnswer(*, email: str | None = None, person_id: int | None = None
     # Construction SQL selon l'identifiant fourni
     params = {}
     if email:
-        sha = utils.email_sha256(email)
+        sha = tools.crypto_utils.email_sha256(email)
         where = "email_sha = :sha"
         params["sha"] = sha
     elif person_id is not None:
@@ -684,7 +689,7 @@ def verifySecretAnswer(*, email: str | None = None, person_id: int | None = None
 
     enc_ans = rowset[0][0]  # VARBINARY chiffré
     try:
-        stored = utils.decrypt_bytes_to_str_strict(enc_ans)  # str
+        stored = tools.crypto_utils.decrypt_bytes_to_str_strict(enc_ans)  # str
     except Exception:
         # si déchiffrement impossible -> on considère faux
         return False
