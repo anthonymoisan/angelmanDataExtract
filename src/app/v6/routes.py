@@ -4,6 +4,7 @@ import json
 import os
 from flask import jsonify, Blueprint
 from app.common.basic_auth import require_basic
+from app.common.security import ratelimit
 
 bp = Blueprint("v6", __name__)
 
@@ -29,30 +30,36 @@ def _load_json(filename: str):
 
 @bp.get("/resources/PharmaceuticalOffice")
 @require_basic
+@ratelimit(5)
 def api_pharmaceutical_office():
     return _load_json("pharmaceuticalOffice.json")
 
 @bp.get("/resources/Ime")
 @require_basic
+@ratelimit(5)
 def api_ime():
     return _load_json("ime.json")
 
 @bp.get("/resources/Mas")
 @require_basic
+@ratelimit(5)
 def api_mas():
     return _load_json("mas.json")
 
 @bp.get("/resources/Fam")
 @require_basic
+@ratelimit(5)
 def api_fam():
     return _load_json("fam.json")
 
 @bp.get("/resources/Mdph")
 @require_basic
+@ratelimit(5)
 def api_mdph():
     return _load_json("mdph.json")
 
 @bp.get("/resources/Camps")
 @require_basic
+@ratelimit(5)
 def api_camps():
     return _load_json("camps.json")
