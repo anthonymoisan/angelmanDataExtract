@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from flask import jsonify, Blueprint
+from app.common.basic_auth import require_basic
 
 bp = Blueprint("v6", __name__)
 
@@ -27,25 +28,31 @@ def _load_json(filename: str):
     return jsonify(data)
 
 @bp.get("/resources/PharmaceuticalOffice")
+@require_basic
 def api_pharmaceutical_office():
     return _load_json("pharmaceuticalOffice.json")
 
 @bp.get("/resources/Ime")
+@require_basic
 def api_ime():
     return _load_json("ime.json")
 
 @bp.get("/resources/Mas")
+@require_basic
 def api_mas():
     return _load_json("mas.json")
 
 @bp.get("/resources/Fam")
+@require_basic
 def api_fam():
     return _load_json("fam.json")
 
 @bp.get("/resources/Mdph")
+@require_basic
 def api_mdph():
     return _load_json("mdph.json")
 
 @bp.get("/resources/Camps")
+@require_basic
 def api_camps():
     return _load_json("camps.json")

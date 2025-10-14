@@ -1,6 +1,21 @@
 import os
 from flask import Flask
 from flask_cors import CORS
+import warnings
+try:
+    from cryptography.utils import CryptographyDeprecationWarning
+except Exception:
+    # fallback si l'emplacement change
+    class CryptographyDeprecationWarning(Warning):
+        pass
+
+warnings.filterwarnings(
+    "ignore",
+    category=CryptographyDeprecationWarning,
+    module=r"paramiko\..*",
+    message=r".*TripleDES has been moved to cryptography\.hazmat\.decrepit\.ciphers\.algorithms\.TripleDES.*",
+)
+
 
 def create_app():
     app = Flask(__name__)
