@@ -4,12 +4,12 @@ import sys
 import numpy as np
 import pandas as pd
 
-from utilsTools import export_Table, send_email_alert
+from tools.utilsTools import export_Table, send_email_alert
 import scraper.scraperPubMed as scrPubMed
 import scraper.scraperASTrial as scrASTrial
 import scraper.scraperPopulation as scrPopulation
 import scraper.scraperClinicalTrial as scrClinicalTrial
-from logger import setup_logger
+from tools.logger import setup_logger
 
 logger = setup_logger(log_file="steve.log", debug=False)
 

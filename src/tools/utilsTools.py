@@ -10,7 +10,7 @@ from configparser import ConfigParser
 from email.message import EmailMessage
 from datetime import datetime
 import logging
-from logger import setup_logger
+from tools.logger import setup_logger
 
 # ----- Logger -----
 logger = setup_logger(debug=True)
@@ -65,6 +65,43 @@ def _build_db_url(params, local_port=None) -> str:
     host = "127.0.0.1" if local_port else params["db_host"]
     port = local_port if local_port else 3306
     return f"mysql+pymysql://{params['db_user']}:{params['db_pass']}@{host}:{port}/{params['db_name']}"
+
+def _run_in_transaction_with_conn(worker_fn, *, max_retries=3):
+    """
+    Exécute worker_fn(conn) dans UNE transaction/connexion.
+    Retourne la valeur renvoyée par worker_fn.
+    """
+    cfg = get_db_params()
+
+    def _do(db_url: str):
+        engine = create_engine(db_url, pool_pre_ping=True, future=True)
+        try:
+            with engine.begin() as conn:
+                return worker_fn(conn)
+        finally:
+            engine.dispose()
+
+    attempt = 0
+    while attempt < max_retries:
+        try:
+            if LOCAL_CONNEXION:
+                with SSHTunnelForwarder(
+                    (cfg["ssh_host"]),
+                    ssh_username=cfg["ssh_user"],
+                    ssh_password=cfg["ssh_pass"],
+                    remote_bind_address=(cfg["db_host"], 3306),
+                ) as tunnel:
+                    return _do(_build_db_url(cfg, tunnel.local_bind_port))
+            else:
+                return _do(_build_db_url(cfg))
+        except Exception as e:
+            attempt += 1
+            logger.error("[Attempt %d] Transaction (worker) failed: %s", attempt, e)
+            if attempt < max_retries:
+                logger.info("Retrying in 3 seconds...")
+                time.sleep(3)
+            else:
+                raise
 
 def _execute_sql(DATABASE_URL, query, *, return_result=False, scalar=False, params=None):
     """

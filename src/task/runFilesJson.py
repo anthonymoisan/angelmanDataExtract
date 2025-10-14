@@ -1,9 +1,9 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-from utilsTools import send_email_alert, _run_query,readTable,_insert_data
+from tools.utilsTools import send_email_alert, _run_query,readTable,_insert_data
 import time
 import logging
-from logger import setup_logger
+from tools.logger import setup_logger
 import scraper.scraperHealthData as scrHealthData
 
 # Set up logger

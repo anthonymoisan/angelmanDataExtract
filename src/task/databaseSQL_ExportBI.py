@@ -16,10 +16,10 @@ import exportBI.exportIndia as expIndia
 import exportBI.exportIndonesia as expIndonesia
 import exportBI.exportGreece as expGreece
 
-from utilsTools import export_Table, send_email_alert
+from tools.utilsTools import export_Table, send_email_alert
 import time
 import logging
-from logger import setup_logger
+from tools.logger import setup_logger
 
 # Set up logger
 logger = setup_logger(debug=False)
