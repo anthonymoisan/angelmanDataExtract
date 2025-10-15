@@ -7,7 +7,7 @@ from tools.crypto_utils import decrypt_dataframe_auto
 # ⬇️ import absolu
 from app.common.config import load_db_config
 
-def _read_table_as_json(table_name: str):
+def _read_table_as_json(table_name: str,decrypt = True):
     cfg = load_db_config()
 
     if cfg["LOCAL_CONNEXION"]:
@@ -22,7 +22,7 @@ def _read_table_as_json(table_name: str):
                 f"mysql+pymysql://{cfg['DB_USERNAME']}:{cfg['DB_PASSWORD']}"
                 f"@127.0.0.1:{local_port}/{cfg['DB_NAME']}"
             )
-            return _read_json_from_engine(db_url, table_name)
+            return _read_json_from_engine(db_url, table_name, decrypt=decrypt)
     else:
         db_url = (
             f"mysql+pymysql://{cfg['DB_USERNAME']}:{cfg['DB_PASSWORD']}"
