@@ -14,7 +14,8 @@ from angelmanSyndromeConnexion.pointRemarquable import (
     getRecordsPointsRemarquables, insertPointRemarquable
 )
 
-from .common import ratelimit, _get_src, parse_date_any
+from .common import _get_src, parse_date_any
+from app.common.security import ratelimit
 
 bp = Blueprint("v5_people", __name__)
 from .common import register_error_handlers; register_error_handlers(bp)

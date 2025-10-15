@@ -6,15 +6,16 @@ from sqlalchemy import text
 from angelmanSyndromeConnexion.error import (
     AppError, MissingFieldError, ValidationError
 )
-from angelmanSyndromeConnexion.utils import email_sha256, decrypt_number
+from tools.crypto_utils import email_sha256, decrypt_number
 from angelmanSyndromeConnexion.peopleRepresentation import (
     updateData, authenticate_and_get_id, verifySecretAnswer
 )
 from tools.utilsTools import _run_query
 
 from .common import (
-    ratelimit, _get_src, _pwd_ok, _normalize_email, _SECRET_QUESTION_LABELS
+    _get_src, _pwd_ok, _normalize_email, _SECRET_QUESTION_LABELS
 )
+from app.common.security import ratelimit
 
 bp = Blueprint("v5_auth", __name__)
 from app.v5.common import register_error_handlers; register_error_handlers(bp)

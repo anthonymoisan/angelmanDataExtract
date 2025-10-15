@@ -5,7 +5,8 @@ from configparser import ConfigParser
 from email.message import EmailMessage
 from flask import Blueprint, jsonify, request, current_app
 
-from .common import sanitize_subject, sanitize_body, ratelimit
+from .common import sanitize_subject, sanitize_body
+from app.common.security import ratelimit
 
 bp = Blueprint("v5_mail", __name__)
 from .common import register_error_handlers; register_error_handlers(bp)
