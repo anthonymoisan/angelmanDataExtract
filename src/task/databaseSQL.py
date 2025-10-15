@@ -52,7 +52,7 @@ class ClinicalTrialsReader:
 def safe_export(table_name, sql_file, reader, label):
     try:
         logger.info(f"🟡 Export : {label}")
-        export_Table(table_name, sql_file, reader)
+        export_Table(table_name, sql_file, reader,encrypt=False)
         logger.info(f"✅ Export OK : {label}\n")
     except Exception as e:
         logger.error(f"❌ Échec KO {label} : {e}")
