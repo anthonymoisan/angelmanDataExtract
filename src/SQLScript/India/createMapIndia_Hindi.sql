@@ -1,9 +1,9 @@
 CREATE TABLE T_MapIndia_Hindi (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    gender VARCHAR(255) NOT NULL,
-    city VARCHAR(255) NOT NULL,
-    states VARCHAR(255) NOT NULL,
-    genotype VARCHAR(255) NOT NULL,
-    age INT NOT NULL,
-    groupAge VARCHAR(255) NOT NULL
+    gender VARBINARY(512) NOT NULL,
+    city VARBINARY(512) NOT NULL,
+    states VARBINARY(512) NOT NULL,
+    genotype VARBINARY(512) NOT NULL,
+    age VARBINARY(64) NOT NULL,
+    groupAge VARBINARY(512) NOT NULL
 );

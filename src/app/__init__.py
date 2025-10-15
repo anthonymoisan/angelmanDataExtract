@@ -140,7 +140,7 @@ def create_app():
 
         API Indonesia
         <ul>
-        <li> API in order for reading data from MapIndonesia_English : <a href="/api/v4/resources/Indonesia/MapIndonesia_English">./api/v4/resources/India/MapIndonesia_English</a>
+        <li> API in order for reading data from MapIndonesia_English : <a href="/api/v4/resources/Indonesia/MapIndonesia_English">./api/v4/resources/Indonesia/MapIndonesia_English</a>
         <li> API in order for reading data from MapIndonesia_Ind : <a href="/api/v4/resources/Indonesia/MapIndonesia_Ind">./api/v4/resources/Indonesia/MapIndonesia_Ind</a>
         </ul>
 

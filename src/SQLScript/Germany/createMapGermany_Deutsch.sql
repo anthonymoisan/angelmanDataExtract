@@ -1,7 +1,7 @@
 CREATE TABLE T_MapGermany_Deutsch (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    indexation VARCHAR(255) NOT NULL UNIQUE,
-    gender VARCHAR(255) NOT NULL,
-    genotype VARCHAR(255) NOT NULL,
-    age INT NOT NULL
+    indexation INT NOT NULL UNIQUE,
+    gender VARBINARY(512) NOT NULL,
+    genotype VARBINARY(512) NOT NULL,
+    age VARBINARY(64) NOT NULL
 );

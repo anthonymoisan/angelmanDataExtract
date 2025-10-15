@@ -1,12 +1,12 @@
 CREATE TABLE T_MapFrance_Capabilitie (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    populations VARCHAR(50) NOT NULL,
-    therapy VARCHAR(50) NOT NULL,
-    phase VARCHAR(50) NOT NULL,
-    hospital VARCHAR(255) NOT NULL,
-    contact VARCHAR(255) NOT NULL,
-    addressLocation VARCHAR(255) NOT NULL,
+    populations VARBINARY(512) NOT NULL,
+    therapy VARBINARY(512) NOT NULL,
+    phase VARBINARY(512) NOT NULL,
+    hospital VARBINARY(512) NOT NULL,
+    contact VARBINARY(512) NOT NULL,
+    addressLocation VARBINARY(512) NOT NULL,
     longitude DECIMAL(10,4) NOT NULL,
     lattitude DECIMAL(10,4) NOT NULL,
-    urlWebSite TEXT
+    urlWebSite VARBINARY(512)
 );

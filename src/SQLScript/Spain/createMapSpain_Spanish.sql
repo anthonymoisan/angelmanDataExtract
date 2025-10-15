@@ -1,7 +1,7 @@
 CREATE TABLE T_MapSpain_Spanish (
     id INT PRIMARY KEY AUTO_INCREMENT,
     indexation INT NOT NULL UNIQUE,
-    sexo VARCHAR(255) NOT NULL,
-    genotipo VARCHAR(255) NOT NULL,
-    edad INT NOT NULL
+    sexo VARBINARY(512) NOT NULL,
+    genotipo VARBINARY(512) NOT NULL,
+    edad VARBINARY(64) NOT NULL
 );

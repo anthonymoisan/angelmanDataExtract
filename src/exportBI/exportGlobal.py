@@ -12,7 +12,7 @@ from configparser import ConfigParser
 
 import time
 import logging
-
+from tools.crypto_utils import decrypt_dataframe_auto
 
 from tools.logger import setup_logger
 
@@ -34,6 +34,7 @@ def readTable_with_retry(table_name, max_retries=3, delay_seconds=5):
         try:
             logging.info(f"Tentative {attempt} de lecture de la table '{table_name}'")
             df = readTable(table_name)
+            decrypt_dataframe_auto(df,inplace=True)
             return df
         except Exception as e:
             logging.error(f"[ERREUR LECTURE] Table '{table_name}' - Tentative {attempt} : {e}")

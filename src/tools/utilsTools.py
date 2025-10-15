@@ -11,6 +11,7 @@ from email.message import EmailMessage
 from datetime import datetime
 import logging
 from tools.logger import setup_logger
+from tools.crypto_utils import encrypt_dataframe_auto
 
 # ----- Logger -----
 logger = setup_logger(debug=True)
@@ -240,7 +241,7 @@ def _log_table_update(table_name: str):
         logger.info("Updated row for %s in update_log.", table_name)
 
 # ----- Export générique -----
-def export_Table(table_name, sql_script, reader):
+def export_Table(table_name, sql_script, reader, encrypt=True):
     """
     - reader.readData() -> DataFrame
     - sql_script: nom de fichier SQL à exécuter pour (re)créer la table
@@ -305,6 +306,8 @@ def export_Table(table_name, sql_script, reader):
                 logger.info("--- Create Table.")
                 _run_query(f.read())
 
+            if encrypt:
+                encrypt_dataframe_auto(df, return_spec=True,inplace=True)
             logger.info("--- Insert data into Table.")
             _insert_data(df, table_name)
 

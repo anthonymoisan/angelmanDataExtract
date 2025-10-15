@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from flask import jsonify
 from sshtunnel import SSHTunnelForwarder
-
+from tools.crypto_utils import decrypt_dataframe_auto
 # ⬇️ import absolu
 from app.common.config import load_db_config
 
@@ -30,11 +30,13 @@ def _read_table_as_json(table_name: str):
         )
         return _read_json_from_engine(db_url, table_name)
 
-def _read_json_from_engine(db_url: str, table_name: str):
+def _read_json_from_engine(db_url: str, table_name: str, decrypt = True):
     engine = create_engine(db_url, pool_pre_ping=True, future=True)
     try:
         with engine.connect() as conn:
             df = pd.read_sql_table(table_name, conn)
+            if decrypt:
+                decrypt_dataframe_auto(df,inplace=True)
         df = df.fillna("None")
         return jsonify(df.to_dict(orient="records"))
     finally:

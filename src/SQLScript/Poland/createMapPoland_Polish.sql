@@ -3,5 +3,5 @@ CREATE TABLE T_MapPoland_Polish (
     indexation VARCHAR(255) NOT NULL UNIQUE,
     gender VARCHAR(255) NOT NULL,
     genotype VARCHAR(255) NOT NULL,
-    age INT NOT NULL
+    age VARBINARY(64) NOT NULL
 );
