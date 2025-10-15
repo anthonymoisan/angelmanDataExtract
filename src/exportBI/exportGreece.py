@@ -65,7 +65,7 @@ def _transformersMapGreece_GR(df):
     df["genotype"] = df["genotype"].replace("Mutation","παραλλαγή")
     df["genotype"] = df["genotype"].replace("UPD","μονογονεϊκή δυσομία")
     df["genotype"] = df["genotype"].replace("ICD","βλάβη του κέντρου αποτύπωσης")
-    df["genotype"] = df["genotype"].replace("I don’t know.","Δεν γνωρίζω")
+    df["genotype"] = df["genotype"].replace("I don’t know","Δεν γνωρίζω")
     df["genotype"] = df["genotype"].replace("Clinical","κλινική διάγνωση")
     
     df["gender"] = df["gender"].replace("M","Άνδρας")

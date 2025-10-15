@@ -7,7 +7,16 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from tools.logger import setup_logger
-from angelmanSyndromeConnexion.peopleRepresentation import verifySecretAnswer,getQuestionSecrete,deleteDataById,updateData,insertData, giveId, getRecordsPeople,fetch_person_decrypted, authenticate_and_get_id, authenticate_email_password
+from angelmanSyndromeConnexion.peopleUpdate import updateData
+from angelmanSyndromeConnexion.peopleAuth import(
+    verifySecretAnswer, authenticate_and_get_id, authenticate_email_password
+)
+from angelmanSyndromeConnexion.peopleRead import( 
+    getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId
+)
+from angelmanSyndromeConnexion.peopleDelete import deleteDataById
+from angelmanSyndromeConnexion.peopleCreate import insertData
+
 import time
 from angelmanSyndromeConnexion import error
 from tools.utilsTools import dropTable,createTable
@@ -22,7 +31,7 @@ def _insertDataFrame(firstRow=False):
     df = pd.read_excel(f"{wkdir}/../../../data/Picture/DataAngelman.xlsx")
     script_path = os.path.join(f"{wkdir}/../SQL/","createASPeople.sql")
     createTable(script_path)
-    BASE = Path(__file__).resolve().parent / ".." / "data" / "Picture"
+    BASE = Path(__file__).resolve().parent / "../../.." / "data" / "Picture"
 
     if (firstRow):
         loop = 1
@@ -79,19 +88,19 @@ def main():
     start = time.time()
     try:
         
-        _insertDataFrame(firstRow=False)
-        findId("gustave.faivre@yahoo.fr")
-        df = getRecordsPeople()
-        logger.info(df.head())
-        dictRes = fetch_person_decrypted(1)
-        logger.info(dictRes)
-        #id = authenticate_and_get_id("louise.richard1@fastfrance.org", "Mmas&37814" ) 
+        #_insertDataFrame(firstRow=False)
+        #findId("eva.moreau199@example.org")
+        #df = getRecordsPeople()
+        #logger.info(df.head())
+        #dictRes = fetch_person_decrypted(1)
+        #logger.info(dictRes)
+        #id = authenticate_and_get_id("victor.cochonneau@gmail.fr", "Mmas&37816" ) 
         #logger.info("Id : %d", id)
-        #logger.info("Authentification : %d", authenticate_email_password("mal.legrand2@mail.fr", "Mmas&37815"))
+        #logger.info("Authentification : %d", authenticate_email_password("gustave.faivre@yahoo.fr", "Mmas&37818"))
         #updateData("anthonymoisan@yahoo.fr", firstname="Robert", password="Mmas|3783",delete_photo=True)
         #deleteDataById(5)
-        #logger.info(getQuestionSecrete(11))
-        logger.info(verifySecretAnswer(email="sarah.boyer200@mail.fr",answer="Chun"))
+        #logger.info(getQuestionSecrete(7))
+        #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chun"))
 
         
         elapsed = time.time() - start
