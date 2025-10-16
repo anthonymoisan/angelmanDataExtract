@@ -7,8 +7,9 @@ from angelmanSyndromeConnexion.error import (
     AppError, MissingFieldError, ValidationError
 )
 from tools.crypto_utils import email_sha256, decrypt_number
-from angelmanSyndromeConnexion.peopleRepresentation import (
-    updateData, authenticate_and_get_id, verifySecretAnswer
+from angelmanSyndromeConnexion.peopleUpdate import updateData
+from angelmanSyndromeConnexion.peopleAuth import( 
+    authenticate_and_get_id, verifySecretAnswer
 )
 from tools.utilsTools import _run_query
 
