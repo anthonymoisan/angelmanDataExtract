@@ -6,10 +6,13 @@ from flask import Blueprint, jsonify, request, Response, abort, current_app
 from angelmanSyndromeConnexion.error import (
     AppError, MissingFieldError, ValidationError
 )
-from angelmanSyndromeConnexion.peopleRepresentation import (
-    deleteDataById, updateData, getRecordsPeople, giveId,
-    fetch_photo, fetch_person_decrypted, insertData,
+from angelmanSyndromeConnexion.peopleCreate import insertData
+from angelmanSyndromeConnexion.peopleRead import(
+    giveId, fetch_person_decrypted, fetch_photo, getRecordsPeople
 )
+from angelmanSyndromeConnexion.peopleUpdate import updateData
+from angelmanSyndromeConnexion.peopleDelete import deleteDataById
+
 from angelmanSyndromeConnexion.pointRemarquable import (
     getRecordsPointsRemarquables, insertPointRemarquable
 )
