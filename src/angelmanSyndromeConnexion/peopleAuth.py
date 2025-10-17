@@ -30,8 +30,8 @@ def _get_auth_row_by_email(email: str) -> Optional[Tuple[int, bytes]]:
         sha = crypto.email_sha256(email)  # BINARY(32) côté SQL
         row = _run_query(
             text("""
-                SELECT id, password_hash
-                FROM T_ASPeople
+                SELECT person_id, password_hash
+                FROM T_People_Identity
                 WHERE email_sha = :sha
                 LIMIT 1
             """),
@@ -103,14 +103,14 @@ def verifySecretAnswer(*, email: str | None = None, person_id: int | None = None
         where = "email_sha = :sha"
         params["sha"] = sha
     elif person_id is not None:
-        where = "id = :id"
-        params["id"] = int(person_id)
+        where = "person_id = :person_id"
+        params["person_id"] = int(person_id)
     else:
         # pas d'identifiant -> échec silencieux
         return False
 
     rowset = _run_query(
-        text(f"SELECT secret_answer FROM T_ASPeople WHERE {where} LIMIT 1"),
+        text(f"SELECT secret_answer FROM T_People_Identity WHERE {where} LIMIT 1"),
         params=params,
         return_result=True
     )

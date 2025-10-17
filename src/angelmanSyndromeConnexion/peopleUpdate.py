@@ -55,129 +55,116 @@ def updateData(
     *,
     firstname=None,
     lastname=None,
-    dateOfBirth=None,
+    dateOfBirth=None,        # date | str ISO
     emailNewAddress=None,
     genotype=None,
-    photo=None,
-    longitude=None,
-    latitude=None,
-    city=None,
-    password=None,
-    questionSecrete=None,
-    reponseSecrete=None,
-    delete_photo: bool=False,
+    photo=None,              # bytes
+    longitude=None,          # float|str
+    latitude=None,           # float|str
+    city=None,               # str (CLAIR → table publique)
+    password=None,           # str (Argon2)
+    questionSecrete=None,    # 1..3
+    reponseSecrete=None,     # str
+    delete_photo: bool=False
 ) -> int:
-    logger.info("Update record for %s", email_address)
+    """
+    Met à jour T_People_Identity (données chiffrées) ET T_People_Public (claires).
+    Retourne 1 si quelque chose a été modifié, 0 sinon.
+    """
+    logger.info("Update (2-tables) for %s", email_address)
 
-    # 1) resolve id from email
-    try:
-        pid = giveId(email_address)
-    except Exception:
-        raise error.ValidationError("email address invalide")
+    # 1) Résoudre l'id depuis l'email (via email_sha dans la table identity)
+    pid = giveId(email_address)
     if pid is None:
         raise error.ValidationError("Utilisateur introuvable pour cet email")
 
-    set_clauses, params = [], {"id": pid}
-
-    # 2) normalize inputs
+    # 2) Normalisations
     firstname       = firstname if _is_str_filled(firstname) else None
     lastname        = lastname  if _is_str_filled(lastname)  else None
     genotype        = genotype  if _is_str_filled(genotype)  else None
-    city            = city      if _is_str_filled(city)      else None
     password        = password  if _is_str_filled(password)  else None
     emailNewAddress = emailNewAddress if _is_str_filled(emailNewAddress) else None
     reponseSecrete  = reponseSecrete  if _is_str_filled(reponseSecrete)  else None
-
+    city            = city if _is_str_filled(city) else None
     lon_val  = _to_float_or_none(longitude)
     lat_val  = _to_float_or_none(latitude)
     qsec_val = _to_int_or_none(questionSecrete)
 
     if dateOfBirth is not None:
-        if isinstance(dateOfBirth, date):
-            dob = dateOfBirth
-        else:
-            dob = coerce_to_date(dateOfBirth)
+        dob = coerce_to_date(dateOfBirth) if not isinstance(dateOfBirth, date) else dateOfBirth
         if dob > date.today():
             raise error.FutureDateError("dateOfBirth ne peut pas être dans le futur")
     else:
         dob = None
 
-    # 3) simple strings
+    # 3) Construire UPDATE pour la table privée (Identity)
+    ident_sets = []
+    ident_params = {"id": pid}
+
     if firstname is not None:
-        set_clauses.append("firstname = :fn")
-        params["fn"] = crypto.encrypt_str(firstname)
+        ident_sets.append("firstname = :fn")
+        ident_params["fn"] = crypto.encrypt_str(firstname)
+
     if lastname is not None:
-        set_clauses.append("lastname = :ln")
-        params["ln"] = crypto.encrypt_str(lastname)
+        ident_sets.append("lastname = :ln")
+        ident_params["ln"] = crypto.encrypt_str(lastname)
+
     if genotype is not None:
-        set_clauses.append("genotype = :gt")
-        params["gt"] = crypto.encrypt_str(genotype)
+        ident_sets.append("genotype = :gt")
+        ident_params["gt"] = crypto.encrypt_str(genotype)
 
-    # 4) new email
+    # email → chiffré + sha
     if emailNewAddress is not None:
-        set_clauses += ["`emailAddress` = :em", "email_sha = :email_sha"]
-        params["em"] = crypto.encrypt_str(emailNewAddress)
-        params["email_sha"] = crypto.email_sha256(emailNewAddress)
+        ident_sets += ["emailAddress = :em", "email_sha = :email_sha"]
+        ident_params["em"] = crypto.encrypt_str(emailNewAddress)
+        ident_params["email_sha"] = crypto.email_sha256(emailNewAddress)
 
-    # 5) date + age
+    # date de naissance (chiffrée)
+    age_new: int | None = None
     if dob is not None:
-        set_clauses += ["`dateOfBirth` = :dob", "age = :age"]
-        params["dob"] = crypto.encrypt_date_like(dob)
-        params["age"] = crypto.encrypt_number(age_years(dob))
+        ident_sets.append("dateOfBirth = :dob")
+        ident_params["dob"] = crypto.encrypt_date_like(dob)
+        age_new = age_years(dob)  # servira à MAJ table publique
 
-    # 6) lon/lat + city (auto)
-    lat_changed = (lat_val is not None)
-    lon_changed = (lon_val is not None)
+    # lon/lat (chiffrés)
+    lat_changed = lat_val is not None
+    lon_changed = lon_val is not None
     if lon_changed:
-        set_clauses.append("longitude = :lon")
-        params["lon"] = crypto.encrypt_number(float(lon_val))
+        ident_sets.append("longitude = :lon")
+        ident_params["lon"] = crypto.encrypt_number(float(lon_val))
     if lat_changed:
-        set_clauses.append("latitude = :lat")
-        params["lat"] = crypto.encrypt_number(float(lat_val))
+        ident_sets.append("latitude = :lat")
+        ident_params["lat"] = crypto.encrypt_number(float(lat_val))
 
-    if city is not None:
-        set_clauses.append("city = :city")
-        params["city"] = crypto.encrypt_str(city.strip())
-    elif lat_changed or lon_changed:
-        try:
-            if (lat_val is not None) and (lon_val is not None):
-                city_str = get_city(lat_val, lon_val) or ""
-                set_clauses.append("city = :city")
-                params["city"] = crypto.encrypt_str(city_str.strip())
-        except Exception as e:
-            logger.warning("Reverse geocoding ignoré: %s", e)
-
-    # 7) secret Q/A
+    # secret Q/A
     if qsec_val is not None:
         if qsec_val not in (1, 2, 3):
             raise error.ValidationError("questionSecrete doit être 1, 2 ou 3")
-        set_clauses.append("secret_question = :secret_q")
-        params["secret_q"] = crypto.encrypt_number(qsec_val)
+        ident_sets.append("secret_question = :secret_q")
+        ident_params["secret_q"] = crypto.encrypt_number(qsec_val)
     if reponseSecrete is not None:
-        set_clauses.append("secret_answer = :secret_ans")
-        params["secret_ans"] = crypto.encrypt_str(reponseSecrete)
+        ident_sets.append("secret_answer = :secret_ans")
+        ident_params["secret_ans"] = crypto.encrypt_str(reponseSecrete)
 
-    # 8) password
+    # password (Argon2)
     if password is not None:
         pwd_hash_bytes, pwd_meta = crypto.hash_password_argon2(password)
-        pwd_meta_json = json.dumps(pwd_meta, separators=(",", ":"))
-        pwd_updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        set_clauses += [
+        ident_sets += [
             "password_hash = :pwd_hash",
             "password_algo = :pwd_algo",
             "password_meta = CAST(:pwd_meta AS JSON)",
             "password_updated_at = :pwd_updated_at",
         ]
-        params.update({
+        ident_params.update({
             "pwd_hash": pwd_hash_bytes,
             "pwd_algo": "argon2id",
-            "pwd_meta": pwd_meta_json,
-            "pwd_updated_at": pwd_updated_at,
+            "pwd_meta": json.dumps(pwd_meta, separators=(",", ":")),
+            "pwd_updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
         })
 
-    # 9) photo
+    # photo
     if delete_photo:
-        set_clauses += ["photo = NULL", "photo_mime = NULL"]
+        ident_sets += ["photo = NULL", "photo_mime = NULL"]
     elif photo is not None:
         detected_mime = detect_mime_from_bytes(photo)
         src_mime = normalize_mime(detected_mime or "image/jpeg")
@@ -199,23 +186,70 @@ def updateData(
         if len(photo_blob_final) > 4 * 1024 * 1024:
             raise error.PhotoTooLargeError("Photo > 4 MiB après recompression")
 
-        set_clauses += ["photo = :photo", "photo_mime = :photo_mime"]
-        params["photo"] = photo_blob_final
-        params["photo_mime"] = photo_mime_final
+        ident_sets += ["photo = :photo", "photo_mime = :photo_mime"]
+        ident_params["photo"] = photo_blob_final
+        ident_params["photo_mime"] = photo_mime_final
 
-    if not set_clauses:
+    # 4) Construire UPDATE pour la table publique (Public)
+    public_sets = []
+    public_params = {"id": pid}
+
+    # city (clair). Si non fourni et lon/lat modifiés → reverse geocoding best-effort
+    if city is not None:
+        public_sets.append("city = :city")
+        public_params["city"] = city.strip()
+    elif lat_changed or lon_changed:
+        try:
+            if (lat_val is not None) and (lon_val is not None):
+                city_str = get_city(lat_val, lon_val) or ""
+                public_sets.append("city = :city")
+                public_params["city"] = city_str.strip()
+        except Exception as e:
+            logger.warning("Reverse geocoding ignoré: %s", e)
+
+    # age_years (clair)
+    if age_new is not None:
+        public_sets.append("age_years = :age_years")
+        public_params["age_years"] = int(age_new)
+
+    if firstname is not None and lastname is not None:
+        public_sets.append("pseudo = :pseudo")
+        public_params["pseudo"] = f"{firstname} {lastname[0]}."
+      
+    # 5) Exécutions SQL (seulement s’il y a quelque chose à modifier)
+    affected = 0
+
+    if ident_sets:
+        sql_ident = text(f"""
+            UPDATE T_People_Identity
+               SET {", ".join(ident_sets)}
+             WHERE person_id = :id
+             LIMIT 1
+        """)
+        try:
+            _run_query(sql_ident, params=ident_params)
+            affected = 1
+        except Exception:
+            logger.exception("Update failed (Identity)")
+            # on continue pour tenter la partie publique si souhaité, sinon return 0
+            return 0
+
+    if public_sets:
+        sql_public = text(f"""
+            UPDATE T_People_Public
+               SET {", ".join(public_sets)}
+             WHERE id = :id
+             LIMIT 1
+        """)
+        try:
+            _run_query(sql_public, params=public_params)
+            affected = 1
+        except Exception:
+            logger.exception("Update failed (Public)")
+            return 0
+
+    if not ident_sets and not public_sets:
         logger.info("Aucun champ fourni pour update (id=%s)", pid)
         return 0
 
-    sql = text(f"""
-        UPDATE `T_ASPeople`
-        SET {", ".join(set_clauses)}
-        WHERE id = :id
-        LIMIT 1
-    """)
-    try:
-        _run_query(sql, params=params)
-    except Exception:
-        logger.exception("Update failed")
-        return 0
-    return 1
+    return affected
