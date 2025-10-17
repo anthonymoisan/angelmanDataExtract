@@ -19,12 +19,14 @@ from angelmanSyndromeConnexion.pointRemarquable import (
 
 from .common import _get_src, parse_date_any
 from app.common.security import ratelimit
+from app.common.basic_auth import require_basic
 
 bp = Blueprint("v5_people", __name__)
 from .common import register_error_handlers; register_error_handlers(bp)
 
 @bp.route("/people/update", methods=["PATCH", "PUT"])
 @ratelimit(3)
+@require_basic
 def api_update_person():
     try:
         def _to_bool(v):
@@ -110,6 +112,7 @@ def api_update_person():
         return jsonify({"error": f"erreur serveur: {e}"}), 500
 
 @bp.get("/people/<int:person_id>/photo")
+@require_basic
 def person_photo(person_id: int):
     photo, mime = fetch_photo(person_id)
     if not photo:
@@ -117,6 +120,7 @@ def person_photo(person_id: int):
     return Response(photo, mimetype=mime)
 
 @bp.get("/people/<int:person_id>/info")
+@require_basic
 def person_info(person_id: int):
     result = fetch_person_decrypted(person_id)
     return jsonify(result)
@@ -189,6 +193,7 @@ def _payload_people_from_request():
     return firstname, lastname, emailAddress, dob, genotype, photo_bytes, longC, latC, password, qSec, rSec
 
 @bp.post("/people")
+@require_basic
 def create_person():
     try:
         fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec = _payload_people_from_request()
@@ -202,6 +207,7 @@ def create_person():
 
 @bp.delete("/people/delete/<int:person_id>")
 @ratelimit(3)
+@require_basic
 def api_delete_person_by_id(person_id: int):
     try:
         deleteDataById(person_id)
@@ -213,6 +219,7 @@ def api_delete_person_by_id(person_id: int):
         return jsonify({"error": f"erreur serveur: {e}"}), 500
 
 @bp.get("/people/lookup")
+@require_basic
 def get_idPerson():
     try:
         email = request.args.get("email") or request.args.get("emailAddress")
@@ -260,6 +267,7 @@ def _payload_point_from_request():
     return lon, lat, str(short_desc).strip(), str(long_desc).strip()
 
 @bp.post("/pointRemarquable")
+@require_basic
 def create_pointRemarquable():
     try:
         longitude, latitude, short_desc, long_desc = _payload_point_from_request()
@@ -276,11 +284,13 @@ def create_pointRemarquable():
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 @bp.get("/peopleMapRepresentation")
+@require_basic
 def peopleMapRepresentation():
     df = getRecordsPeople()
     return jsonify(df.to_dict(orient="records"))
 
 @bp.get("/pointRemarquableRepresentation")
+@require_basic
 def pointRemarquableRepresentation():
     df = getRecordsPointsRemarquables()
     return jsonify(df.to_dict(orient="records"))

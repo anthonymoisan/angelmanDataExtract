@@ -10,6 +10,7 @@ from app.common.security import ratelimit
 
 bp = Blueprint("v5_mail", __name__)
 from .common import register_error_handlers; register_error_handlers(bp)
+from app.common.basic_auth import require_basic
 
 # Chargement Config5.ini (même logique qu'avant)
 _app_dir = os.path.dirname(os.path.dirname(__file__))  # -> src/app
@@ -24,6 +25,7 @@ MAIL_FROM = "asconnect@fastfrance.org"
 
 @bp.post("/contact")
 @ratelimit(5)
+@require_basic
 def relay_contact():
     data = request.get_json(force=True, silent=True) or {}
     subject = sanitize_subject(data.get("subject", ""))

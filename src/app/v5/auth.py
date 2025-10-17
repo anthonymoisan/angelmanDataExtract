@@ -17,11 +17,14 @@ from .common import (
     _get_src, _pwd_ok, _normalize_email, _SECRET_QUESTION_LABELS
 )
 from app.common.security import ratelimit
+from app.common.basic_auth import require_basic
 
 bp = Blueprint("v5_auth", __name__)
 from app.v5.common import register_error_handlers; register_error_handlers(bp)
 
 @bp.post("/auth/login")
+@ratelimit(3)
+@require_basic
 def auth_login():
     data = request.get_json(silent=True)
     if not isinstance(data, dict) or not data:
@@ -46,6 +49,7 @@ def auth_login():
 
 @bp.get("/people/secret-question")
 @ratelimit(5)
+@require_basic
 def api_get_secret_question():
     try:
         src = _get_src() or {}
@@ -90,6 +94,7 @@ def api_get_secret_question():
 
 @bp.post("/people/secret-answer/verify")
 @ratelimit(5)
+@require_basic
 def api_verify_secret_answer():
     """
     Entrée:
@@ -123,6 +128,7 @@ def api_verify_secret_answer():
 
 @bp.post("/auth/reset-password")
 @ratelimit(3)
+@require_basic
 def api_reset_password():
     try:
         src = _get_src() or {}
