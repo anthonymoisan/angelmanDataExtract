@@ -4,6 +4,7 @@ import os, json, requests
 from configparser import ConfigParser
 from requests.auth import HTTPBasicAuth
 from flask import Blueprint, request, jsonify
+from app.common.security import require_public_app_key
 
 from tools.logger import setup_logger
 logger = setup_logger(debug=False)
@@ -33,6 +34,7 @@ def _auth():
 
 # --------- PUBLIC: POST /auth/login -----------
 @bp.post("/auth/login")
+@require_public_app_key
 def public_login():
     payload = request.get_json(silent=True) or {}
     if not payload.get("email") or not payload.get("password"):
@@ -61,6 +63,7 @@ def public_login():
 
 # --------- PUBLIC: GET /people/secret-question -----------
 @bp.get("/people/secret-question")
+@require_public_app_key
 def public_secret_question():
     # Relay query string (?email=... or emailAddress=...)
     try:
@@ -83,6 +86,7 @@ def public_secret_question():
 
 # --------- PUBLIC: POST /people/secret-answer/verify -----------
 @bp.post("/people/secret-answer/verify")
+@require_public_app_key
 def public_verify_secret_answer():
     # Private endpoint accepts JSON or query; we forward JSON body
     payload = request.get_json(silent=True) or {}
@@ -106,6 +110,7 @@ def public_verify_secret_answer():
 
 # --------- PUBLIC: POST /auth/reset-password -----------
 @bp.post("/auth/reset-password")
+@require_public_app_key
 def public_reset_password():
     payload = request.get_json(silent=True) or {}
     try:

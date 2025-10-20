@@ -26,11 +26,18 @@ def sanitize_body(s: str) -> str:
     return (s or "").strip()[:MAX_BODY]
 
 def _get_src():
-    # multipart => request.form ; sinon JSON
-    ctype = (request.content_type or "")
-    if ctype.startswith("multipart/form-data"):
-        return request.form
-    return request.get_json(silent=True) or {}
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
+        return {**request.form.to_dict(flat=True)}  # + files si besoin
+
+    data = request.get_json(force=True, silent=True) or {}
+    if not isinstance(data, dict):
+        data = {}
+    if not data:
+        data = request.form.to_dict(flat=True)
+    if not data:
+        data = request.args.to_dict(flat=True)
+    return data
+
 
 def parse_date_any(s: str) -> date:
     s = (s or "").strip()

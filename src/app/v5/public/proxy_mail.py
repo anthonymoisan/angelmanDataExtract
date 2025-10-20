@@ -7,6 +7,7 @@ from time import monotonic
 import requests
 from requests.auth import HTTPBasicAuth
 from flask import Blueprint, jsonify, request, current_app
+from app.common.security import ratelimit,require_public_app_key
 
 bp = Blueprint("public_mail", __name__)
 
@@ -28,22 +29,8 @@ except KeyError as e:
 if not PROXY_USER or not PROXY_PASS or not PRIVATE_CONTACT_URL:
     raise RuntimeError("Config5.ini incomplete: PROXY_AUTH.USER, PROXY_AUTH.PASS, PRIVATE.CONTACT_URL required")
 
-_last_hit: dict[str, float] = {}
-def ratelimit(seconds: float = 5.0):
-    def deco(f):
-        @wraps(f)
-        def wrapped(*args, **kwargs):
-            ip = request.headers.get("X-Forwarded-For", request.remote_addr) or "anon"
-            now = monotonic()
-            if now - _last_hit.get(ip, 0.0) < seconds:
-                return jsonify({"error": "Trop de requêtes, réessaie dans quelques secondes."}), 429
-            _last_hit[ip] = now
-            return f(*args, **kwargs)
-        return wrapped
-    return deco
-
 @bp.post("/contact")
-@ratelimit(5)
+@require_public_app_key
 def relay_contact_public():
     payload = request.get_json(force=True, silent=True) or {}
 
