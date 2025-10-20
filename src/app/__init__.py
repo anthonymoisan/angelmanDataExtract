@@ -41,15 +41,23 @@ def create_app():
     app.register_blueprint(v4, url_prefix="/api/v4")
 
     from app.v5.auth import bp as v5_auth
-    from app.v5.mail import bp as v5_mail
+    from app.v5.public.proxy_auth import bp as public_auth_bp
+    app.register_blueprint(public_auth_bp, url_prefix="/api/public")
+    app.register_blueprint(v5_auth,       url_prefix="/api/v5")
+
     from app.v5.people import bp as v5_people
-
-    app.register_blueprint(v5_auth,   url_prefix="/api/v5")
-    app.register_blueprint(v5_mail,   url_prefix="/api/v5")
+    from app.v5.public.proxy_people import bp as public_people_bp
+    app.register_blueprint(public_people_bp, url_prefix="/api/public")
     app.register_blueprint(v5_people, url_prefix="/api/v5")
-    #from app.v5.routes import bp as v5
-    #app.register_blueprint(v5, url_prefix="/api/v5")
 
+    from app.v5.mail import bp as v5_mail
+    from app.v5.public.proxy_mail import bp as public_mail_bp
+    app.register_blueprint(public_mail_bp, url_prefix="/api/public")
+    app.register_blueprint(v5_mail,   url_prefix="/api/v5")
+
+    
+    
+    
     from app.v6.routes import bp as v6
     app.register_blueprint(v6, url_prefix="/api/v6")
 

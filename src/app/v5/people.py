@@ -8,7 +8,7 @@ from angelmanSyndromeConnexion.error import (
 )
 from angelmanSyndromeConnexion.peopleCreate import insertData
 from angelmanSyndromeConnexion.peopleRead import(
-    giveId, fetch_person_decrypted, fetch_photo, getRecordsPeople
+    giveId, fetch_person_decrypted, fetch_photo, getRecordsPeople, identity_public
 )
 from angelmanSyndromeConnexion.peopleUpdate import updateData
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
@@ -123,6 +123,12 @@ def person_photo(person_id: int):
 @require_basic
 def person_info(person_id: int):
     result = fetch_person_decrypted(person_id)
+    return jsonify(result)
+
+@bp.get("/people/<int:person_id>/infoPublic")
+@require_basic
+def person_infoPublic(person_id: int):
+    result = identity_public(person_id)
     return jsonify(result)
 
 def _payload_people_from_request():

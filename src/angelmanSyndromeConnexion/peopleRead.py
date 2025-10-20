@@ -22,6 +22,28 @@ def fetch_photo(person_id: int) -> tuple[bytes | None, str | None]:
     photo, mime = rows[0]
     return photo, (mime or "image/jpeg")
 
+def identity_public(person_id: int) -> dict | None:
+    row = _run_query(text("""
+                SELECT
+                city, age_years, pseudo, status 
+                FROM T_People_Public 
+                WHERE id = :id
+                """),
+            return_result=True, params={"id": int(person_id)}
+    )
+
+    if not row:
+        return None
+    else:
+        r = row[0]
+        return {
+            "id": person_id,
+            "city": r[0],
+            "age": r[1],
+            "pseudo" : r[2],
+            "status" : r[3],
+        }
+
 
 def fetch_person_decrypted(person_id: int) -> dict | None:
     row = _run_query(text("""

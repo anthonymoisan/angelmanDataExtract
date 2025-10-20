@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from angelmanSyndromeConnexion.error import (
     AppError, DuplicateEmailError
 )
+from app.common.basic_auth import require_basic
 
 # ---------- Helpers requêtes / validations ----------
 MAX_SUBJECT = 140

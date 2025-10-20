@@ -14,7 +14,7 @@ from angelmanSyndromeConnexion.geo_utils import get_city
 from angelmanSyndromeConnexion.utils_image import (
     coerce_to_date, detect_mime_from_bytes, normalize_mime, recompress_image
 )
-from angelmanSyndromeConnexion.peopleRead import giveId
+from angelmanSyndromeConnexion.peopleRead import giveId, fetch_person_decrypted_simple
 
 logger = setup_logger(debug=False)
 
@@ -215,7 +215,17 @@ def updateData(
     if firstname is not None and lastname is not None:
         public_sets.append("pseudo = :pseudo")
         public_params["pseudo"] = f"{firstname} {lastname[0]}."
-      
+    elif firstname is not None:
+        #lastNewName is None
+        person = fetch_person_decrypted_simple(pid)
+        public_sets.append("pseudo = :pseudo")
+        valueLastName = person["lastname"][0]
+        public_params["pseudo"] = f"{firstname} {valueLastName}."
+    elif lastname is not None:
+        person = fetch_person_decrypted_simple(pid)
+        valueFirstName = person["firstname"]
+        public_sets.append("pseudo = :pseudo")
+        public_params["pseudo"] = f"{valueFirstName} {lastname[0]}."
     # 5) Exécutions SQL (seulement s’il y a quelque chose à modifier)
     affected = 0
 

@@ -12,7 +12,7 @@ from angelmanSyndromeConnexion.peopleAuth import(
     verifySecretAnswer, authenticate_and_get_id, authenticate_email_password
 )
 from angelmanSyndromeConnexion.peopleRead import( 
-    getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId
+    getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId,identity_public
 )
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
 from angelmanSyndromeConnexion.peopleCreate import insertData
@@ -99,18 +99,19 @@ def main():
         #findId("anthonymoisan@yahoo.fr")
         #df = getRecordsPeople()
         #logger.info(df.head())
-        dictRes = fetch_person_decrypted(1)
-        logger.info(dictRes)
+        #dictRes = fetch_person_decrypted(1)
+        #logger.info(dictRes)
+        dictR = identity_public(1)
+        logger.info(dictR)
         #id = authenticate_and_get_id("anthonymoisan@yahoo.fr", "Mmas&37814" ) 
         #logger.info("Id : %d", id)
         #logger.info("Authentification : %d", authenticate_email_password("anthonymoisan@yahoo.fr", "Mmas&37814"))
         '''
         updateData(
             "jean2.imbert@mail.fr", 
-            firstname="Jean",
-            lastname="Imbert",
-            dateOfBirth = "26/11/2018",
-            emailNewAddress = "jean2.imbert@mail.fr",
+            firstname="Anthony",
+            dateOfBirth = "26/11/2019",
+            emailNewAddress = "anthonymoisan@yahoo.fr",
             genotype = "Mutation",             
             password="Mmas|3783",
             longitude = "2.5",
