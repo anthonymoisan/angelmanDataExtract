@@ -87,3 +87,11 @@ def require_basic(f):
 
         return f(*args, **kwargs)
     return wrapped
+
+def require_internal():
+    # OPTIONS: laisser passer les préflights CORS
+    if request.method == "OPTIONS":
+        return None
+    if request.headers.get("X-Internal-Call") != "1":
+        return jsonify({"error": "unauthorized"}), 401
+    return None

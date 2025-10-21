@@ -8,9 +8,12 @@ from flask import Blueprint, jsonify, request, current_app
 from .common import sanitize_subject, sanitize_body
 from app.common.security import ratelimit
 
+
+from app.common.basic_auth import require_basic,require_internal
+
 bp = Blueprint("v5_mail", __name__)
+bp.before_request(require_internal)
 from .common import register_error_handlers; register_error_handlers(bp)
-from app.common.basic_auth import require_basic
 
 # Chargement Config5.ini (même logique qu'avant)
 _app_dir = os.path.dirname(os.path.dirname(__file__))  # -> src/app

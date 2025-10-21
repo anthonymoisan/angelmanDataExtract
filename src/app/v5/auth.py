@@ -11,9 +11,10 @@ from tools.utilsTools import _run_query
 
 from .common import _get_src, _pwd_ok, _normalize_email, _SECRET_QUESTION_LABELS
 from app.common.security import ratelimit
-from app.common.basic_auth import require_basic
+from app.common.basic_auth import require_basic,require_internal
 
 bp = Blueprint("v5_auth", __name__)
+bp.before_request(require_internal)
 from app.v5.common import register_error_handlers; register_error_handlers(bp)
 
 @bp.post("/auth/login")

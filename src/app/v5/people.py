@@ -19,9 +19,11 @@ from angelmanSyndromeConnexion.pointRemarquable import (
 
 from .common import _get_src, parse_date_any
 from app.common.security import ratelimit
-from app.common.basic_auth import require_basic
+from app.common.basic_auth import require_basic,require_internal
 
 bp = Blueprint("v5_people", __name__)
+bp.before_request(require_internal)
+
 from .common import register_error_handlers; register_error_handlers(bp)
 
 @bp.route("/people/update", methods=["PATCH", "PUT"])
