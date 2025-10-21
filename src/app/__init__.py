@@ -58,6 +58,12 @@ def create_app():
         from app.v5.auth import bp as v5_auth
         app.register_blueprint(v5_auth,       url_prefix="/api/v5")
     
+    try:
+        from app.debug_routes import bp as debug_bp
+        app.register_blueprint(debug_bp)
+    except Exception:
+        pass
+    
     from app.v6.routes import bp as v6
     app.register_blueprint(v6, url_prefix="/api/v6")
 
@@ -70,29 +76,6 @@ def create_app():
         # pas bloquant si le fichier est absent en prod
         pass
     '''
-
-    @app.get("/_routes")
-    def _routes():
-        # Sécurisation optionnelle
-        expected = os.getenv("ROUTES_TOKEN")
-        if expected:
-            got = request.headers.get("X-Admin-Token") or request.args.get("token")
-            if got != expected:
-                return jsonify({"error": "forbidden"}), 403
-
-        rows = []
-        for rule in app.url_map.iter_rules():
-            if rule.endpoint == "static":
-                continue
-            methods = sorted(m for m in rule.methods if m not in {"HEAD", "OPTIONS"})
-            rows.append({
-                "rule": str(rule),
-                "endpoint": rule.endpoint,
-                "methods": methods,
-            })
-        rows.sort(key=lambda r: r["rule"])
-        return jsonify({"count": len(rows), "routes": rows})
-
     @app.get("/")
     def home():
         return '''        
