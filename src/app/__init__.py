@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import warnings
 try:
@@ -16,6 +16,7 @@ warnings.filterwarnings(
     message=r".*TripleDES has been moved to cryptography\.hazmat\.decrepit\.ciphers\.algorithms\.TripleDES.*",
 )
 
+LOCAL_ENV = not os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower().startswith("pythonanywhere")
 
 def create_app():
     app = Flask(__name__)
@@ -40,30 +41,62 @@ def create_app():
     from app.v4.routes import bp as v4
     app.register_blueprint(v4, url_prefix="/api/v4")
 
-    from app.v5.auth import bp as v5_auth
     from app.v5.public.proxy_auth import bp as public_auth_bp
     app.register_blueprint(public_auth_bp, url_prefix="/api/public")
-    app.register_blueprint(v5_auth,       url_prefix="/api/v5")
-
-    from app.v5.people import bp as v5_people
+    
     from app.v5.public.proxy_people import bp as public_people_bp
     app.register_blueprint(public_people_bp, url_prefix="/api/public")
-    app.register_blueprint(v5_people, url_prefix="/api/v5")
-
-    from app.v5.mail import bp as v5_mail
+    
     from app.v5.public.proxy_mail import bp as public_mail_bp
     app.register_blueprint(public_mail_bp, url_prefix="/api/public")
-    app.register_blueprint(v5_mail,   url_prefix="/api/v5")
-
     
-    
+    if LOCAL_ENV:
+        from app.v5.mail import bp as v5_mail
+        app.register_blueprint(v5_mail,   url_prefix="/api/v5")
+        from app.v5.people import bp as v5_people
+        app.register_blueprint(v5_people, url_prefix="/api/v5")
+        from app.v5.auth import bp as v5_auth
+        app.register_blueprint(v5_auth,       url_prefix="/api/v5")
     
     from app.v6.routes import bp as v6
     app.register_blueprint(v6, url_prefix="/api/v6")
 
+    '''
+    # === Debug routes (uniquement local / si forcé) ===
+    try:
+        from app.debug_routes import bp as debug_bp
+        app.register_blueprint(debug_bp, url_prefix = "/_routes")
+    except Exception:
+        # pas bloquant si le fichier est absent en prod
+        pass
+    '''
+
+    @app.get("/_routes")
+    def _routes():
+        # Sécurisation optionnelle
+        expected = os.getenv("ROUTES_TOKEN")
+        if expected:
+            got = request.headers.get("X-Admin-Token") or request.args.get("token")
+            if got != expected:
+                return jsonify({"error": "forbidden"}), 403
+
+        rows = []
+        for rule in app.url_map.iter_rules():
+            if rule.endpoint == "static":
+                continue
+            methods = sorted(m for m in rule.methods if m not in {"HEAD", "OPTIONS"})
+            rows.append({
+                "rule": str(rule),
+                "endpoint": rule.endpoint,
+                "methods": methods,
+            })
+        rows.sort(key=lambda r: r["rule"])
+        return jsonify({"count": len(rows), "routes": rows})
+
     @app.get("/")
     def home():
-        return '''<h1>APIs</h1>
+        return '''        
+        <h1>APIs</h1>
         API Steve
         <ul>
         <li>API in order for scraping data from PubMed : <a href="./api/v1/resources/articlesPubMed">./api/v1/resources/articlesPubMed</a></li>

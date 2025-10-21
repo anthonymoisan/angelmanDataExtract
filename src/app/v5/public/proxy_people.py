@@ -39,7 +39,7 @@ if not PROXY_USER or not PROXY_PASS or not PRIVATE_BASE:
 
 # ------------------------ Utilitaires proxy ------------------------
 
-TIMEOUT = (26,5)
+TIMEOUT = (30,30)
 def _forward_json(method: str, path: str, *, params=None, payload=None):
     url = PRIVATE_BASE.rstrip("/") + path
     try:
