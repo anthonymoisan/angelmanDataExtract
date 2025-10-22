@@ -19,10 +19,16 @@ cfg = ConfigParser()
 if not cfg.read(_INI):
     raise RuntimeError(f"Config file not found: {_INI}")
 
-# For the proxy we need BASIC creds in **clear**
+# BASIC creds pour l'upstream privé
 PROXY_USER = cfg["PROXY_AUTH"]["USER"].strip()
 PROXY_PASS = cfg["PROXY_AUTH"]["PASS"].strip()
+
+# Base URL privé (ex: https://…/api/v5)
 AUTH_BASE  = cfg["PRIVATE"]["AUTH_BASE_URL"].rstrip("/")
+
+# Header "interne" exigé par require_internal (nom/valeur)
+INTERNAL_HEADER_NAME  = (cfg["PRIVATE"].get("INTERNAL_HEADER_NAME")).strip()
+INTERNAL_HEADER_VALUE = (cfg["PRIVATE"].get("INTERNAL_HEADER_VALUE")).strip()
 
 LOGIN_URL   = f"{AUTH_BASE}/auth/login"
 SECRETQ_URL = f"{AUTH_BASE}/people/secret-question"
@@ -32,17 +38,44 @@ RESET_URL   = f"{AUTH_BASE}/auth/reset-password"
 def _auth():
     return HTTPBasicAuth(PROXY_USER, PROXY_PASS)
 
+def _upstream_headers(extra: dict | None = None) -> dict:
+    """
+    Construit les entêtes pour l'appel upstream privé :
+    - JSON par défaut
+    - Header interne exigé par require_internal
+    """
+    base = {
+        "Accept": "application/json",
+        INTERNAL_HEADER_NAME: INTERNAL_HEADER_VALUE,
+    }
+    if extra:
+        base.update(extra)
+    return base
+
+def _json_or_stub(r: requests.Response) -> tuple[dict, int]:
+    try:
+        return r.json(), r.status_code
+    except ValueError:
+        return (
+            {
+                "upstream_status": r.status_code,
+                "upstream_body": (r.text or "")[:400],
+            },
+            r.status_code,
+        )
+
 # --------- PUBLIC: POST /auth/login -----------
 @bp.post("/auth/login")
 @require_public_app_key
 def public_login():
     payload = request.get_json(silent=True) or {}
+    # L’upstream privé attend "email" et "password" (cf. v5_auth.auth_login)
     if not payload.get("email") or not payload.get("password"):
         return jsonify({"error": "email et password sont requis"}), 400
     try:
         r = requests.post(
             LOGIN_URL,
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers=_upstream_headers({"Content-Type": "application/json"}),
             data=json.dumps(payload, ensure_ascii=False),
             timeout=(6, 15),
             auth=_auth(),
@@ -51,26 +84,28 @@ def public_login():
         logger.exception("proxy login error")
         return jsonify({"error": f"proxy error: {e}"}), 502
 
-    try:
-        data = r.json()
-    except ValueError:
-        data = {"upstream_status": r.status_code, "upstream_body": (r.text or "")[:400]}
-
     if r.status_code == 401:
-        logger.warning("proxy_auth: 401 from private. user=%s pass_len=%d url=%s",
-                       PROXY_USER, len(PROXY_PASS), LOGIN_URL)
-    return jsonify(data), r.status_code
+        # Très utile pour diagnostiquer : confirme que le Basic est bien lu côté privé
+        logger.warning(
+            "proxy_auth: 401 from private on /auth/login (user=%s, basic=%s, internal=%s:%s)",
+            PROXY_USER,
+            "set" if (PROXY_USER and PROXY_PASS) else "missing",
+            INTERNAL_HEADER_NAME,
+            INTERNAL_HEADER_VALUE,
+        )
+
+    data, code = _json_or_stub(r)
+    return jsonify(data), code
 
 # --------- PUBLIC: GET /people/secret-question -----------
 @bp.get("/people/secret-question")
 @require_public_app_key
 def public_secret_question():
-    # Relay query string (?email=... or emailAddress=...)
     try:
         r = requests.get(
             SECRETQ_URL,
             params=request.args,  # forward all query params
-            headers={"Accept": "application/json"},
+            headers=_upstream_headers(),  # IMPORTANT: header interne ici aussi
             timeout=(6, 15),
             auth=_auth(),
         )
@@ -78,22 +113,18 @@ def public_secret_question():
         logger.exception("proxy secret-question error")
         return jsonify({"error": f"proxy error: {e}"}), 502
 
-    try:
-        data = r.json()
-    except ValueError:
-        data = {"upstream_status": r.status_code, "upstream_body": (r.text or "")[:400]}
-    return jsonify(data), r.status_code
+    data, code = _json_or_stub(r)
+    return jsonify(data), code
 
 # --------- PUBLIC: POST /people/secret-answer/verify -----------
 @bp.post("/people/secret-answer/verify")
 @require_public_app_key
 def public_verify_secret_answer():
-    # Private endpoint accepts JSON or query; we forward JSON body
     payload = request.get_json(silent=True) or {}
     try:
         r = requests.post(
             VERIFY_URL,
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers=_upstream_headers({"Content-Type": "application/json"}),
             data=json.dumps(payload, ensure_ascii=False),
             timeout=(6, 15),
             auth=_auth(),
@@ -102,11 +133,8 @@ def public_verify_secret_answer():
         logger.exception("proxy verify-secret-answer error")
         return jsonify({"error": f"proxy error: {e}"}), 502
 
-    try:
-        data = r.json()
-    except ValueError:
-        data = {"upstream_status": r.status_code, "upstream_body": (r.text or "")[:400]}
-    return jsonify(data), r.status_code
+    data, code = _json_or_stub(r)
+    return jsonify(data), code
 
 # --------- PUBLIC: POST /auth/reset-password -----------
 @bp.post("/auth/reset-password")
@@ -116,7 +144,7 @@ def public_reset_password():
     try:
         r = requests.post(
             RESET_URL,
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers=_upstream_headers({"Content-Type": "application/json"}),
             data=json.dumps(payload, ensure_ascii=False),
             timeout=(6, 15),
             auth=_auth(),
@@ -125,11 +153,7 @@ def public_reset_password():
         logger.exception("proxy reset-password error")
         return jsonify({"error": f"proxy error: {e}"}), 502
 
-    # This private route may return 204 (no body)
     if r.status_code == 204:
         return ("", 204)
-    try:
-        data = r.json()
-    except ValueError:
-        data = {"upstream_status": r.status_code, "upstream_body": (r.text or "")[:400]}
-    return jsonify(data), r.status_code
+    data, code = _json_or_stub(r)
+    return jsonify(data), code

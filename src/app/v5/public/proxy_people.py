@@ -3,12 +3,11 @@ from __future__ import annotations
 
 import os, json
 from configparser import ConfigParser
-from functools import wraps
-from time import monotonic
-from app.common.security import require_public_app_key
 import requests
 from requests.auth import HTTPBasicAuth
 from flask import Blueprint, request, jsonify, Response, current_app
+
+from app.common.security import require_public_app_key
 
 bp = Blueprint("public_people", __name__)
 
@@ -26,20 +25,53 @@ try:
     # Identifiants du proxy (EN CLAIR, distincts du hash utilisé côté privé)
     PROXY_USER = _cfg["PROXY_AUTH"]["USER"].strip()
     PROXY_PASS = _cfg["PROXY_AUTH"]["PASS"].strip()
-    # Base privée pour tous les endpoints /api/v5
+
+    # Base privée pour tous les endpoints /api/v5 People (ex: https://…/api/v5)
     PRIVATE_BASE = _cfg["PRIVATE"]["PEOPLE_BASE_URL"].rstrip("/")
-    POINTS_URL = f"{PRIVATE_BASE}/pointRemarquableRepresentation"
-    PEOPLE_URL = f"{PRIVATE_BASE}/peopleMapRepresentation"
+
+    # Header interne exigé par require_internal côté privé
+    INTERNAL_HEADER_NAME  = (_cfg["PRIVATE"].get("INTERNAL_HEADER_NAME")).strip()
+    INTERNAL_HEADER_VALUE = (_cfg["PRIVATE"].get("INTERNAL_HEADER_VALUE")).strip()
 except KeyError as e:
     raise RuntimeError(f"Config5.ini missing key: {e}")
 
 if not PROXY_USER or not PROXY_PASS or not PRIVATE_BASE:
-    raise RuntimeError("Config5.ini incomplete: PROXY_AUTH.USER, PROXY_AUTH.PASS, PRIVATE.AUTH_BASE_URL requis")
-
+    raise RuntimeError(
+        "Config5.ini incomplete: PROXY_AUTH.USER, PROXY_AUTH.PASS, PRIVATE.PEOPLE_BASE_URL requis"
+    )
 
 # ------------------------ Utilitaires proxy ------------------------
+TIMEOUT = (6, 15)  # (connect, read)
 
-TIMEOUT = (30,30)
+def _auth():
+    return HTTPBasicAuth(PROXY_USER, PROXY_PASS)
+
+def _upstream_headers(extra: dict | None = None) -> dict:
+    """
+    Entêtes vers l'upstream privé :
+    - JSON par défaut
+    - Header interne exigé par require_internal
+    """
+    base = {
+        "Accept": "application/json",
+        INTERNAL_HEADER_NAME: INTERNAL_HEADER_VALUE,
+    }
+    if extra:
+        base.update(extra)
+    return base
+
+def _json_or_stub(r: requests.Response) -> tuple[dict, int]:
+    try:
+        return r.json(), r.status_code
+    except ValueError:
+        return (
+            {
+                "upstream_status": r.status_code,
+                "upstream_body": (r.text or "")[:600],
+            },
+            r.status_code,
+        )
+
 def _forward_json(method: str, path: str, *, params=None, payload=None):
     url = PRIVATE_BASE.rstrip("/") + path
     try:
@@ -47,23 +79,17 @@ def _forward_json(method: str, path: str, *, params=None, payload=None):
             method.upper(),
             url,
             params=params or {},
-            json=payload or {},  # << IMPORTANT: envoie un vrai JSON
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json; charset=utf-8",  # << IMPORTANT
-            },
-            timeout=TIMEOUT, # (connect, read)
-            auth=HTTPBasicAuth(PROXY_USER, PROXY_PASS),  # tes identifiants privés
+            data=json.dumps(payload or {}, ensure_ascii=False),
+            headers=_upstream_headers({"Content-Type": "application/json; charset=utf-8"}),
+            timeout=TIMEOUT,
+            auth=_auth(),
         )
     except requests.RequestException as e:
+        current_app.logger.exception("Proxy JSON error %s %s", method, url)
         return jsonify({"error": f"proxy error: {e}"}), 502
 
-    try:
-        data = r.json()
-    except ValueError:
-        data = {"upstream_status": r.status_code, "upstream_body": (r.text or "")[:512]}
-    return jsonify(data), r.status_code
-
+    data, code = _json_or_stub(r)
+    return jsonify(data), code
 
 def _forward_multipart(method: str, path: str):
     """Forward multipart/form-data en préservant fichiers et champs."""
@@ -77,24 +103,23 @@ def _forward_multipart(method: str, path: str):
     # Fichiers
     files = {}
     for name, storage in request.files.items():
-        # (filename, fileobj, content_type)
         files[name] = (storage.filename, storage.stream, storage.content_type)
 
     try:
         r = requests.request(
-            method,
+            method.upper(),
             url,
             params=request.args,
             data=form,
             files=files,
+            headers=_upstream_headers(),  # header interne aussi en multipart
             timeout=TIMEOUT,
-            auth=HTTPBasicAuth(PROXY_USER, PROXY_PASS),
+            auth=_auth(),
         )
     except requests.RequestException as e:
-        current_app.logger.exception("Proxy error multipart %s %s", method, url)
+        current_app.logger.exception("Proxy multipart error %s %s", method, url)
         return jsonify({"error": f"proxy error: {e}"}), 502
 
-    # Si le backend renvoie JSON, on le passe tel quel; sinon texte
     ctype = r.headers.get("Content-Type", "")
     if "application/json" in ctype:
         try:
@@ -105,30 +130,28 @@ def _forward_multipart(method: str, path: str):
         {"upstream_status": r.status_code, "upstream_body": (r.text or "")[:600]}
     ), r.status_code
 
-
 def _forward_binary(method: str, path: str, *, params=None):
     """Forward binaire (photo)."""
     url = f"{PRIVATE_BASE}{path}"
     try:
         r = requests.request(
-            method,
+            method.upper(),
             url,
-            params=params,
+            params=params or {},
             stream=True,
+            headers=_upstream_headers(),  # header interne aussi pour la photo
             timeout=TIMEOUT,
-            auth=HTTPBasicAuth(PROXY_USER, PROXY_PASS),
+            auth=_auth(),
         )
     except requests.RequestException as e:
-        current_app.logger.exception("Proxy error binary %s %s", method, url)
+        current_app.logger.exception("Proxy binary error %s %s", method, url)
         return jsonify({"error": f"proxy error: {e}"}), 502
 
-    # Passe le flux binaire et le mimetype d'origine
     return Response(
         r.content,
         status=r.status_code,
         mimetype=r.headers.get("Content-Type", "application/octet-stream"),
     )
-
 
 # ------------------------ Routes PUBLIC -> PRIVATE ------------------------
 
@@ -138,10 +161,8 @@ def _forward_binary(method: str, path: str, *, params=None):
 def public_update_person():
     if request.content_type and request.content_type.startswith("multipart/form-data"):
         return _forward_multipart(request.method, "/people/update")
-    # JSON fallback
     payload = request.get_json(silent=True) or {}
     return _forward_json(request.method, "/people/update", params=request.args, payload=payload)
-
 
 # Photo binaire
 @bp.get("/people/<int:person_id>/photo")
@@ -149,19 +170,17 @@ def public_update_person():
 def public_person_photo(person_id: int):
     return _forward_binary("GET", f"/people/{person_id}/photo")
 
-
 # Info (JSON)
 @bp.get("/people/<int:person_id>/info")
 @require_public_app_key
 def public_person_info(person_id: int):
     return _forward_json("GET", f"/people/{person_id}/info", params=request.args)
 
-# Info (JSON)
+# Info publique (JSON)
 @bp.get("/people/<int:person_id>/infoPublic")
 @require_public_app_key
 def public_person_infoPublic(person_id: int):
     return _forward_json("GET", f"/people/{person_id}/infoPublic", params=request.args)
-
 
 # Create person (JSON ou multipart)
 @bp.post("/people")
@@ -172,13 +191,11 @@ def public_create_person():
     payload = request.get_json(silent=True) or {}
     return _forward_json("POST", "/people", params=request.args, payload=payload)
 
-
 # Delete by id
 @bp.delete("/people/delete/<int:person_id>")
 @require_public_app_key
 def public_delete_person(person_id: int):
     return _forward_json("DELETE", f"/people/delete/{person_id}", params=request.args)
-
 
 # Lookup (querystring)
 @bp.get("/people/lookup")
@@ -186,13 +203,11 @@ def public_delete_person(person_id: int):
 def public_lookup_person():
     return _forward_json("GET", "/people/lookup", params=request.args)
 
-
 # Map People (JSON)
 @bp.get("/peopleMapRepresentation")
 @require_public_app_key
 def public_people_map():
     return _forward_json("GET", "/peopleMapRepresentation", params=request.args)
-
 
 # Point Remarquable - création (JSON)
 @bp.post("/pointRemarquable")
@@ -200,7 +215,6 @@ def public_people_map():
 def public_create_point_remarquable():
     payload = request.get_json(silent=True) or {}
     return _forward_json("POST", "/pointRemarquable", params=request.args, payload=payload)
-
 
 # Point Remarquable - liste (JSON)
 @bp.get("/pointRemarquableRepresentation")
