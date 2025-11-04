@@ -26,14 +26,14 @@ filePath = f"{wkdir}/../../angelman_viz_keys/Config4.ini"
 config.read(filePath)
     
 
-def readTable_with_retry(table_name, max_retries=3, delay_seconds=5):
+def readTable_with_retry(table_name, max_retries=3, delay_seconds=5, bAngelmanResult=True):
     """
     Tentative de lecture avec relances automatiques
     """
     for attempt in range(1, max_retries + 1):
         try:
             logging.info(f"Tentative {attempt} de lecture de la table '{table_name}'")
-            df = readTable(table_name)
+            df = readTable(table_name, bAngelmanResult=bAngelmanResult)
             decrypt_dataframe_auto(df,inplace=True)
             return df
         except Exception as e:
@@ -44,8 +44,8 @@ def readTable_with_retry(table_name, max_retries=3, delay_seconds=5):
                 logging.info(f"[ÉCHEC] Lecture de la table '{table_name}' échouée après {max_retries} tentatives.")
                 return pd.DataFrame()
 
-def safe_readTable(table_name, transformer):
-    df = readTable_with_retry(table_name)
+def safe_readTable(table_name, transformer,bAngelmanResult=True):
+    df = readTable_with_retry(table_name,bAngelmanResult=bAngelmanResult)
     return transformer(df)
     
 def _buildDataFrameMapMapGlobal():
