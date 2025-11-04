@@ -26,17 +26,17 @@ logger = setup_logger(debug=False)
 
 def _insertDataFrame(firstRow=False):
 
-    dropTable("T_People_Identity")
-    dropTable("T_People_Public")    
+    dropTable("T_People_Identity",bAngelmanResult=False)
+    dropTable("T_People_Public",bAngelmanResult=False)    
     
     wkdir = os.path.dirname(__file__)
     df = pd.read_excel(f"{wkdir}/../../../data/Picture/DataAngelman.xlsx")
     
     script_path2 = os.path.join(f"{wkdir}/../SQL/","createPublicPeople.sql")
-    createTable(script_path2)
+    createTable(script_path2,bAngelmanResult=False)
 
     script_path = os.path.join(f"{wkdir}/../SQL/","createPeopleIdentity.sql")
-    createTable(script_path)
+    createTable(script_path,bAngelmanResult=False)
 
     BASE = Path(__file__).resolve().parent / "../../.." / "data" / "Picture"
 
@@ -96,19 +96,20 @@ def main():
     try:
         
         #_insertDataFrame(firstRow=False)
-        #findId("anthonymoisan@yahoo.fr")
+        findId("anthonymoisan@yahoo.fr")
         #df = getRecordsPeople()
         #logger.info(df.head())
         #dictRes = fetch_person_decrypted(1)
         #logger.info(dictRes)
-        dictR = identity_public(1)
-        logger.info(dictR)
-        #id = authenticate_and_get_id("anthonymoisan@yahoo.fr", "Mmas&37814" ) 
+        #dictR = identity_public(1)
+        #logger.info(dictR)
+        #id = authenticate_and_get_id("anthonymoisan@yahoo.fr", "Mmas&37814", bAngelmanResult=False ) 
         #logger.info("Id : %d", id)
-        #logger.info("Authentification : %d", authenticate_email_password("anthonymoisan@yahoo.fr", "Mmas&37814"))
+        #logger.info("Authentification : %d", authenticate_email_password("anthonymoisan@yahoo.fr", "Mmas&37814", bAngelmanResult=False))
+        
         '''
         updateData(
-            "jean2.imbert@mail.fr", 
+            "victor.cochonneau@gmail.fr", 
             firstname="Anthony",
             dateOfBirth = "26/11/2019",
             emailNewAddress = "anthonymoisan@yahoo.fr",
@@ -121,10 +122,11 @@ def main():
         )
         '''
         
+        
    
         #deleteDataById(5)
         #logger.info(getQuestionSecrete(8))
-        #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun"))
+        #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
 
         
         elapsed = time.time() - start

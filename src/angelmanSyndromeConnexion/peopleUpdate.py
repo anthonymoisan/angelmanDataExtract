@@ -237,7 +237,7 @@ def updateData(
              LIMIT 1
         """)
         try:
-            _run_query(sql_ident, params=ident_params)
+            _run_query(sql_ident, params=ident_params,bAngelmanResult=False)
             affected = 1
         except Exception:
             logger.exception("Update failed (Identity)")
@@ -252,7 +252,7 @@ def updateData(
              LIMIT 1
         """)
         try:
-            _run_query(sql_public, params=public_params)
+            _run_query(sql_public, params=public_params,bAngelmanResult=False)
             affected = 1
         except Exception:
             logger.exception("Update failed (Public)")

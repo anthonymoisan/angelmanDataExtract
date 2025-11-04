@@ -18,10 +18,11 @@ def deleteDataById(person_id: int) -> int:
     exists_rows = _run_query(
         text("SELECT 1 FROM T_People_Public WHERE id = :id LIMIT 1"),
         params={"id": pid},
-        return_result=True
+        return_result=True,
+        bAngelmanResult=False
     )
     if not exists_rows:
         return 0
 
-    _run_query(text("DELETE FROM T_People_Public WHERE id = :id"), params={"id": pid})
+    _run_query(text("DELETE FROM T_People_Public WHERE id = :id"), params={"id": pid},bAngelmanResult=False)
     return 1

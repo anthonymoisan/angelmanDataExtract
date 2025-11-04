@@ -105,13 +105,13 @@ def coerce_to_date(d) -> date:
 # (facultatif) utilitaire de migration de photos – exemple d’usage:
 def recompress_all_people_photos():
     SQL_SELECT = text("SELECT id, photo, photo_mime FROM T_ASPeople WHERE photo IS NOT NULL")
-    rows = _run_query(SQL_SELECT, return_result=True)
+    rows = _run_query(SQL_SELECT, return_result=True, bAngelmanResult=False)
     for pid, blob, mime in rows:
         try:
             new_blob, new_mime = recompress_image(blob)
             if new_blob and len(new_blob) < len(blob):
                 SQL_UPDATE = text("UPDATE T_ASPeople SET photo = :p, photo_mime = :m WHERE id = :id")
-                _run_query(SQL_UPDATE, params={"p": new_blob, "m": new_mime, "id": pid})
+                _run_query(SQL_UPDATE, params={"p": new_blob, "m": new_mime, "id": pid},bAngelmanResult=False)
         except UnidentifiedImageError:
             logger.warning("Blob non image ignoré (id=%s)", pid)
         except Exception as e:

@@ -57,10 +57,10 @@ def main():
         #dropTable("T_PointRemarquable")
         wkdir = os.path.dirname(__file__)
         script_path = os.path.join(f"{wkdir}/../SQL/","createPointRemarquable.sql")
-        #createTable(script_path)
-        #_insertDataFrame()
-        df = getRecordsPointsRemarquables()
-        logger.info(df.head())
+        createTable(script_path,bAngelmanResult=False)
+        _insertDataFrame()
+        #df = getRecordsPointsRemarquables()
+        #logger.info(df.head())
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for Point Remarquable are ok with an execution time in {elapsed:.2f} secondes.")

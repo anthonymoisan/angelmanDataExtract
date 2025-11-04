@@ -192,7 +192,7 @@ def create_person_and_identity(data) -> int:
         )
         return int(pid)
 
-    return _run_in_transaction_with_conn(worker)
+    return _run_in_transaction_with_conn(worker,bAngelmanResult=False)
 
 def insertData(
     firstname,

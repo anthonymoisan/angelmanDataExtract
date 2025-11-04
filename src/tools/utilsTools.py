@@ -31,18 +31,29 @@ def load_config(filepath: str) -> ConfigParser:
         return config
     raise FileNotFoundError(f"Config file not found: {filepath}")
 
-def get_db_params():
+def get_db_params(bAngelmanResult=True):
     cfg = load_config(CONFIG_PATH)
-    return {
-        "ssh_host": cfg['SSH']['SSH_HOST'],
-        "ssh_user": cfg['SSH']['SSH_USERNAME'],
-        "ssh_pass": cfg['SSH']['SSH_PASSWORD'],
-        "db_host":  cfg['MySQL']['DB_HOST'],
-        "db_user":  cfg['MySQL']['DB_USERNAME'],
-        "db_pass":  cfg['MySQL']['DB_PASSWORD'],
-        "db_name":  cfg['MySQL']['DB_NAME'],
-    }
-
+    if(bAngelmanResult):
+        return {
+            "ssh_host": cfg['SSH']['SSH_HOST'],
+            "ssh_user": cfg['SSH']['SSH_USERNAME'],
+            "ssh_pass": cfg['SSH']['SSH_PASSWORD'],
+            "db_host":  cfg['MySQL']['DB_HOST'],
+            "db_user":  cfg['MySQL']['DB_USERNAME'],
+            "db_pass":  cfg['MySQL']['DB_PASSWORD'],
+            "db_name":  cfg['MySQL']['DB_NAME'],
+        }
+    else:
+        return {
+            "ssh_host": cfg['SSH']['SSH_HOST'],
+            "ssh_user": cfg['SSH']['SSH_USERNAME'],
+            "ssh_pass": cfg['SSH']['SSH_PASSWORD'],
+            "db_host":  cfg['MySQL']['DB_HOST'],
+            "db_user":  cfg['MySQL']['DB_USERNAME'],
+            "db_pass":  cfg['MySQL']['DB_PASSWORDAS'],
+            "db_name":  cfg['MySQL']['DB_NAMEAS'],
+        }
+    
 # ----- Email -----
 def send_email_alert(title: str, message: str) -> None:
     cfg = load_config(CONFIG_GMAIL_PATH)
@@ -67,12 +78,12 @@ def _build_db_url(params, local_port=None) -> str:
     port = local_port if local_port else 3306
     return f"mysql+pymysql://{params['db_user']}:{params['db_pass']}@{host}:{port}/{params['db_name']}"
 
-def _run_in_transaction_with_conn(worker_fn, *, max_retries=3):
+def _run_in_transaction_with_conn(worker_fn, *, max_retries=3, bAngelmanResult=True):
     """
     Exécute worker_fn(conn) dans UNE transaction/connexion.
     Retourne la valeur renvoyée par worker_fn.
     """
-    cfg = get_db_params()
+    cfg = get_db_params(bAngelmanResult)
 
     def _do(db_url: str):
         engine = create_engine(db_url, pool_pre_ping=True, future=True)
@@ -104,6 +115,74 @@ def _run_in_transaction_with_conn(worker_fn, *, max_retries=3):
             else:
                 raise
 
+'''
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import DBAPIError, OperationalError
+
+def _execute_sql(DATABASE_URL, query, *, return_result=False, scalar=False, params=None):
+    """
+    Exécute une requête SQLAlchemy text() ou str.
+    - return_result=True -> fetchall()
+    - scalar=True -> scalar_one_or_none() (ou scalar())
+    """
+    url = make_url(DATABASE_URL)
+    safe_url = url._replace(password="***")  # masque le mdp dans les logs
+    logger.debug("Creating engine for %s (dialect=%s, driver=%s)",
+                 str(safe_url), url.get_backend_name(), url.get_driver_name())
+
+    # Ajustements utiles selon le dialecte
+    connect_args = {}
+    engine_kwargs = dict(pool_pre_ping=True, future=True)
+    if url.get_backend_name().startswith("sqlite"):
+        connect_args["check_same_thread"] = False
+        engine_kwargs.update(connect_args=connect_args)
+
+    engine = create_engine(DATABASE_URL, **engine_kwargs)
+
+    try:
+        # Préflight: ouvre une connexion brute et ping le serveur
+        with engine.connect() as conn:
+            logger.debug("Connected. Running preflight ping...")
+            try:
+                conn.exec_driver_sql("SELECT 1")
+            except Exception as ping_err:
+                logger.error("Preflight ping failed: %r", ping_err)
+                raise
+
+        # Si ping OK, on peut ouvrir un begin() transactionnel
+        with engine.begin() as conn:
+            logger.debug("Transaction opened.")
+            stmt = text(query) if isinstance(query, str) else query
+            res = conn.execute(stmt, params or {})
+            if scalar:
+                try:
+                    return res.scalar_one_or_none()
+                except Exception:
+                    return res.scalar()
+            if return_result:
+                return res.fetchall()
+            return None
+
+    except OperationalError as e:
+        # Erreurs réseau/auth/SSL/limites de connexions
+        logger.error("OperationalError on %s: %s | orig=%r", str(safe_url), e, getattr(e, "orig", None))
+        raise
+    except DBAPIError as e:
+        # Erreurs DBAPI génériques (driver)
+        logger.error("DBAPIError on %s: %s | orig=%r", str(safe_url), e, getattr(e, "orig", None))
+        raise
+    except Exception as e:
+        logger.error("Execution error on %s: %s", str(safe_url), e)
+        raise
+    finally:
+        try:
+            engine.dispose()
+            logger.debug("Database connection closed.")
+        except Exception as e:
+            logger.warning("Dispose failed: %r", e)
+'''
+
 def _execute_sql(DATABASE_URL, query, *, return_result=False, scalar=False, params=None):
     """
     Exécute une requête SQLAlchemy text() ou str.
@@ -132,6 +211,7 @@ def _execute_sql(DATABASE_URL, query, *, return_result=False, scalar=False, para
         engine.dispose()
         logger.debug("Database connection closed.")
 
+
 def _insert_df(DATABASE_URL, table_name, df, if_exists='replace'):
     engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
     try:
@@ -145,14 +225,14 @@ def _insert_df(DATABASE_URL, table_name, df, if_exists='replace'):
         engine.dispose()
 
 # ----- Public helpers -----
-def _run_query(query, *, return_result=False, scalar=False, max_retries=3, params=None):
+def _run_query(query, *, return_result=False, scalar=False, max_retries=3, params=None, bAngelmanResult=True):
     """
     Exécute une requête avec gestion du tunnel SSH si nécessaire.
     - params: dict des bind params
     - return_result: fetchall()
     - scalar: scalar()
     """
-    cfg = get_db_params()
+    cfg = get_db_params(bAngelmanResult)
     attempt = 0
     while attempt < max_retries:
         try:
@@ -177,8 +257,8 @@ def _run_query(query, *, return_result=False, scalar=False, max_retries=3, param
             else:
                 raise
 
-def _insert_data(df, table_name, if_exists='replace'):
-    cfg = get_db_params()
+def _insert_data(df, table_name, if_exists='replace',bAngelmanResult=True):
+    cfg = get_db_params(bAngelmanResult)
     max_retries = 3
     attempt = 0
     while attempt < max_retries:
@@ -206,17 +286,17 @@ def _insert_data(df, table_name, if_exists='replace'):
                 raise
 
 # ----- update_log utilitaires -----
-def _create_update_log_table_if_not_exists():
+def _create_update_log_table_if_not_exists(bAngelmanResult=True):
     query = """
     CREATE TABLE IF NOT EXISTS update_log (
       table_name VARCHAR(255) PRIMARY KEY,
       updated_at DATETIME
     )
     """
-    _run_query(query)
+    _run_query(query,bAngelmanResult=bAngelmanResult)
     logger.info("Create Table `update_log` if not exists.")
 
-def _log_table_update(table_name: str):
+def _log_table_update(table_name: str,bAngelmanResult:bool):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     logger.info("Trying to log update for %s at %s", table_name, now)
 
@@ -224,24 +304,24 @@ def _log_table_update(table_name: str):
     exists_sql = text("""
         SELECT COUNT(*) FROM update_log WHERE table_name = :t
     """)
-    count = _run_query(exists_sql, scalar=True, params={"t": table_name}) or 0
+    count = _run_query(exists_sql, scalar=True, params={"t": table_name},bAngelmanResult=bAngelmanResult) or 0
 
     if count == 0:
         insert_sql = text("""
             INSERT INTO update_log (table_name, updated_at)
             VALUES (:t, :ts)
         """)
-        _run_query(insert_sql, params={"t": table_name, "ts": now})
+        _run_query(insert_sql, params={"t": table_name, "ts": now}, bAngelmanResult=bAngelmanResult)
         logger.info("Inserted new row for %s in update_log.", table_name)
     else:
         update_sql = text("""
             UPDATE update_log SET updated_at = :ts WHERE table_name = :t
         """)
-        _run_query(update_sql, params={"ts": now, "t": table_name})
+        _run_query(update_sql, params={"ts": now, "t": table_name},bAngelmanResult=bAngelmanResult)
         logger.info("Updated row for %s in update_log.", table_name)
 
 # ----- Export générique -----
-def export_Table(table_name, sql_script, reader, encrypt=True):
+def export_Table(table_name, sql_script, reader, encrypt=True, bAngelmanResult=True):
     """
     - reader.readData() -> DataFrame
     - sql_script: nom de fichier SQL à exécuter pour (re)créer la table
@@ -276,6 +356,7 @@ def export_Table(table_name, sql_script, reader, encrypt=True):
                 """),
                 scalar=True,
                 params={"t": table_name},
+                bAngelmanResult=bAngelmanResult
             ) or 0
         )
 
@@ -285,6 +366,7 @@ def export_Table(table_name, sql_script, reader, encrypt=True):
                 _run_query(
                     text(f"SELECT COUNT(*) FROM `{table_name}`"),
                     scalar=True,
+                    bAngelmanResult=bAngelmanResult
                 ) or 0
             )
 
@@ -299,21 +381,21 @@ def export_Table(table_name, sql_script, reader, encrypt=True):
             # (Re)crée la table à partir du script
             if table_exists:
                 logger.info("--- Drop Table.")
-                _run_query(text(f"DROP TABLE `{table_name}`"))
+                _run_query(text(f"DROP TABLE `{table_name}`"),bAngelmanResult=bAngelmanResult)
 
             script_path = os.path.join(SQL_DIR, sql_script)
             with open(script_path, "r", encoding="utf-8") as f:
                 logger.info("--- Create Table.")
-                _run_query(f.read())
+                _run_query(f.read(),bAngelmanResult=bAngelmanResult)
 
             if encrypt:
                 encrypt_dataframe_auto(df, return_spec=True,inplace=True)
             logger.info("--- Insert data into Table.")
-            _insert_data(df, table_name)
+            _insert_data(df, table_name,bAngelmanResult=bAngelmanResult)
 
-            _create_update_log_table_if_not_exists()
+            _create_update_log_table_if_not_exists(bAngelmanResult=bAngelmanResult)
             logger.info("--- Update Log")
-            _log_table_update(table_name)
+            _log_table_update(table_name,bAngelmanResult=bAngelmanResult)
 
             logger.info("Execution time for %s: %.2fs", table_name, time.time() - start)
 
@@ -334,10 +416,10 @@ def _debug_database_name(DATABASE_URL):
         engine.dispose()
 
 # ----- Lecture simple -----
-def readTable(table_name: str) -> pd.DataFrame:
+def readTable(table_name: str,bAngelmanResult=True) -> pd.DataFrame:
     try:
         logger.info("Read Table %s", table_name)
-        rows = _run_query(text(f"SELECT * FROM `{table_name}`"), return_result=True)
+        rows = _run_query(text(f"SELECT * FROM `{table_name}`"), return_result=True, bAngelmanResult=bAngelmanResult)
         if not rows:
             return pd.DataFrame()
         # Compat SQLAlchemy 1.4 / 2.0
@@ -353,12 +435,12 @@ def readTable(table_name: str) -> pd.DataFrame:
 # -----------------------------
 #  SQL helpers (DDL)
 # -----------------------------
-def createTable(script_path: str):
+def createTable(script_path: str, bAngelmanResult=True):
     with open(script_path, "r", encoding="utf-8") as f:
         logger.info("--- Create Table.")
-        _run_query(f.read())
+        _run_query(f.read(),bAngelmanResult=bAngelmanResult)
 
-def dropTable(table_name: str):
+def dropTable(table_name: str, bAngelmanResult=True):
     safe_table = table_name.replace("`", "``")
     sql = text(f"DROP TABLE IF EXISTS `{safe_table}`")
-    _run_query(sql)
+    _run_query(sql,bAngelmanResult=bAngelmanResult)

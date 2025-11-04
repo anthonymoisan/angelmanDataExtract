@@ -27,7 +27,7 @@ def auth_login():
     if not email or not password:
         return jsonify({"error": "email et password sont requis"}), 400
     try:
-        person_id = authenticate_and_get_id(email, password)
+        person_id = authenticate_and_get_id(email, password, bAngelmanResult=False)
     except Exception:
         current_app.logger.exception("Erreur d'authentification")
         return jsonify({"error": "erreur serveur"}), 500
@@ -58,6 +58,7 @@ def api_get_secret_question():
             """),
             params={"sha": sha},
             return_result=True,
+            bAngelmanResult=False
         )
         if not row or row[0][0] is None:
             return jsonify({"ok": False}), 404

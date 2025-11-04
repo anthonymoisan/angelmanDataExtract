@@ -21,7 +21,7 @@ def _to_bytes_phc(x) -> bytes:
     return str(x).encode("utf-8", "strict")
 
 
-def _get_auth_row_by_email(email: str) -> Optional[Tuple[int, bytes]]:
+def _get_auth_row_by_email(email: str,bAngelmanResult=True) -> Optional[Tuple[int, bytes]]:
     """
     Retourne (id, password_hash_bytes) pour un email donné,
     ou None si l'utilisateur n'existe pas.
@@ -37,6 +37,7 @@ def _get_auth_row_by_email(email: str) -> Optional[Tuple[int, bytes]]:
             """),
             params={"sha": sha},
             return_result=True,
+            bAngelmanResult = bAngelmanResult
         )
         if not row:
             return None
@@ -47,13 +48,13 @@ def _get_auth_row_by_email(email: str) -> Optional[Tuple[int, bytes]]:
         return None
 
 
-def authenticate_email_password(email: str, password: str) -> bool:
+def authenticate_email_password(email: str, password: str, bAngelmanResult:bool) -> bool:
     """
     True si (email, password) est valide, sinon False.
     Ne lève pas d'exception (utile pour endpoints).
     """
     try:
-        row = _get_auth_row_by_email(email)
+        row = _get_auth_row_by_email(email,bAngelmanResult=bAngelmanResult)
         if not row:
             return False
         _pid, stored_hash_bytes = row
@@ -63,12 +64,12 @@ def authenticate_email_password(email: str, password: str) -> bool:
         return False
 
 
-def authenticate_and_get_id(email: str, password: str) -> Optional[int]:
+def authenticate_and_get_id(email: str, password: str, bAngelmanResult=False) -> Optional[int]:
     """
     Retourne l'ID de l'utilisateur si les identifiants sont valides, sinon None.
     """
     try:
-        row = _get_auth_row_by_email(email)
+        row = _get_auth_row_by_email(email, bAngelmanResult=bAngelmanResult)
         if not row:
             return None
         pid, stored_hash_bytes = row
@@ -85,7 +86,7 @@ def _norm(s: str) -> str:
         return ""
     return unicodedata.normalize("NFKC", s).strip().lower()
 
-def verifySecretAnswer(*, email: str | None = None, person_id: int | None = None, answer: str) -> bool:
+def verifySecretAnswer(*, email: str | None = None, person_id: int | None = None, answer: str, bAngelmanResult=False) -> bool:
     """
     Vérifie la réponse secrète.
     - On n'expose JAMAIS la réponse.
@@ -112,7 +113,8 @@ def verifySecretAnswer(*, email: str | None = None, person_id: int | None = None
     rowset = _run_query(
         text(f"SELECT secret_answer FROM T_People_Identity WHERE {where} LIMIT 1"),
         params=params,
-        return_result=True
+        return_result=True,
+        bAngelmanResult=bAngelmanResult
     )
     if not rowset or not rowset[0]:
         # utilisateur introuvable -> renvoyer False (ne rien divulguer)

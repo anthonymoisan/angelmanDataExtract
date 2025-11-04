@@ -16,6 +16,7 @@ def fetch_photo(person_id: int) -> tuple[bytes | None, str | None]:
         text("SELECT photo, photo_mime FROM T_People_Identity WHERE person_id=:person_id"),
         return_result=True,
         params={"person_id": int(person_id)},
+        bAngelmanResult=False
     )
     if not rows:
         return None, None
@@ -29,7 +30,7 @@ def identity_public(person_id: int) -> dict | None:
                 FROM T_People_Public 
                 WHERE id = :id
                 """),
-            return_result=True, params={"id": int(person_id)}
+            return_result=True, params={"id": int(person_id)},bAngelmanResult=False
     )
 
     if not row:
@@ -59,7 +60,7 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
                 WHERE p.id = :id
                 LIMIT 1
                 """),
-        return_result=True, params={"id": int(person_id)}
+        return_result=True, params={"id": int(person_id)}, bAngelmanResult=False
     )
     
     if not row:
@@ -103,7 +104,7 @@ def fetch_person_decrypted_simple(person_id: int) -> dict | None:
         text("""SELECT person_id, firstname, lastname, emailAddress, dateOfBirth,
                        genotype, photo_mime, longitude, latitude 
                 FROM T_People_Identity WHERE person_id=:person_id"""),
-        return_result=True, params={"person_id": person_id}
+        return_result=True, params={"person_id": person_id}, bAngelmanResult=False
     )
 
     if not row:
@@ -136,7 +137,7 @@ def getRecordsPeople():
     #Only need City, Id, Firstname, LastName, Genotype
     rows = _run_query(
         text("SELECT id, city, age_years FROM T_People_Public ORDER BY id"),
-        return_result=True)
+        return_result=True, bAngelmanResult=False)
 
     data = []
     for row in rows:
@@ -176,6 +177,7 @@ def giveId(email_real):
         text("SELECT person_id FROM T_People_Identity WHERE email_sha = :sha LIMIT 1"),
         return_result=True,
         params={"sha": sha},
+        bAngelmanResult=False
     )
     return int(row[0][0]) if row else None
 
@@ -184,6 +186,7 @@ def getQuestionSecrete(person_id: int) -> int | None:
         text("""SELECT secret_question FROM T_People_Identity WHERE person_id = :person_id LIMIT 1"""),
         params={"person_id": int(person_id)},
         return_result=True,
+        bAngelmanResult=False
     )
     if not rows:
         return None

@@ -35,7 +35,8 @@ def insertPointRemarquable(longitude, latitude, short_desc, long_desc):
     try:
         _run_query(
         sql,
-        params={"lon": lon, "lat": lat, "sd": short_desc, "ld": long_desc, "wkt": wkt}
+        params={"lon": lon, "lat": lat, "sd": short_desc, "ld": long_desc, "wkt": wkt},
+        bAngelmanResult=False
     )
     except Exception:
         logger.error("Erreur dans insert T_PointRemarquable")
@@ -44,7 +45,8 @@ def insertPointRemarquable(longitude, latitude, short_desc, long_desc):
     try:
         lastRowId = _run_query(
         text("SELECT COUNT(*) FROM T_PointRemarquable"),
-        return_result=True)
+        return_result=True,
+        bAngelmanResult=False)
         return lastRowId[0][0]
     except Exception:
         logger.error("Insert failed in T_PointRemarquable")
@@ -55,7 +57,7 @@ def record(record_id: int) -> dict | None:
         text("""SELECT id, longitude, latitude, short_desc, long_desc,
                        geom
                 FROM T_PointRemarquable WHERE id=:id"""),
-        return_result=True, paramsSQL={"id": record_id}
+        return_result=True, paramsSQL={"id": record_id},bAngelmanResult=False
     )
 
     if not row:
@@ -87,7 +89,7 @@ def getRecordsPointsRemarquables():
           ST_AsGeoJSON(geom) AS geojson   -- '{"type":"Point",...}'
         FROM T_PointRemarquable
         ORDER BY id
-    """), return_result=True)
+    """), return_result=True, bAngelmanResult=False)
 
     data = []
     for r in rows:
