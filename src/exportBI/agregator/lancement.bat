@@ -1,0 +1,1 @@
+python agregator.py --config settings.ini
