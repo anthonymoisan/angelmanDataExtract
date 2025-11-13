@@ -21,6 +21,7 @@ import exportBI.exportIndia as expIndia
 import exportBI.exportIndonesia as expIndonesia
 import exportBI.exportGreece as expGreece
 import exportBI.exportMalaysia as expMalaysia
+import exportBI.exportTurkey as expTurkey
 
 from tools.utilsTools import export_Table, send_email_alert
 import time
@@ -171,6 +172,14 @@ def export_mapMalaysia_Malaysian():
     reader = expMalaysia.T_MapMalaysia_MA()
     export_Table("T_MapMalaysia_Malaysian", "Malaysia/createMapMalaysia_Malaysian.sql", reader)
 
+def export_mapTurkey_English():
+    reader = expTurkey.T_MapTurkey_EN()
+    export_Table("T_MapTurkey_English", "Turkey/createMapTurkey_English.sql", reader)
+
+def export_mapTurkey_Turkish():
+    reader = expTurkey.T_MapTurkey_TK()
+    export_Table("T_MapTurkey_Turkish", "Turkey/createMapTurkey_Turkish.sql", reader)
+
 def export_mapGlobal():
     reader = expGlobal.T_MapGlobal()
     export_Table("T_MapGlobal", "Global/createMapGlobal.sql", reader)
@@ -224,6 +233,9 @@ def main():
     
         safe_export(export_mapMalaysia_English, "Map Malaysia EN")
         safe_export(export_mapMalaysia_Malaysian, "Map Malaysia MA")
+        
+        safe_export(export_mapTurkey_English, "Map Turkey EN")
+        safe_export(export_mapTurkey_Turkish, "Map Turkey TK")
 
         safe_export(export_mapGlobal, "Map Global")
         elapsed = time.time() - start

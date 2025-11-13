@@ -212,3 +212,15 @@ data/Picture/MethodPost.txt
 src/token.txt
 src/testPeopleRepresentation - Copie.py
 src/angelmanSyndromeConnexion/peopleRepresentation - Copie.py
+src/exportBI/agregator/data/df1.csv
+src/exportBI/agregator/data/df2.csv
+src/exportBI/agregator/data/df3.csv
+data/agregator/output/union_result.xlsx
+data/agregator/data/df1.csv
+data/agregator/data/df2.csv
+data/agregator/data/df3.csv
+data/agregator/settings.ini
+data/agregator/Readme.txt.txt
+data/agregator/Agregator.exe
+data/agregator/lancement.bat
+src/exportBI/agregator/output/union_result.xlsx

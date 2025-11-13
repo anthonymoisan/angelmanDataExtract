@@ -158,3 +158,14 @@ def map_malaysia_en():
 @ratelimit(5)
 def map_malaysia_ma():
     return _read_table_as_json("T_MapMalaysia_Malaysian")
+
+# -------- Turkey --------
+@bp.get("/resources/Turkey/MapTurkey_English")
+@ratelimit(5)
+def map_turkey_en():
+    return _read_table_as_json("T_MapTurkey_English")
+
+@bp.get("/resources/Turkey/MapTurkey_Turkish")
+@ratelimit(5)
+def map_turkey_tk():
+    return _read_table_as_json("T_MapTurkey_Turkish")
