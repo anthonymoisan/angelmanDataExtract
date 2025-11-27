@@ -7,6 +7,7 @@ from sqlalchemy import text
 from tools.logger import setup_logger
 from tools.utilsTools import _run_query
 import tools.crypto_utils as crypto
+import time
 
 logger = setup_logger(debug=False)
 
@@ -135,12 +136,42 @@ def fetch_person_decrypted_simple(person_id: int) -> dict | None:
 def getRecordsPeople():
 
     #Only need City, Id, Firstname, LastName, Genotype
+    t0 = time.perf_counter()
+    logger.info("[V5][MAP] getRecordsPeople() start")
+
+    t_db0 = time.perf_counter()
     rows = _run_query(
-        text("SELECT id, city, age_years FROM T_People_Public ORDER BY id"),
-        return_result=True, bAngelmanResult=False)
+        text("""
+            SELECT
+                p.id,
+                p.city,
+                p.age_years,
+                i.firstname,
+                i.lastname,
+                i.genotype,
+                i.longitude,
+                i.latitude
+            FROM T_People_Public   AS p
+            INNER JOIN T_People_Identity AS i
+                ON i.person_id = p.id
+            ORDER BY p.id
+        """),
+        return_result=True,
+        bAngelmanResult=False,
+    )
+
+    t_db1 = time.perf_counter()
+    logger.info(
+        "[V5][MAP] Private rows fetched: %d in %.3fs",
+        len(rows),
+        t_db1 - t_db0,
+    )
 
     data = []
+
+    decrypt_start = time.perf_counter()
     for row in rows:
+
         # Compatibilité selon la version de SQLAlchemy
         try:
             m = row._mapping   # SA 1.4+/2.0
@@ -150,24 +181,36 @@ def getRecordsPeople():
         pid = m["id"]
         city = m["city"]
         age = m["age_years"]
-
-        # Ta fonction existante qui renvoie les champs déchiffrés PII
-        person = fetch_person_decrypted_simple(pid)
-        if not person:
-            continue
+        fn  = crypto.decrypt_bytes_to_str_strict(m["firstname"])
+        ln  = crypto.decrypt_bytes_to_str_strict(m["lastname"])
+        gt  = crypto.decrypt_bytes_to_str_strict(m["genotype"])
+        long = crypto.decrypt_number(m["longitude"])
+        lat = crypto.decrypt_number(m["latitude"])
+   
 
         data.append({
             "id": pid,
-            "firstname": person.get("firstname"),
-            "lastname": person.get("lastname"),
+            "firstname": fn,
+            "lastname": ln,
             "city": city,                 # on prend la ville de la table publique
             "age": age,                   # remap age_years -> age pour la sortie
-            "genotype": person.get("genotype"),
-            "longitude": person.get("longitude"),
-            "latitude": person.get("latitude"),
+            "genotype": gt,
+            "longitude": long,
+            "latitude": lat,
         })
 
     df = pd.DataFrame(data, columns=["id","firstname","lastname","city","age","genotype","longitude","latitude"])
+
+    decrypt_end = time.perf_counter()
+    logger.info(
+        "[V5][MAP] DataFrame built: %d rows in %.3fs",
+        len(df),
+        decrypt_end - decrypt_start,
+    )
+
+    t1 = time.perf_counter()
+    logger.info("[V5][MAP] getRecordsPeople() done in %.3fs", t1 - t0)
+
     return df
 
 
