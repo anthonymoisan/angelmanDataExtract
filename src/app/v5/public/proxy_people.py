@@ -1,223 +1,466 @@
 # app/v5/public/proxy_people.py
 from __future__ import annotations
 
-import os, json
-from configparser import ConfigParser
-import requests
-from requests.auth import HTTPBasicAuth
-from flask import Blueprint, request, jsonify, Response, current_app
+import base64
+from flask import Blueprint, jsonify, request, Response, abort, current_app
 
+from angelmanSyndromeConnexion.error import (
+    AppError,
+    MissingFieldError,
+    ValidationError,
+)
+from angelmanSyndromeConnexion.peopleCreate import insertData
+from angelmanSyndromeConnexion.peopleRead import (
+    giveId,
+    fetch_person_decrypted,
+    fetch_photo,
+    getRecordsPeople,
+    identity_public,
+)
+from angelmanSyndromeConnexion.peopleUpdate import updateData
+from angelmanSyndromeConnexion.peopleDelete import deleteDataById
+from angelmanSyndromeConnexion.pointRemarquable import (
+    getRecordsPointsRemarquables,
+    insertPointRemarquable,
+)
+
+from ..common import _get_src, parse_date_any, register_error_handlers
 from app.common.security import require_public_app_key
 
 bp = Blueprint("public_people", __name__)
+register_error_handlers(bp)
 
-# ----------- Chargement Config (.ini côté serveur) -----------
-_APP_DIR  = os.path.dirname(os.path.dirname(__file__))  # -> src/app/v5
-_INI_PATH = os.path.abspath(
-    os.path.join(_APP_DIR, "..", "..", "..", "angelman_viz_keys", "Config5.ini")
-)
+# --------------------------------------------------------------------
+# Utilitaires locaux (reprise des helpers de app/v5/people.py)
+# --------------------------------------------------------------------
 
-_cfg = ConfigParser()
-if not _cfg.read(_INI_PATH):
-    raise RuntimeError(f"Config file not found: {_INI_PATH}")
 
-try:
-    # Identifiants du proxy (EN CLAIR, distincts du hash utilisé côté privé)
-    PROXY_USER = _cfg["PROXY_AUTH"]["USER"].strip()
-    PROXY_PASS = _cfg["PROXY_AUTH"]["PASS"].strip()
+def _to_bool(v):
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, (int, float)):
+        return v != 0
+    if isinstance(v, str):
+        return v.strip().lower() in {"1", "true", "yes", "on"}
+    return False
 
-    # Base privée pour tous les endpoints /api/v5 People (ex: https://…/api/v5)
-    PRIVATE_BASE = _cfg["PRIVATE"]["PEOPLE_BASE_URL"].rstrip("/")
 
-    # Header interne exigé par require_internal côté privé
-    INTERNAL_HEADER_NAME  = (_cfg["PRIVATE"].get("INTERNAL_HEADER_NAME")).strip()
-    INTERNAL_HEADER_VALUE = (_cfg["PRIVATE"].get("INTERNAL_HEADER_VALUE")).strip()
-except KeyError as e:
-    raise RuntimeError(f"Config5.ini missing key: {e}")
+def _to_float_or_none(v):
+    if v in (None, "", "null"):
+        return None
+    try:
+        return float(str(v).replace(",", "."))
+    except Exception:
+        return None
 
-if not PROXY_USER or not PROXY_PASS or not PRIVATE_BASE:
-    raise RuntimeError(
-        "Config5.ini incomplete: PROXY_AUTH.USER, PROXY_AUTH.PASS, PRIVATE.PEOPLE_BASE_URL requis"
+
+def _to_int_or_none(v):
+    if v in (None, "", "null"):
+        return None
+    try:
+        return int(str(v).strip())
+    except Exception:
+        return None
+
+
+def _payload_people_from_request():
+    """
+    Retourne (firstname, lastname, email, dob(date), genotype,
+              photo_bytes, longC, latC, password, qSec, rSec).
+    Supporte multipart/form-data et JSON (photo_base64).
+    """
+    src = _get_src()
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
+        form = request.form
+        firstname = form.get("firstname")
+        lastname = form.get("lastname")
+        emailAddress = form.get("emailAddress")
+        dob_str = form.get("dateOfBirth")
+        genotype = form.get("genotype")
+        long = form.get("longitude")
+        lat = form.get("latitude")
+        password = form.get("password")
+        qSec = form.get("qSecrete")
+        rSec = form.get("rSecrete")
+        file = request.files.get("photo")
+        photo_bytes = file.read() if file else None
+    else:
+        data = request.get_json(silent=True) or {}
+        firstname = data.get("firstname")
+        lastname = data.get("lastname")
+        emailAddress = data.get("emailAddress")
+        dob_str = data.get("dateOfBirth")
+        genotype = data.get("genotype")
+        long = data.get("longitude")
+        lat = data.get("latitude")
+        password = data.get("password")
+        qSec = data.get("qSecrete")
+        rSec = data.get("rSecrete")
+        photo_b64 = data.get("photo_base64")
+        if photo_b64:
+            if "," in photo_b64:
+                photo_b64 = photo_b64.split(",", 1)[1]
+            photo_bytes = base64.b64decode(photo_b64)
+        else:
+            photo_bytes = None
+
+    try:
+        longC = float(str(long).replace(",", "."))
+        latC = float(str(lat).replace(",", "."))
+    except (TypeError, ValueError):
+        raise ValidationError("longitude/latitude doivent être numériques")
+
+    if not (-180.0 <= longC <= 180.0):
+        raise ValidationError("longitude hors plage [-180, 180]")
+    if not (-90.0 <= latC <= 90.0):
+        raise ValidationError("latitude hors plage [-90, 90]")
+
+    required = [
+        "firstname",
+        "lastname",
+        "emailAddress",
+        "dateOfBirth",
+        "genotype",
+        "longitude",
+        "latitude",
+        "password",
+        "qSecrete",
+        "rSecrete",
+    ]
+
+    def is_missing(v):
+        return v is None or (isinstance(v, str) and v.strip() == "")
+
+    # src vient de _get_src() (fusion form/JSON)
+    missing = [k for k in required if is_missing(src.get(k))]
+    if missing:
+        raise MissingFieldError(
+            f"Champs manquants: {', '.join(missing)}",
+            details={"missing": missing},
+        )
+
+    dob = parse_date_any(dob_str)
+    return (
+        firstname,
+        lastname,
+        emailAddress,
+        dob,
+        genotype,
+        photo_bytes,
+        longC,
+        latC,
+        password,
+        qSec,
+        rSec,
     )
 
-# ------------------------ Utilitaires proxy ------------------------
-TIMEOUT = (6, 15)  # (connect, read)
 
-def _auth():
-    return HTTPBasicAuth(PROXY_USER, PROXY_PASS)
-
-def _upstream_headers(extra: dict | None = None) -> dict:
+def _payload_point_from_request():
     """
-    Entêtes vers l'upstream privé :
-    - JSON par défaut
-    - Header interne exigé par require_internal
+    Même logique que dans app/v5/people.py pour les points remarquables.
     """
-    base = {
-        "Accept": "application/json",
-        INTERNAL_HEADER_NAME: INTERNAL_HEADER_VALUE,
-    }
-    if extra:
-        base.update(extra)
-    return base
+    src = _get_src()
+    raw_lon = src.get("longitude") or src.get("lon")
+    raw_lat = src.get("latitude") or src.get("lat")
+    short_desc = src.get("short_desc") or src.get("short") or src.get("title")
+    long_desc = src.get("long_desc") or src.get("description") or ""
 
-def _json_or_stub(r: requests.Response) -> tuple[dict, int]:
+    missing = []
+
+    def _miss(v):
+        return v is None or (isinstance(v, str) and v.strip() == "")
+
+    if _miss(raw_lon):
+        missing.append("longitude")
+    if _miss(raw_lat):
+        missing.append("latitude")
+    if _miss(short_desc):
+        missing.append("short_desc")
+
+    if missing:
+        raise MissingFieldError(
+            f"Champs manquants: {', '.join(missing)}",
+            details={"missing": missing},
+        )
+
     try:
-        return r.json(), r.status_code
+        lon = float(str(raw_lon).replace(",", "."))
+        lat = float(str(raw_lat).replace(",", "."))
     except ValueError:
-        return (
-            {
-                "upstream_status": r.status_code,
-                "upstream_body": (r.text or "")[:600],
-            },
-            r.status_code,
-        )
+        raise ValidationError("longitude/latitude doivent être numériques")
 
-def _forward_json(method: str, path: str, *, params=None, payload=None):
-    url = PRIVATE_BASE.rstrip("/") + path
-    try:
-        r = requests.request(
-            method.upper(),
-            url,
-            params=params or {},
-            data=json.dumps(payload or {}, ensure_ascii=False),
-            headers=_upstream_headers({"Content-Type": "application/json; charset=utf-8"}),
-            timeout=TIMEOUT,
-            auth=_auth(),
-        )
-    except requests.RequestException as e:
-        current_app.logger.exception("Proxy JSON error %s %s", method, url)
-        return jsonify({"error": f"proxy error: {e}"}), 502
+    if not (-180.0 <= lon <= 180.0):
+        raise ValidationError("longitude hors plage [-180, 180]")
+    if not (-90.0 <= lat <= 90.0):
+        raise ValidationError("latitude hors plage [-90, 90]")
 
-    data, code = _json_or_stub(r)
-    return jsonify(data), code
+    return lon, lat, str(short_desc).strip(), str(long_desc).strip()
 
-def _forward_multipart(method: str, path: str):
-    """Forward multipart/form-data en préservant fichiers et champs."""
-    url = f"{PRIVATE_BASE}{path}"
 
-    # Champs simples
-    form = {}
-    for k, v in request.form.items():
-        form[k] = v
+# --------------------------------------------------------------------
+# Routes PUBLIC -> logique interne (sans HTTP requests)
+# --------------------------------------------------------------------
 
-    # Fichiers
-    files = {}
-    for name, storage in request.files.items():
-        files[name] = (storage.filename, storage.stream, storage.content_type)
-
-    try:
-        r = requests.request(
-            method.upper(),
-            url,
-            params=request.args,
-            data=form,
-            files=files,
-            headers=_upstream_headers(),  # header interne aussi en multipart
-            timeout=TIMEOUT,
-            auth=_auth(),
-        )
-    except requests.RequestException as e:
-        current_app.logger.exception("Proxy multipart error %s %s", method, url)
-        return jsonify({"error": f"proxy error: {e}"}), 502
-
-    ctype = r.headers.get("Content-Type", "")
-    if "application/json" in ctype:
-        try:
-            return jsonify(r.json()), r.status_code
-        except ValueError:
-            pass
-    return jsonify(
-        {"upstream_status": r.status_code, "upstream_body": (r.text or "")[:600]}
-    ), r.status_code
-
-def _forward_binary(method: str, path: str, *, params=None):
-    """Forward binaire (photo)."""
-    url = f"{PRIVATE_BASE}{path}"
-    try:
-        r = requests.request(
-            method.upper(),
-            url,
-            params=params or {},
-            stream=True,
-            headers=_upstream_headers(),  # header interne aussi pour la photo
-            timeout=TIMEOUT,
-            auth=_auth(),
-        )
-    except requests.RequestException as e:
-        current_app.logger.exception("Proxy binary error %s %s", method, url)
-        return jsonify({"error": f"proxy error: {e}"}), 502
-
-    return Response(
-        r.content,
-        status=r.status_code,
-        mimetype=r.headers.get("Content-Type", "application/octet-stream"),
-    )
-
-# ------------------------ Routes PUBLIC -> PRIVATE ------------------------
 
 # Update person (JSON ou multipart)
 @bp.route("/people/update", methods=["PATCH", "PUT"])
 @require_public_app_key
 def public_update_person():
-    if request.content_type and request.content_type.startswith("multipart/form-data"):
-        return _forward_multipart(request.method, "/people/update")
-    payload = request.get_json(silent=True) or {}
-    return _forward_json(request.method, "/people/update", params=request.args, payload=payload)
+    """
+    Version publique de /api/v5/people/update :
+    - pas de basic auth
+    - même logique que api_update_person, mais en direct Python.
+    """
+    try:
+        src = _get_src() or {}
+
+        email_current = (
+            (src.get("emailAddress") if isinstance(src, dict) else None)
+            or request.args.get("emailAddress")
+            or (src.get("email") if isinstance(src, dict) else None)
+            or request.args.get("email")
+            or ""
+        ).strip()
+        if not email_current:
+            raise MissingFieldError(
+                "emailAddress manquant",
+                {"missing": ["emailAddress"]},
+            )
+
+        kwargs: dict = {}
+        for key_src, key_dst in [
+            ("firstname", "firstname"),
+            ("lastname", "lastname"),
+            ("genotype", "genotype"),
+            ("city", "city"),
+            ("password", "password"),
+            ("emailNewAddress", "emailNewAddress"),
+            ("newEmail", "emailNewAddress"),
+            ("reponseSecrete", "reponseSecrete"),
+        ]:
+            val = src.get(key_src)
+            if isinstance(val, str):
+                val = val.strip()
+            if val not in (None, ""):
+                kwargs[key_dst] = val
+
+        if src.get("dateOfBirth"):
+            kwargs["dateOfBirth"] = parse_date_any(src.get("dateOfBirth"))
+
+        lon = _to_float_or_none(src.get("longitude"))
+        lat = _to_float_or_none(src.get("latitude"))
+        if lon is not None:
+            kwargs["longitude"] = lon
+        if lat is not None:
+            kwargs["latitude"] = lat
+
+        qsec = _to_int_or_none(src.get("questionSecrete"))
+        if qsec is not None:
+            kwargs["questionSecrete"] = qsec
+
+        if "delete_photo" in src:
+            kwargs["delete_photo"] = _to_bool(src.get("delete_photo"))
+
+        photo_bytes = None
+        if request.content_type and request.content_type.startswith(
+            "multipart/form-data"
+        ):
+            f = request.files.get("photo")
+            if f and f.filename:
+                photo_bytes = f.read()
+        else:
+            b64 = src.get("photo_base64")
+            if b64:
+                if "," in b64:
+                    b64 = b64.split(",", 1)[1]
+                photo_bytes = base64.b64decode(b64)
+        if photo_bytes is not None:
+            kwargs["photo"] = photo_bytes
+
+        affected = updateData(email_address=email_current, **kwargs)
+        if affected == 0:
+            return (
+                jsonify(
+                    {
+                        "ok": True,
+                        "updated": 0,
+                        "message": "Aucune modification appliquée.",
+                    }
+                ),
+                200,
+            )
+        return jsonify({"ok": True, "updated": int(affected)}), 200
+
+    except AppError as e:
+        # Les AppError sont déjà gérées par register_error_handlers
+        raise e
+    except Exception as e:
+        current_app.logger.exception("Erreur update person (public)")
+        return jsonify({"error": f"erreur serveur: {e}"}), 500
+
 
 # Photo binaire
 @bp.get("/people/<int:person_id>/photo")
 @require_public_app_key
 def public_person_photo(person_id: int):
-    return _forward_binary("GET", f"/people/{person_id}/photo")
+    photo, mime = fetch_photo(person_id)
+    if not photo:
+        abort(404)
+    return Response(photo, mimetype=mime)
 
-# Info (JSON)
+
+# Info complète (comme /api/v5/people/<id>/info)
 @bp.get("/people/<int:person_id>/info")
 @require_public_app_key
 def public_person_info(person_id: int):
-    return _forward_json("GET", f"/people/{person_id}/info", params=request.args)
+    result = fetch_person_decrypted(person_id)
+    return jsonify(result)
 
-# Info publique (JSON)
+
+# Info publique (comme /api/v5/people/<id>/infoPublic)
 @bp.get("/people/<int:person_id>/infoPublic")
 @require_public_app_key
 def public_person_infoPublic(person_id: int):
-    return _forward_json("GET", f"/people/{person_id}/infoPublic", params=request.args)
+    result = identity_public(person_id)
+    return jsonify(result)
+
 
 # Create person (JSON ou multipart)
 @bp.post("/people")
 @require_public_app_key
 def public_create_person():
-    if request.content_type and request.content_type.startswith("multipart/form-data"):
-        return _forward_multipart("POST", "/people")
-    payload = request.get_json(silent=True) or {}
-    return _forward_json("POST", "/people", params=request.args, payload=payload)
+    try:
+        (
+            fn,
+            ln,
+            email,
+            dob,
+            gt,
+            photo_bytes,
+            long,
+            lat,
+            password,
+            qSec,
+            rSec,
+        ) = _payload_people_from_request()
+        new_id = insertData(
+            fn,
+            ln,
+            email,
+            dob,
+            gt,
+            photo_bytes,
+            long,
+            lat,
+            password,
+            qSec,
+            rSec,
+        )
+        return jsonify({"status": "created", "id": new_id}), 201
+    except AppError as e:
+        raise e
+    except Exception:
+        current_app.logger.exception("Unhandled error (public_create_person)")
+        return (
+            jsonify({"status": "error", "message": "Internal server error"}),
+            500,
+        )
+
 
 # Delete by id
 @bp.delete("/people/delete/<int:person_id>")
 @require_public_app_key
 def public_delete_person(person_id: int):
-    return _forward_json("DELETE", f"/people/delete/{person_id}", params=request.args)
+    try:
+        deleteDataById(person_id)
+        return jsonify({"ok": True, "deleted": person_id}), 200
+    except AppError as e:
+        raise e
+    except Exception as e:
+        current_app.logger.exception("Erreur suppression par id (public)")
+        return jsonify({"error": f"erreur serveur: {e}"}), 500
+
 
 # Lookup (querystring)
 @bp.get("/people/lookup")
 @require_public_app_key
 def public_lookup_person():
-    return _forward_json("GET", "/people/lookup", params=request.args)
+    try:
+        email = request.args.get("email") or request.args.get("emailAddress")
+        if not email or not email.strip():
+            raise MissingFieldError(
+                "email (query param) manquant",
+                {"missing": ["email"]},
+            )
+        person_id = giveId(email)
+        if person_id is None:
+            return jsonify({"status": "not_found"}), 404
+        return jsonify({"status": "found", "id": person_id}), 200
+    except AppError as e:
+        raise e
+    except Exception:
+        current_app.logger.exception("Unhandled error (public_lookup_person)")
+        return (
+            jsonify({"status": "error", "message": "Internal server error"}),
+            500,
+        )
 
-# Map People (JSON)
+
+# Map People (JSON) — direct DB (getRecordsPeople)
 @bp.get("/peopleMapRepresentation")
 @require_public_app_key
 def public_people_map():
-    return _forward_json("GET", "/peopleMapRepresentation", params=request.args)
+    """
+    Version publique de /api/v5/peopleMapRepresentation :
+    pas de HTTP interne, on appelle directement getRecordsPeople().
+    """
+    try:
+        df = getRecordsPeople()
+        return jsonify(df.to_dict(orient="records"))
+    except Exception as e:
+        current_app.logger.exception(
+            "[PUBLIC_PROXY][MAP] peopleMapRepresentation ERROR: %s", e
+        )
+        return jsonify({"error": f"peopleMapRepresentation error: {e}"}), 500
+
 
 # Point Remarquable - création (JSON)
 @bp.post("/pointRemarquable")
 @require_public_app_key
 def public_create_point_remarquable():
-    payload = request.get_json(silent=True) or {}
-    return _forward_json("POST", "/pointRemarquable", params=request.args, payload=payload)
+    try:
+        longitude, latitude, short_desc, long_desc = _payload_point_from_request()
+        new_id = insertPointRemarquable(longitude, latitude, short_desc, long_desc)
+        resp = jsonify({"status": "created", "id": new_id})
+        resp.status_code = 201
+        resp.headers["Location"] = f"/api/public/pointRemarquable/{new_id}"
+        return resp
+    except AppError as e:
+        raise e
+    except Exception:
+        current_app.logger.exception(
+            "Unhandled error (public_create_point_remarquable)"
+        )
+        return (
+            jsonify({"status": "error", "message": "Internal server error"}),
+            500,
+        )
+
 
 # Point Remarquable - liste (JSON)
 @bp.get("/pointRemarquableRepresentation")
 @require_public_app_key
 def public_point_remarquable_representation():
-    return _forward_json("GET", "/pointRemarquableRepresentation", params=request.args)
+    try:
+        df = getRecordsPointsRemarquables()
+        return jsonify(df.to_dict(orient="records"))
+    except Exception as e:
+        current_app.logger.exception(
+            "[PUBLIC_PROXY][POINT] pointRemarquableRepresentation ERROR: %s", e
+        )
+        return (
+            jsonify(
+                {"error": f"pointRemarquableRepresentation error: {e}"}
+            ),
+            500,
+        )

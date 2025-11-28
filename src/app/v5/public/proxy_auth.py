@@ -1,159 +1,219 @@
 # app/v5/public/proxy_auth.py
 from __future__ import annotations
-import os, json, requests
-from configparser import ConfigParser
-from requests.auth import HTTPBasicAuth
-from flask import Blueprint, request, jsonify
-from app.common.security import require_public_app_key
 
-from tools.logger import setup_logger
-logger = setup_logger(debug=False)
+from flask import Blueprint, jsonify, request, current_app
+from sqlalchemy import text
+
+from angelmanSyndromeConnexion.error import AppError, MissingFieldError, ValidationError
+from angelmanSyndromeConnexion.peopleUpdate import updateData
+from angelmanSyndromeConnexion.peopleAuth import authenticate_and_get_id, verifySecretAnswer
+from tools.crypto_utils import email_sha256, decrypt_number
+from tools.utilsTools import _run_query
+
+from app.common.security import ratelimit, require_public_app_key
+from app.v5.common import _get_src, _pwd_ok, _normalize_email, _SECRET_QUESTION_LABELS
 
 bp = Blueprint("public_auth", __name__)
 
-# ---- Load server-side .ini ----
-_APP_DIR = os.path.dirname(os.path.dirname(__file__))            # src/app/v5
-_INI     = os.path.abspath(os.path.join(_APP_DIR, "..", "..", "..", "angelman_viz_keys", "Config5.ini"))
-
-cfg = ConfigParser()
-if not cfg.read(_INI):
-    raise RuntimeError(f"Config file not found: {_INI}")
-
-# BASIC creds pour l'upstream privé
-PROXY_USER = cfg["PROXY_AUTH"]["USER"].strip()
-PROXY_PASS = cfg["PROXY_AUTH"]["PASS"].strip()
-
-# Base URL privé (ex: https://…/api/v5)
-AUTH_BASE  = cfg["PRIVATE"]["AUTH_BASE_URL"].rstrip("/")
-
-# Header "interne" exigé par require_internal (nom/valeur)
-INTERNAL_HEADER_NAME  = (cfg["PRIVATE"].get("INTERNAL_HEADER_NAME")).strip()
-INTERNAL_HEADER_VALUE = (cfg["PRIVATE"].get("INTERNAL_HEADER_VALUE")).strip()
-
-LOGIN_URL   = f"{AUTH_BASE}/auth/login"
-SECRETQ_URL = f"{AUTH_BASE}/people/secret-question"
-VERIFY_URL  = f"{AUTH_BASE}/people/secret-answer/verify"
-RESET_URL   = f"{AUTH_BASE}/auth/reset-password"
-
-def _auth():
-    return HTTPBasicAuth(PROXY_USER, PROXY_PASS)
-
-def _upstream_headers(extra: dict | None = None) -> dict:
-    """
-    Construit les entêtes pour l'appel upstream privé :
-    - JSON par défaut
-    - Header interne exigé par require_internal
-    """
-    base = {
-        "Accept": "application/json",
-        INTERNAL_HEADER_NAME: INTERNAL_HEADER_VALUE,
-    }
-    if extra:
-        base.update(extra)
-    return base
-
-def _json_or_stub(r: requests.Response) -> tuple[dict, int]:
-    try:
-        return r.json(), r.status_code
-    except ValueError:
-        return (
-            {
-                "upstream_status": r.status_code,
-                "upstream_body": (r.text or "")[:400],
-            },
-            r.status_code,
-        )
-
 # --------- PUBLIC: POST /auth/login -----------
+
+
 @bp.post("/auth/login")
+@ratelimit(3)
 @require_public_app_key
 def public_login():
-    payload = request.get_json(silent=True) or {}
-    # L’upstream privé attend "email" et "password" (cf. v5_auth.auth_login)
-    if not payload.get("email") or not payload.get("password"):
-        return jsonify({"error": "email et password sont requis"}), 400
-    try:
-        r = requests.post(
-            LOGIN_URL,
-            headers=_upstream_headers({"Content-Type": "application/json"}),
-            data=json.dumps(payload, ensure_ascii=False),
-            timeout=(6, 15),
-            auth=_auth(),
-        )
-    except requests.RequestException as e:
-        logger.exception("proxy login error")
-        return jsonify({"error": f"proxy error: {e}"}), 502
+  """
+  Authentification publique :
+  - Protégée par X-App-Key (require_public_app_key)
+  - Pas de Basic ni d'entête interne
+  - Retourne {ok: True, id: ...} ou 401 / 400 / 500
+  """
+  data = (
+      request.get_json(silent=True)
+      or request.form.to_dict(flat=True)
+      or request.args.to_dict(flat=True)
+      or {}
+  )
 
-    if r.status_code == 401:
-        # Très utile pour diagnostiquer : confirme que le Basic est bien lu côté privé
-        logger.warning(
-            "proxy_auth: 401 from private on /auth/login (user=%s, basic=%s, internal=%s:%s)",
-            PROXY_USER,
-            "set" if (PROXY_USER and PROXY_PASS) else "missing",
-            INTERNAL_HEADER_NAME,
-            INTERNAL_HEADER_VALUE,
-        )
+  email = (data.get("email") or "").strip()
+  password = data.get("password") or ""
 
-    data, code = _json_or_stub(r)
-    return jsonify(data), code
+  if not email or not password:
+    return jsonify({"error": "email et password sont requis"}), 400
+
+  try:
+    person_id = authenticate_and_get_id(email, password, bAngelmanResult=False)
+  except Exception:
+    current_app.logger.exception("Erreur d'authentification (public_login)")
+    return jsonify({"error": "erreur serveur"}), 500
+
+  if person_id is None:
+    return jsonify({"ok": False, "message": "identifiants invalides"}), 401
+
+  return jsonify({"ok": True, "id": person_id}), 200
+
 
 # --------- PUBLIC: GET /people/secret-question -----------
+
+
 @bp.get("/people/secret-question")
+@ratelimit(5)
 @require_public_app_key
 def public_secret_question():
-    try:
-        r = requests.get(
-            SECRETQ_URL,
-            params=request.args,  # forward all query params
-            headers=_upstream_headers(),  # IMPORTANT: header interne ici aussi
-            timeout=(6, 15),
-            auth=_auth(),
-        )
-    except requests.RequestException as e:
-        logger.exception("proxy secret-question error")
-        return jsonify({"error": f"proxy error: {e}"}), 502
+  """
+  Expose la question secrète associée à un email.
+  Entrée (query ou body): email ou emailAddress
+  Sortie:
+    - 200 + {question: int, label: str} si ok
+    - 404 si pas de question
+    - 4xx/5xx si erreur
+  """
+  try:
+    src = _get_src() or {}
+    email = (
+        request.args.get("email")
+        or request.args.get("emailAddress")
+        or (src.get("email") if isinstance(src, dict) else None)
+        or (src.get("emailAddress") if isinstance(src, dict) else None)
+        or ""
+    ).strip()
 
-    data, code = _json_or_stub(r)
-    return jsonify(data), code
+    if not email:
+      raise MissingFieldError("email manquant", {"missing": ["email"]})
+
+    sha = email_sha256(_normalize_email(email))
+    row = _run_query(
+        text("""
+                SELECT secret_question
+                FROM T_People_Identity
+                WHERE email_sha = :sha
+                LIMIT 1
+            """),
+        params={"sha": sha},
+        return_result=True,
+        bAngelmanResult=False,
+    )
+
+    if not row or row[0][0] is None:
+      return jsonify({"ok": False}), 404
+
+    try:
+      q_int = int(decrypt_number(row[0][0]))
+    except Exception:
+      return jsonify({"ok": False}), 500
+
+    label = _SECRET_QUESTION_LABELS.get(q_int, "Question secrète")
+    return jsonify({"question": q_int, "label": label}), 200
+
+  except AppError as e:
+    # Laisse la gestion aux handlers globaux si tu les utilises
+    raise e
+  except Exception as e:
+    current_app.logger.exception("Erreur public_secret_question")
+    return jsonify({"error": f"erreur serveur: {e}"}), 500
+
 
 # --------- PUBLIC: POST /people/secret-answer/verify -----------
+
+
 @bp.post("/people/secret-answer/verify")
+@ratelimit(5)
 @require_public_app_key
 def public_verify_secret_answer():
-    payload = request.get_json(silent=True) or {}
-    try:
-        r = requests.post(
-            VERIFY_URL,
-            headers=_upstream_headers({"Content-Type": "application/json"}),
-            data=json.dumps(payload, ensure_ascii=False),
-            timeout=(6, 15),
-            auth=_auth(),
-        )
-    except requests.RequestException as e:
-        logger.exception("proxy verify-secret-answer error")
-        return jsonify({"error": f"proxy error: {e}"}), 502
+  """
+  Vérifie la réponse à la question secrète.
+  Entrée (JSON / form / query):
+    - email ou emailAddress, ou id
+    - answer
+  Sortie:
+    - 200 + {ok: true/false}
+  """
+  try:
+    src = _get_src() or {}
+    email = (src.get("email") or request.args.get("email") or "").strip()
+    if not email:
+      email = (src.get("emailAddress") or request.args.get("emailAddress") or "").strip()
 
-    data, code = _json_or_stub(r)
-    return jsonify(data), code
+    id_raw = src.get("id") or request.args.get("id")
+    try:
+      person_id = int(id_raw) if id_raw not in (None, "", "null") else None
+    except Exception:
+      person_id = None
+
+    answer = (src.get("answer") or request.args.get("answer") or "").strip()
+
+    if not answer or (not email and person_id is None):
+      return jsonify({"ok": False}), 200
+
+    ok = verifySecretAnswer(email=email if email else None, person_id=person_id, answer=answer)
+    return jsonify({"ok": bool(ok)}), 200
+
+  except AppError as e:
+    raise e
+  except Exception:
+    current_app.logger.exception("Erreur public_verify_secret_answer")
+    return jsonify({"ok": False}), 200
+
 
 # --------- PUBLIC: POST /auth/reset-password -----------
+
+
 @bp.post("/auth/reset-password")
+@ratelimit(3)
 @require_public_app_key
 def public_reset_password():
-    payload = request.get_json(silent=True) or {}
-    try:
-        r = requests.post(
-            RESET_URL,
-            headers=_upstream_headers({"Content-Type": "application/json"}),
-            data=json.dumps(payload, ensure_ascii=False),
-            timeout=(6, 15),
-            auth=_auth(),
-        )
-    except requests.RequestException as e:
-        logger.exception("proxy reset-password error")
-        return jsonify({"error": f"proxy error: {e}"}), 502
+  """
+  Réinitialisation de mot de passe via question secrète.
+  Entrée (JSON / form / query via _get_src()):
+    - emailAddress (ou email)
+    - questionSecrete (1,2,3)
+    - reponseSecrete
+    - newPassword
+  """
+  try:
+    src = _get_src() or {}
+    email = (
+        (src.get("emailAddress") if isinstance(src, dict) else None)
+        or src.get("email")
+        or ""
+    ).strip()
+    if not email:
+      raise MissingFieldError("emailAddress manquant", {"missing": ["emailAddress"]})
 
-    if r.status_code == 204:
-        return ("", 204)
-    data, code = _json_or_stub(r)
-    return jsonify(data), code
+    q_raw = src.get("questionSecrete")
+    try:
+      question = int(str(q_raw).strip())
+    except Exception:
+      raise ValidationError("questionSecrete doit être un entier 1..3")
+
+    if question not in (1, 2, 3):
+      raise ValidationError("questionSecrete doit être 1, 2 ou 3")
+
+    answer = src.get("reponseSecrete")
+    if not isinstance(answer, str) or not answer.strip():
+      raise MissingFieldError("reponseSecrete manquante ou vide", {"missing": ["reponseSecrete"]})
+
+    new_pwd = src.get("newPassword")
+    if not isinstance(new_pwd, str) or not new_pwd.strip():
+      raise MissingFieldError("newPassword manquant", {"missing": ["newPassword"]})
+
+    if not _pwd_ok(new_pwd):
+      return jsonify({
+          "ok": False,
+          "code": "weak_password",
+          "message": "Mot de passe trop faible (≥8 caractères, ≥1 majuscule, ≥1 caractère spécial).",
+      }), 400
+
+    # Vérifie la réponse secrète
+    if not verifySecretAnswer(email=email, person_id=None, answer=answer):
+      return jsonify({"ok": False}), 401
+
+    # Met à jour le mot de passe
+    affected = updateData(email_address=email, password=new_pwd)
+    return ("", 204) if affected else (jsonify({"ok": False}), 401)
+
+  except AppError as e:
+    raise e
+  except Exception as e:
+    current_app.logger.exception("Erreur public_reset_password")
+    return jsonify({"error": f"erreur serveur: {e}"}), 500

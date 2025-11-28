@@ -2,6 +2,7 @@
 from __future__ import annotations
 import base64
 from flask import Blueprint, jsonify, request, Response, abort, current_app
+from time import perf_counter
 
 from angelmanSyndromeConnexion.error import (
     AppError, MissingFieldError, ValidationError
@@ -294,7 +295,15 @@ def create_pointRemarquable():
 @bp.get("/peopleMapRepresentation")
 @require_basic
 def peopleMapRepresentation():
+    t0 = perf_counter()
+    current_app.logger.info("[V5][MAP] peopleMapRepresentation START")
     df = getRecordsPeople()
+    t1 = perf_counter()
+    current_app.logger.info(
+        "[V5][MAP] getRecordsPeople FINI en %.3fs (rows=%d)",
+        t1 - t0,
+        len(df),
+    )
     return jsonify(df.to_dict(orient="records"))
 
 @bp.get("/pointRemarquableRepresentation")
