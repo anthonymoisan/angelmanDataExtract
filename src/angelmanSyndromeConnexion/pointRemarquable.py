@@ -145,7 +145,7 @@ def getRecordsPointsRemarquables():
         })
     return pd.DataFrame(data, columns=["id","longitude","latitude","short_desc","long_desc", "has_photo", "photo_mime","wkt","geojson"])
 
-def fetch_photo(id: int) -> tuple[bytes | None, str | None]:
+def fetch_point_photo(id: int) -> tuple[bytes | None, str | None]:
     rows = _run_query(
         text("SELECT photo, photo_mime FROM T_PointRemarquable WHERE id=:id"),
         return_result=True,

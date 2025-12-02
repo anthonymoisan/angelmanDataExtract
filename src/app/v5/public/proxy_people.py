@@ -22,6 +22,7 @@ from angelmanSyndromeConnexion.peopleDelete import deleteDataById
 from angelmanSyndromeConnexion.pointRemarquable import (
     getRecordsPointsRemarquables,
     insertPointRemarquable,
+    fetch_point_photo,
 )
 
 from ..common import _get_src, parse_date_any, register_error_handlers
@@ -476,3 +477,11 @@ def public_point_remarquable_representation():
             ),
             500,
         )
+
+@bp.get("/pointRemarquable/<int:point_id>/photo")
+@require_public_app_key
+def public_point_remarquable_photo(point_id: int):
+    photo, mime = fetch_point_photo(point_id)  
+    if not photo:
+        abort(404)
+    return Response(photo, mimetype=mime)

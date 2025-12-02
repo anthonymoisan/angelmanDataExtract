@@ -15,7 +15,7 @@ from angelmanSyndromeConnexion.peopleUpdate import updateData
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
 
 from angelmanSyndromeConnexion.pointRemarquable import (
-    getRecordsPointsRemarquables, insertPointRemarquable
+    getRecordsPointsRemarquables, insertPointRemarquable, fetch_point_photo
 )
 
 from .common import _get_src, parse_date_any
@@ -331,3 +331,11 @@ def peopleMapRepresentation():
 def pointRemarquableRepresentation():
     df = getRecordsPointsRemarquables()
     return jsonify(df.to_dict(orient="records"))
+
+@bp.get("/pointRemarquable/<int:point_id>/photo")
+@require_basic
+def pointRemarquablePhoto(point_id: int):
+    photo, mime = fetch_point_photo(point_id)  
+    if not photo:
+        abort(404)
+    return Response(photo, mimetype=mime)
