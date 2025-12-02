@@ -48,19 +48,39 @@ def _insertDataFrame():
      "Abbaye médiévale sur îlot rocheux en baie du Mont."),
     ]
 
+    BASE = Path(__file__).resolve().parent / "../../.." / "data" / "Picture"
+
+    img_path = BASE / "EiffelTower.jpg"
+    photo_data = None
+    try:
+        if img_path.is_file():
+            size = img_path.stat().st_size
+            if size <= 4 * 1024 * 1024:
+                with img_path.open("rb") as f:
+                    photo_data = f.read()
+            else:
+                logger.error("Photo > 4MiB: %s", img_path)
+        else:
+            logger.warning("Fichier introuvable: %s", img_path)
+    except Exception:
+        logger.exception("Erreur lecture photo: %s", img_path)
+
+
     for lon, lat, sd, ld in points:
-        insertPointRemarquable(lon, lat, sd, ld)
+        insertPointRemarquable(lon, lat, sd, ld, photo_data)
 
 def main():
     start = time.time()
     try:
-        #dropTable("T_PointRemarquable")
+        '''
+        dropTable("T_PointRemarquable")
         wkdir = os.path.dirname(__file__)
         script_path = os.path.join(f"{wkdir}/../SQL/","createPointRemarquable.sql")
         createTable(script_path,bAngelmanResult=False)
         _insertDataFrame()
-        #df = getRecordsPointsRemarquables()
-        #logger.info(df.head())
+        '''
+        df = getRecordsPointsRemarquables()
+        logger.info(df.head())
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for Point Remarquable are ok with an execution time in {elapsed:.2f} secondes.")

@@ -164,6 +164,18 @@ def _payload_point_from_request():
     raw_lat = src.get("latitude") or src.get("lat")
     short_desc = src.get("short_desc") or src.get("short") or src.get("title")
     long_desc = src.get("long_desc") or src.get("description") or ""
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
+        file = request.files.get("photo")
+        photo_bytes = file.read() if file else None
+    else:
+        data = request.get_json(silent=True) or {}
+        photo_b64 = data.get("photo_base64")
+        if photo_b64:
+            if "," in photo_b64:
+                photo_b64 = photo_b64.split(",", 1)[1]
+            photo_bytes = base64.b64decode(photo_b64)
+        else:
+            photo_bytes = None
 
     missing = []
 
@@ -194,7 +206,7 @@ def _payload_point_from_request():
     if not (-90.0 <= lat <= 90.0):
         raise ValidationError("latitude hors plage [-90, 90]")
 
-    return lon, lat, str(short_desc).strip(), str(long_desc).strip()
+    return lon, lat, str(short_desc).strip(), str(long_desc).strip(), photo_bytes
 
 
 # --------------------------------------------------------------------
@@ -429,8 +441,8 @@ def public_people_map():
 @require_public_app_key
 def public_create_point_remarquable():
     try:
-        longitude, latitude, short_desc, long_desc = _payload_point_from_request()
-        new_id = insertPointRemarquable(longitude, latitude, short_desc, long_desc)
+        longitude, latitude, short_desc, long_desc, photo_bytes = _payload_point_from_request()
+        new_id = insertPointRemarquable(longitude, latitude, short_desc, long_desc,photo_bytes)
         resp = jsonify({"status": "created", "id": new_id})
         resp.status_code = 201
         resp.headers["Location"] = f"/api/public/pointRemarquable/{new_id}"
