@@ -45,6 +45,9 @@ def create_app():
     
     from app.v5.public.proxy_people import bp as public_people_bp
     app.register_blueprint(public_people_bp, url_prefix="/api/public")
+
+    from app.v5.public.proxy_pointRemarquable import bp as public_pointRemarquable_bp
+    app.register_blueprint(public_pointRemarquable_bp, url_prefix="/api/public")
     
     from app.v5.public.proxy_mail import bp as public_mail_bp
     app.register_blueprint(public_mail_bp, url_prefix="/api/public")
