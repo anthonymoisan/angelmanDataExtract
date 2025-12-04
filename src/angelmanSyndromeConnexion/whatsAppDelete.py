@@ -1,0 +1,115 @@
+from __future__ import annotations
+
+from angelmanSyndromeConnexion.models.message import Message
+from datetime import datetime, timezone
+
+def deleteMessageSoft(session, message_id: int) -> bool:
+    """
+    Suppression logique : conserve le message mais l'indique comme supprimé.
+    """
+    msg = session.get(Message, message_id)
+    if not msg:
+        return False
+
+    msg.status = "deleted"
+    msg.deleted_at = datetime.now(timezone.utc)
+    msg.body_text = "Message supprimé"
+
+    session.commit()
+    return True
+
+from datetime import datetime, timezone
+
+from sqlalchemy import select, func
+from sqlalchemy.orm import Session
+
+from angelmanSyndromeConnexion.models.conversation import Conversation
+from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
+from angelmanSyndromeConnexion.models.message import Message
+from angelmanSyndromeConnexion.whatsAppDelete import deleteMessageSoft  # ← adapte le chemin si besoin
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def leave_conversation(
+    session: Session,
+    conversation_id: int,
+    people_public_id: int,
+    soft_delete_own_messages: bool = True,
+    delete_empty_conversation: bool = True,
+) -> bool:
+    """
+    Permet à une personne (people_public_id) de quitter une conversation.
+
+    - Optionnellement passe *en soft delete* tous ses messages dans cette conversation
+      via deleteMessageSoft(...)
+    - Supprime son entrée dans T_Conversation_Member
+    - Recalcule last_message_at pour la conversation
+    - Optionnel : supprime la conversation si plus de membres + plus de messages non supprimés
+
+    Retourne True si la sortie a bien été effectuée, False si la personne
+    n'était pas membre de la conversation.
+    """
+
+    # 0) Vérifier que la conversation existe
+    conv = session.get(Conversation, conversation_id)
+    if not conv:
+        return False
+
+    # 1) Vérifier que la personne est bien membre
+    member = session.get(
+        ConversationMember,
+        {
+            "conversation_id": conversation_id,
+            "people_public_id": people_public_id,
+        },
+    )
+    if not member:
+        return False
+
+    # 2) Soft-delete de tous ses messages s'il le faut
+    if soft_delete_own_messages:
+        messages = (
+            session.execute(
+                select(Message)
+                .where(
+                    Message.conversation_id == conversation_id,
+                    Message.sender_people_id == people_public_id,
+                    Message.status != "deleted",   # évite de retraiter ceux déjà supprimés
+                )
+                .order_by(Message.created_at.asc())
+            )
+        ).scalars().all()
+
+        for msg in messages:
+            deleteMessageSoft(session, msg.id)
+
+    # 3) Supprimer son appartenance à la conversation
+    session.delete(member)
+    session.commit()
+
+    # 4) Recalculer last_message_at à partir des messages NON supprimés
+    last_msg_dt = session.execute(
+        select(func.max(Message.created_at)).where(
+            Message.conversation_id == conversation_id,
+            Message.status != "deleted",
+        )
+    ).scalar_one_or_none()
+
+    conv.last_message_at = last_msg_dt
+
+    # 5) Optionnel : si plus de membres + plus de messages non supprimés → supprimer la conversation
+    if delete_empty_conversation:
+        remaining_members = session.execute(
+            select(func.count())
+            .select_from(ConversationMember)
+            .where(ConversationMember.conversation_id == conversation_id)
+        ).scalar_one()
+
+        if remaining_members == 0:
+            session.delete(conv)
+
+    session.commit()
+    return True
