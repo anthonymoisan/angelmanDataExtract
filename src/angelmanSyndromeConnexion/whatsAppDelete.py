@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 from angelmanSyndromeConnexion.models.conversation import Conversation
 from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
 from angelmanSyndromeConnexion.models.message import Message
-from angelmanSyndromeConnexion.whatsAppDelete import deleteMessageSoft  # ← adapte le chemin si besoin
 
 def deleteMessageSoft(session, message_id: int) -> bool:
     """

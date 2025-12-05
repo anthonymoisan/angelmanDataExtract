@@ -17,6 +17,20 @@ from angelmanSyndromeConnexion.whatsAppCreate import (
     addMessage,
     addMessageReaction,
 )
+from angelmanSyndromeConnexion.whatsAppRead import(
+    get_conversations_for_person_sorted,
+    get_messages_for_conversation,
+)
+
+from angelmanSyndromeConnexion.whatsAppUpdate import(
+    setMemberMetaData,
+    updateMessage,
+)
+
+from angelmanSyndromeConnexion.whatsAppDelete import(
+    deleteMessageSoft,
+    leave_conversation,
+)
 
 from app.common.security import require_public_app_key
 
@@ -298,3 +312,188 @@ def api_add_message_reaction(message_id: int):
         )
 
         return jsonify(reaction_to_dict(reaction)), 201
+
+
+@bp.get("/people/<int:people_public_id>/conversations")
+@require_public_app_key
+def api_get_conversations_for_person_public(people_public_id: int):
+    """
+    GET /api/public/people/<people_public_id>/conversations
+    Retourne la liste des conversations où la personne est membre,
+    triées par last_message_at DESC puis created_at DESC.
+    """
+    with get_session() as session:
+        person = session.execute(
+            select(PeoplePublic).where(PeoplePublic.id == people_public_id)
+        ).scalar_one_or_none()
+
+        if not person:
+            return jsonify({"error": "PeoplePublic introuvable"}), 404
+
+        conversations = get_conversations_for_person_sorted(session, people_public_id)
+
+        return jsonify([conversation_to_dict(c) for c in conversations]), 200
+
+@bp.get("/conversations/<int:conversation_id>/messages")
+@require_public_app_key
+def api_get_messages_for_conversation_public(conversation_id: int):
+    """
+    GET /api/public/conversations/<conversation_id>/messages
+    Retourne la liste des messages de la conversation, triés par created_at ASC.
+    """
+    with get_session() as session:
+        conv = session.execute(
+            select(Conversation).where(Conversation.id == conversation_id)
+        ).scalar_one_or_none()
+
+        if not conv:
+            return jsonify({"error": "Conversation introuvable"}), 404
+
+        rows = get_messages_for_conversation(session, conversation_id)
+
+        messages = [
+            {
+                "body_text": r.body_text,
+                "pseudo": r.pseudo,
+                "created_at": _dt_to_str(r.created_at),
+            }
+            for r in rows
+        ]
+
+        return jsonify(messages), 200
+
+@bp.post("/conversations/<int:conversation_id>/members/<int:people_public_id>/metadata")
+@require_public_app_key
+def api_update_member_metadata_public(conversation_id: int, people_public_id: int):
+    """
+    POST /api/public/conversations/<conversation_id>/members/<people_public_id>/metadata
+    Body JSON :
+    {
+       "last_read_message_id": 123
+    }
+    """
+    data = request.get_json(silent=True) or {}
+    last_read_message_id = data.get("last_read_message_id")
+
+    if last_read_message_id is None:
+        return jsonify({"error": "last_read_message_id est requis"}), 400
+
+    try:
+        last_read_message_id = int(last_read_message_id)
+    except ValueError:
+        return jsonify({"error": "last_read_message_id doit être un entier"}), 400
+
+    with get_session() as session:
+        member = session.execute(
+            select(ConversationMember).where(
+                ConversationMember.conversation_id == conversation_id,
+                ConversationMember.people_public_id == people_public_id,
+            )
+        ).scalar_one_or_none()
+
+        if not member:
+            return jsonify({"error": "Membre introuvable"}), 404
+
+        setMemberMetaData(session, member, last_read_message_id)
+
+        return jsonify(member_to_dict(member)), 200
+
+@bp.post("/messages/<int:message_id>/edit")
+@require_public_app_key
+def api_edit_message_public(message_id: int):
+    """
+    POST /api/public/messages/<message_id>/edit
+    Body JSON :
+    {
+        "editor_people_id": 1,
+        "new_text": "Message modifié"
+    }
+    """
+    data = request.get_json(silent=True) or {}
+    editor_people_id = data.get("editor_people_id")
+    new_text = data.get("new_text")
+
+    if not editor_people_id or not new_text:
+        return jsonify({"error": "editor_people_id et new_text sont requis"}), 400
+
+    try:
+        editor_people_id = int(editor_people_id)
+    except ValueError:
+        return jsonify({"error": "editor_people_id doit être un entier"}), 400
+
+    with get_session() as session:
+        try:
+            message = updateMessage(session, message_id, editor_people_id, new_text)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 404
+        except PermissionError as e:
+            return jsonify({"error": str(e)}), 403
+
+        return jsonify(message_to_dict(message)), 200
+
+@bp.delete("/messages/<int:message_id>")
+@require_public_app_key
+def api_soft_delete_message_public(message_id: int):
+    """
+    DELETE /api/public/messages/<message_id>
+    Suppression logique d'un message (soft delete).
+    """
+    with get_session() as session:
+        msg = session.execute(
+            select(Message).where(Message.id == message_id)
+        ).scalar_one_or_none()
+
+        if not msg:
+            return jsonify({"error": "Message introuvable"}), 404
+
+        ok = deleteMessageSoft(session, message_id)
+        if not ok:
+            return jsonify({"error": "Message introuvable"}), 404
+
+        msg = session.execute(
+            select(Message).where(Message.id == message_id)
+        ).scalar_one_or_none()
+
+        return jsonify(message_to_dict(msg)), 200
+
+@bp.post("/conversations/<int:conversation_id>/leave")
+@require_public_app_key
+def api_leave_conversation_public(conversation_id: int):
+    """
+    POST /api/public/conversations/<conversation_id>/leave
+    Body JSON :
+    {
+      "people_public_id": 1,
+      "soft_delete_own_messages": true,   (optionnel)
+      "delete_empty_conversation": true   (optionnel)
+    }
+    """
+    data = request.get_json(silent=True) or {}
+
+    people_public_id = data.get("people_public_id")
+    soft_delete_own_messages = bool(data.get("soft_delete_own_messages", True))
+    delete_empty_conversation = bool(data.get("delete_empty_conversation", True))
+
+    if people_public_id is None:
+        return jsonify({"error": "people_public_id est requis"}), 400
+
+    try:
+        people_public_id = int(people_public_id)
+    except ValueError:
+        return jsonify({"error": "people_public_id doit être un entier"}), 400
+
+    with get_session() as session:
+        ok = leave_conversation(
+            session,
+            conversation_id=conversation_id,
+            people_public_id=people_public_id,
+            soft_delete_own_messages=soft_delete_own_messages,
+            delete_empty_conversation=delete_empty_conversation,
+        )
+
+        if not ok:
+            return jsonify(
+                {"error": "Conversation introuvable ou personne non membre"}
+            ), 404
+
+        return jsonify({"success": True}), 200
