@@ -10,12 +10,12 @@ if str(SRC_DIR) not in sys.path:
 from tools.logger import setup_logger
 from angelmanSyndromeConnexion import error
 
+from datetime import datetime, timezone
 from angelmanSyndromeConnexion import models  # noqa: F401  <-- important
 from app.db import get_session  # ton helper de session (context manager)
 
-from angelmanSyndromeConnexion.whatsAppDelete import(
-    deleteMessageSoft,
-    leave_conversation,
+from angelmanSyndromeConnexion.whatsAppUpdate import (
+    updateMessage
 )
 
 import traceback
@@ -24,11 +24,10 @@ import traceback
 logger = setup_logger(debug=False)
 
 def run():
-    
+
     with get_session() as session:
-        #deleteMessageSoft(session,6) 
-        leave_conversation(session,1,1)
-    
+        updateMessage(session,5,3,'Changement de contenu')
+
     logger.info("✅ Seed de conversation terminé avec succès !")
 
 

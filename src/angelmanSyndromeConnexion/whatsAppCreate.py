@@ -13,6 +13,40 @@ from sqlalchemy import select, func
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
+def createConversationDump(session,title,is_group,created_at,last_message_at):
+    conv = Conversation(
+        title=title,
+        is_group = is_group,
+        created_at = created_at,
+        last_message_at = last_message_at,
+    )
+    session.add(conv)
+    session.flush()
+    return conv
+
+def createConversationMemberDump(session,conversation_id,people_public_id,last_read_message_id,last_read_at,joined_at):
+    member = ConversationMember(
+        conversation_id = conversation_id,
+        people_public_id = people_public_id,
+        last_read_message_id = last_read_message_id,
+        last_read_at = last_read_at,
+        joined_at = joined_at,
+    )
+    session.add(member)
+    session.flush()  # obtenir les valeurs PK si besoin
+    return member
+
+def createMessageDump(session,conversation_id,sender_people_id,body_text,created_at):
+    message = Message(
+        conversation_id = conversation_id,
+        sender_people_id = sender_people_id,
+        body_text = body_text,
+        created_at = created_at,
+    )
+    session.add(message)
+    session.flush()
+    return message
+
 # Create a new Conversation
 def _createConversation(session,title,is_group) -> Conversation:
     conv = Conversation(

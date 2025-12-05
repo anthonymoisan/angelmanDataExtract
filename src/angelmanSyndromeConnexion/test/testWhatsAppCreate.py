@@ -20,7 +20,11 @@ from angelmanSyndromeConnexion.whatsAppCreate import (
     addMessage,
     addMessageReaction,   
     get_or_create_private_conversation,
+    createConversationDump,
+    createConversationMemberDump,
+    createMessageDump,
 )
+import pandas as pd
 
 from angelmanSyndromeConnexion.whatsAppUpdate import setMemberMetaData
 
@@ -30,7 +34,7 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def run():
+def runManuel():
     with get_session() as session:
         # 1) Créer 3 personnes publiques (T_People_Public)
         alice = PeoplePublic(
@@ -202,7 +206,53 @@ def run():
 
         logger.info("✅ Seed de conversation terminé avec succès !")
 
+def runExcel():
+    wkdir = os.path.dirname(__file__)
+    df = pd.read_excel(f"{wkdir}/../../../data/Picture/Conversation_all_pairs.xlsx")
+    convs = (
+        df[["IdConversation", "title", "created_at", "last_message_at"]]
+        .drop_duplicates()
+        .sort_values("IdConversation")
+    )
 
+    members = (
+        df[["IdConversation", "people_public_id","last_read_message_id", "last_read_at","joined_at"]]
+            .drop_duplicates()
+            .sort_values("IdConversation")
+    )
+
+    messages = (
+        df[["IdConversation","idMessage","sender_people_id","body_text","created_at_message"]]
+    )
+    
+    with get_session() as session:
+        for _, row in convs.iterrows():
+            conv = createConversationDump(
+                session,
+                row["title"],
+                0,
+                row["created_at"],
+                row["last_message_at"],
+            )
+
+        for _, row in members.iterrows():
+            #logger.info(row)
+            memb = createConversationMemberDump(
+                session,
+                row["IdConversation"],
+                row["people_public_id"],
+                row["last_read_message_id"],
+                row["last_read_at"],
+                row["joined_at"],
+            )
+        for _, row in messages.iterrows():
+            message = createMessageDump(
+                session,
+                row["IdConversation"],
+                row["sender_people_id"],
+                row["body_text"],
+                row["created_at_message"],
+            )
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -211,15 +261,16 @@ logger = setup_logger(debug=False)
 def main():
     start = time.time()
     try:
+        wkdir = os.path.dirname(__file__)
+        
+        
         dropTable("T_Message_Attachment",bAngelmanResult=False)
         dropTable("T_Message_Reaction",bAngelmanResult=False)
         dropTable("T_Message",bAngelmanResult=False)
         dropTable("T_Conversation_Member",bAngelmanResult=False)
         dropTable("T_Conversation",bAngelmanResult=False)
-        dropTable("T_People_Public",bAngelmanResult=False)
-        wkdir = os.path.dirname(__file__)
-        script_path = os.path.join(f"{wkdir}/../SQL/","createPublicPeople.sql")
-        createTable(script_path,bAngelmanResult=False)
+        #dropTable("T_People_Public",bAngelmanResult=False)
+        
         script_path = os.path.join(f"{wkdir}/../SQL/","createConversation.sql")
         createTable(script_path,bAngelmanResult=False)
         script_path = os.path.join(f"{wkdir}/../SQL/","createConversationMember.sql")
@@ -230,7 +281,8 @@ def main():
         createTable(script_path,bAngelmanResult=False)
         script_path = os.path.join(f"{wkdir}/../SQL/","createMessageReaction.sql")
         createTable(script_path,bAngelmanResult=False)
-        run()
+    
+        runExcel()
         elapsed = time.time() - start
         logger.info(f"\n✅ Tables for WhatsApp are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)

@@ -3,6 +3,16 @@ from __future__ import annotations
 from angelmanSyndromeConnexion.models.message import Message
 from datetime import datetime, timezone
 
+from datetime import datetime, timezone
+
+from sqlalchemy import select, func
+from sqlalchemy.orm import Session
+
+from angelmanSyndromeConnexion.models.conversation import Conversation
+from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
+from angelmanSyndromeConnexion.models.message import Message
+from angelmanSyndromeConnexion.whatsAppDelete import deleteMessageSoft  # ← adapte le chemin si besoin
+
 def deleteMessageSoft(session, message_id: int) -> bool:
     """
     Suppression logique : conserve le message mais l'indique comme supprimé.
@@ -17,17 +27,6 @@ def deleteMessageSoft(session, message_id: int) -> bool:
 
     session.commit()
     return True
-
-from datetime import datetime, timezone
-
-from sqlalchemy import select, func
-from sqlalchemy.orm import Session
-
-from angelmanSyndromeConnexion.models.conversation import Conversation
-from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
-from angelmanSyndromeConnexion.models.message import Message
-from angelmanSyndromeConnexion.whatsAppDelete import deleteMessageSoft  # ← adapte le chemin si besoin
-
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)

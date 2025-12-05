@@ -35,17 +35,17 @@ def run():
     with get_session() as session:
 
         allPeople = get_all_peoplePublic(session)
-
-        for p in allPeople:
-            convs = get_conversations_for_person_sorted(session, p.id)
-            logger.info("\nConversations triées pour %s :",p.pseudo)
-            for c in convs:
-                logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
-                
-                messages = get_messages_for_conversation(session,c.id)
-                for body, pseudo, created_at in messages:
-                    logger.info(f"---------- [{created_at}] {pseudo} : {body}")
-                
+        p = allPeople[0]
+        #for p in allPeople:
+        convs = get_conversations_for_person_sorted(session, p.id)
+        logger.info("\nConversations triées pour %s :",p.pseudo)
+        for c in convs:
+            logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
+            
+            messages = get_messages_for_conversation(session,c.id)
+            for body, pseudo, created_at in messages:
+                logger.info(f"---------- [{created_at}] {pseudo} : {body}")
+            
 
     logger.info("✅ Seed de conversation terminé avec succès !")
 

@@ -60,9 +60,9 @@ def create_app():
     app.register_blueprint(v5_auth,       url_prefix="/api/v5")
 
     from app.v5.message import bp as messages_private
-    app.register_blueprint(messages_private)
+    app.register_blueprint(messages_private, url_prefix="/api/v5")
     from app.v5.public.proxy_message import bp as proxy_messages
-    app.register_blueprint(proxy_messages)
+    app.register_blueprint(proxy_messages, url_prefix="/api/public")
     
     try:
         from app.debug_routes import bp as debug_bp
