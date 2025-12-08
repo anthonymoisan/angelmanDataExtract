@@ -19,6 +19,7 @@ from angelmanSyndromeConnexion.whatsAppRead import (
     get_all_conversation_members,
     get_all_peoplePublic,
     get_messages_for_conversation,
+    get_member_ids_for_conversation,
 )
 
 import traceback
@@ -34,6 +35,7 @@ def run():
 
     with get_session() as session:
 
+        '''
         allPeople = get_all_peoplePublic(session)
         p = allPeople[0]
         #for p in allPeople:
@@ -45,7 +47,10 @@ def run():
             messages = get_messages_for_conversation(session,c.id)
             for body, pseudo, created_at in messages:
                 logger.info(f"---------- [{created_at}] {pseudo} : {body}")
-            
+        '''
+
+        member_ids = get_member_ids_for_conversation(session,1)  
+        logger.info(member_ids)
 
     logger.info("✅ Seed de conversation terminé avec succès !")
 

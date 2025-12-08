@@ -20,6 +20,7 @@ from angelmanSyndromeConnexion.whatsAppCreate import (
 from angelmanSyndromeConnexion.whatsAppRead import(
     get_conversations_for_person_sorted,
     get_messages_for_conversation,
+    get_member_ids_for_conversation,
 )
 
 from angelmanSyndromeConnexion.whatsAppUpdate import(
@@ -107,11 +108,6 @@ def api_get_or_create_private_conversation():
       "title": "Optionnel"
     }
     """
-    raw = request.get_data(as_text=True)
-    print("== RAW DATA (proxy_message) ==> ", raw)
-
-    data = request.get_json(silent=True) or {}
-    print("== PARSED JSON (proxy_message) ==> ", data)
 
     p1_id = data.get("p1_id")
     p2_id = data.get("p2_id")
@@ -497,3 +493,23 @@ def api_leave_conversation_public(conversation_id: int):
             ), 404
 
         return jsonify({"success": True}), 200
+
+@bp.get("/conversations/<int:conversation_id>/members/ids")
+@require_public_app_key
+def api_get_member_ids_public(conversation_id: int):
+    """
+    GET /api/public/conversations/<conversation_id>/members/ids
+    Retourne la liste des IDs people_public_id présents dans la conversation.
+    """
+    with get_session() as session:
+
+        conv = session.execute(
+            select(Conversation).where(Conversation.id == conversation_id)
+        ).scalar_one_or_none()
+
+        if not conv:
+            return jsonify({"error": "Conversation introuvable"}), 404
+
+        ids = get_member_ids_for_conversation(session, conversation_id)
+
+        return jsonify({"conversation_id": conversation_id, "member_ids": ids}), 200

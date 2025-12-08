@@ -68,3 +68,12 @@ def get_messages_for_conversation(session, conversation_id: int):
     rows = session.execute(stmt).all()
     # rows = list de tuples (body_text, pseudo, created_at)
     return rows
+
+def get_member_ids_for_conversation(session, conversation_id: int) -> list[int]:
+    stmt = (
+        select(ConversationMember.people_public_id)
+        .where(ConversationMember.conversation_id == conversation_id)
+    )
+
+    member_ids = session.scalars(stmt).all()
+    return member_ids
