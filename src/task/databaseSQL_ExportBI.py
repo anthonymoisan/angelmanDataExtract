@@ -218,8 +218,6 @@ def main():
         safe_export(export_mapItaly_Italian, "Map Italy IT")
         safe_export(export_mapGermany_English, "Map Germany EN")
         safe_export(export_mapGermany_Deutsch, "Map Germany DE")
-        safe_export(export_mapBrazil_English, "Map Brazil EN")
-        safe_export(export_mapBrazil_Portuguese, "Map Brazil PT")
         safe_export(export_mapItaly_English, "Map Italy EN")
         safe_export(export_mapItaly_Italian, "Map Italy IT")
         
@@ -236,7 +234,10 @@ def main():
         
         safe_export(export_mapTurkey_English, "Map Turkey EN")
         safe_export(export_mapTurkey_Turkish, "Map Turkey TK")
-
+    
+        safe_export(export_mapBrazil_English, "Map Brazil EN")
+        safe_export(export_mapBrazil_Portuguese, "Map Brazil PT")
+        
         safe_export(export_mapGlobal, "Map Global")
         elapsed = time.time() - start
         logger.info(f"\n✅ All exports are ok with an execution time in {elapsed:.2f} secondes.")

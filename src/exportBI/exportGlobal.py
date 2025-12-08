@@ -60,13 +60,15 @@ def _buildDataFrameMapMapGlobal():
     df_UK = safe_readTable("T_MapUK_English", _transformersMapUK)
     df_Italy = safe_readTable("T_MapItaly_English", _transformersMapItaly)
     df_Germany = safe_readTable("T_MapGermany_English", _transformersMapGermany)
-    df_Brazil = safe_readTable("T_MapBrazil_English", _transformersMapBrazil)"""
+    """
     df_India = safe_readTable("T_MapIndia_English", _transformersMapIndia)
     df_Indonesia = safe_readTable("T_MapIndonesia_English", _transformersMapIndonesia)
     df_Malaysia = safe_readTable("T_MapMalaysia_English", _transformersMapMalaysia)
     df_Greece = safe_readTable("T_MapGreece_English", _transformersMapGreece)
+    df_Brazil = safe_readTable("T_MapBrazil_English", _transformersMapBrazil)
     #df_total = pd.concat([df_France, df_Latam, df_Poland, df_Spain, df_Australia, df_USA, df_Canada, df_UK, df_Italy,df_Germany,df_Brazil,df_India,df_Indonesia], ignore_index=True)
-    df_total = pd.concat([df_France, df_Latam,df_India,df_Indonesia,df_Malaysia, df_Greece], ignore_index=True)
+
+    df_total = pd.concat([df_France, df_Latam,df_India,df_Indonesia,df_Malaysia, df_Greece,df_Brazil], ignore_index=True)
 
     # Filtrage des valeurs valides uniquement si les colonnes existent
     if not df_total.empty:

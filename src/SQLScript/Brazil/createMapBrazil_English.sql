@@ -1,8 +1,11 @@
 CREATE TABLE T_MapBrazil_English (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    indexation INT NOT NULL UNIQUE,
+    internal_id INT NOT NULL UNIQUE,
     gender VARBINARY(512) NOT NULL,
     genotype VARBINARY(512) NOT NULL,
+    region VARBINARY(512) NOT NULL,
+    city VARBINARY(512) NOT NULL,
+    estate VARBINARY(512) NOT NULL,
     age VARBINARY(64) NOT NULL,
     groupAge VARBINARY(512) NOT NULL
 );
