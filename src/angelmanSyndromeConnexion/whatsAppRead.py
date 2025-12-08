@@ -77,3 +77,29 @@ def get_member_ids_for_conversation(session, conversation_id: int) -> list[int]:
 
     member_ids = session.scalars(stmt).all()
     return member_ids
+
+def get_last_message_for_conversation(session, conversation_id: int):
+    """
+    Retourne uniquement le dernier message non supprimé d'une conversation.
+    Inclus :
+      - body_text
+      - pseudo de l'auteur
+      - created_at
+    """
+    stmt = (
+        select(
+            Message.body_text.label("body_text"),
+            PeoplePublic.pseudo.label("pseudo"),
+            Message.created_at.label("created_at"),
+        )
+        .join(PeoplePublic, Message.sender_people_id == PeoplePublic.id)
+        .where(
+            Message.conversation_id == conversation_id,
+            Message.status != "deleted",  # ignorer les soft delete
+        )
+        .order_by(desc(Message.created_at))
+        .limit(1)
+    )
+
+    row = session.execute(stmt).first()
+    return row  # → Row(body_text=..., pseudo=..., created_at=...)

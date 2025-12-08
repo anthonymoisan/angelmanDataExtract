@@ -21,6 +21,7 @@ from angelmanSyndromeConnexion.whatsAppRead import(
     get_conversations_for_person_sorted,
     get_messages_for_conversation,
     get_member_ids_for_conversation,
+    get_last_message_for_conversation,
 )
 
 from angelmanSyndromeConnexion.whatsAppUpdate import(
@@ -513,3 +514,30 @@ def api_get_member_ids_public(conversation_id: int):
         ids = get_member_ids_for_conversation(session, conversation_id)
 
         return jsonify({"conversation_id": conversation_id, "member_ids": ids}), 200
+    
+@bp.get("/conversations/<int:conversation_id>/messages/last")
+@require_public_app_key
+def api_get_last_message_public(conversation_id: int):
+    """
+    GET /api/public/conversations/<conversation_id>/messages/last
+    Retourne le dernier message (non supprimé).
+    """
+    with get_session() as session:
+
+        conv = session.execute(
+            select(Conversation).where(Conversation.id == conversation_id)
+        ).scalar_one_or_none()
+
+        if not conv:
+            return jsonify({"error": "Conversation introuvable"}), 404
+
+        row = get_last_message_for_conversation(session, conversation_id)
+
+        if row is None:
+            return jsonify({"last_message": None}), 200
+
+        return jsonify({
+            "body_text": row.body_text,
+            "pseudo": row.pseudo,
+            "created_at": _dt_to_str(row.created_at)
+        }), 200
