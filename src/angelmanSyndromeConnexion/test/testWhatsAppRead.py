@@ -36,7 +36,6 @@ def run():
 
     with get_session() as session:
 
-        '''
         allPeople = get_all_peoplePublic(session)
         p = allPeople[0]
         #for p in allPeople:
@@ -46,13 +45,13 @@ def run():
             logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
             
             messages = get_messages_for_conversation(session,c.id)
-            for body, pseudo, created_at in messages:
-                logger.info(f"---------- [{created_at}] {pseudo} : {body}")
-        '''
+            for body, pseudo, created_at,sender_id in messages:
+                logger.info(f"---------- [{created_at}] {pseudo} : {body} + {sender_id}")
+        
 
         #member_ids = get_member_ids_for_conversation(session,1)  
-        lastMessage = get_last_message_for_conversation(session,1)
-        logger.info(lastMessage)
+        #lastMessage = get_last_message_for_conversation(session,1)
+        #logger.info(lastMessage)
 
     logger.info("✅ Seed de conversation terminé avec succès !")
 

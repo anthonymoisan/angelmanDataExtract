@@ -59,6 +59,7 @@ def get_messages_for_conversation(session, conversation_id: int):
             Message.body_text,
             PeoplePublic.pseudo,
             Message.created_at,
+            Message.sender_people_id,
         )
         .join(PeoplePublic, Message.sender_people_id == PeoplePublic.id)
         .where(Message.conversation_id == conversation_id)
