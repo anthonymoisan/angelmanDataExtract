@@ -53,6 +53,8 @@ def get_messages_for_conversation(session, conversation_id: int):
       - body_text
       - pseudo de l'auteur
       - created_at
+      - sender_people_id
+      - id du message
     """
     stmt = (
         select(
@@ -60,6 +62,7 @@ def get_messages_for_conversation(session, conversation_id: int):
             PeoplePublic.pseudo,
             Message.created_at,
             Message.sender_people_id,
+            Message.id,
         )
         .join(PeoplePublic, Message.sender_people_id == PeoplePublic.id)
         .where(Message.conversation_id == conversation_id)

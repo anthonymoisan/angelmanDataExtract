@@ -362,6 +362,7 @@ def api_get_messages_for_conversation_private(conversation_id: int):
                 "pseudo": r.pseudo,
                 "sender_people_id" : r.sender_people_id,
                 "created_at": _dt_to_str(r.created_at),
+                "message_id" : r.id,
             }
             for r in rows
         ]
