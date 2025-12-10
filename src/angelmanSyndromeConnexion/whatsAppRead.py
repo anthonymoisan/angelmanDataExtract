@@ -4,7 +4,7 @@ from angelmanSyndromeConnexion.models.conversation import Conversation
 from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
 from angelmanSyndromeConnexion.models.people_public import PeoplePublic
 from angelmanSyndromeConnexion.models.message import Message
-
+from sqlalchemy.orm import aliased
 from sqlalchemy import select, desc, asc
 
 def get_conversations_for_person_sorted(session, people_public_id: int):
@@ -50,27 +50,36 @@ def get_messages_for_conversation(session, conversation_id: int):
     """
     Retourne tous les messages d'une conversation donnée,
     triés par date de création croissante, avec :
-      - body_text
-      - pseudo de l'auteur
-      - created_at
-      - sender_people_id
-      - id du message
+      - body_text               : texte du message
+      - pseudo                  : pseudo de l'auteur
+      - created_at              : date de création
+      - sender_people_id        : auteur
+      - id                      : id du message
+      - reply_to_message_id     : id du message auquel on répond (ou None)
+      - reply_body_text         : texte du message auquel on répond (ou None)
     """
+
+    # alias pour le message auquel on répond
+    ParentMsg = aliased(Message)
+
     stmt = (
         select(
+            Message.id,
             Message.body_text,
             PeoplePublic.pseudo,
             Message.created_at,
             Message.sender_people_id,
-            Message.id,
+            Message.reply_to_message_id,
+            ParentMsg.body_text.label("reply_body_text"),
         )
         .join(PeoplePublic, Message.sender_people_id == PeoplePublic.id)
+        # LEFT JOIN sur le message parent (pour ne pas exclure les messages sans reply)
+        .outerjoin(ParentMsg, Message.reply_to_message_id == ParentMsg.id)
         .where(Message.conversation_id == conversation_id)
         .order_by(asc(Message.created_at))
     )
 
     rows = session.execute(stmt).all()
-    # rows = list de tuples (body_text, pseudo, created_at)
     return rows
 
 def get_member_ids_for_conversation(session, conversation_id: int) -> list[int]:

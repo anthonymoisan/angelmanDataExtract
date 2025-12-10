@@ -16,7 +16,7 @@ def setMemberMetaData(session,member,last_read_message_id):
 def updateMessage(session, message_id: int, editor_people_id: int, new_text: str) -> Message:
     """
     Modifie un message si (et seulement si) l'auteur est celui qui édite.
-
+    - conversation associé
     - message_id : ID du message à modifier
     - editor_people_id : ID de la personne qui tente d’éditer
     - new_text : contenu modifié
@@ -42,7 +42,7 @@ def updateMessage(session, message_id: int, editor_people_id: int, new_text: str
     message.body_text = new_text
     message.status = "edited"
     message.edited_at = utc_now()
-
+    message.conversation.last_message_at = message.edited_at
     session.commit()
     session.refresh(message)
 

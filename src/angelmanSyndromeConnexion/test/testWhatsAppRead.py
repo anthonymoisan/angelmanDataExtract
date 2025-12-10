@@ -41,12 +41,32 @@ def run():
         #for p in allPeople:
         convs = get_conversations_for_person_sorted(session, p.id)
         logger.info("\nConversations triées pour %s :",p.pseudo)
-        for c in convs:
-            logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
-            
-            messages = get_messages_for_conversation(session,c.id)
-            for body, pseudo, created_at,sender_id in messages:
-                logger.info(f"---------- [{created_at}] {pseudo} : {body} + {sender_id}")
+        c = convs[1]
+        #for c in convs:
+        logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
+        
+        messages = get_messages_for_conversation(session,c.id)
+        for (
+            idMessage,
+            body,
+            pseudo,
+            created_at,
+            sender_people_id,
+            reply_to_message_id,
+            reply_body,
+        ) in messages:
+            logger.info(
+                f"---------- [message {idMessage} {created_at}] "
+                f"{pseudo} : {body} (sender={sender_people_id})"
+            )
+
+            if reply_to_message_id is not None:
+                logger.info(
+                    f"----------   ↳ reply à l'id {reply_to_message_id} "
+                    f"avec body : {reply_body}"
+                )
+
+                
         
 
         #member_ids = get_member_ids_for_conversation(session,1)  

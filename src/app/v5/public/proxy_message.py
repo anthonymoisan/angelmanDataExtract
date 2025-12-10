@@ -336,9 +336,12 @@ def api_get_conversations_for_person_public(people_public_id: int):
 def api_get_messages_for_conversation_public(conversation_id: int):
     """
     GET /api/public/conversations/<conversation_id>/messages
-    Retourne la liste des messages de la conversation, triés par created_at ASC.
+    Retourne la liste des messages de la conversation,
+    triés par created_at ASC,
+    avec gestion des messages reply.
     """
     with get_session() as session:
+
         conv = session.execute(
             select(Conversation).where(Conversation.id == conversation_id)
         ).scalar_one_or_none()
@@ -350,11 +353,13 @@ def api_get_messages_for_conversation_public(conversation_id: int):
 
         messages = [
             {
+                "message_id": r.id,
                 "body_text": r.body_text,
                 "pseudo": r.pseudo,
-                "sender_people_id" : r.sender_people_id,
+                "sender_people_id": r.sender_people_id,
                 "created_at": _dt_to_str(r.created_at),
-                "message_id" : r.id,
+                "reply_to_message_id": r.reply_to_message_id,
+                "reply_body_text": r.reply_body_text,
             }
             for r in rows
         ]

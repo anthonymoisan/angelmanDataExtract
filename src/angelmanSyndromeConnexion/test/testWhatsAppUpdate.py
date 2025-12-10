@@ -26,7 +26,7 @@ logger = setup_logger(debug=False)
 def run():
 
     with get_session() as session:
-        updateMessage(session,5,3,'Changement de contenu')
+        updateMessage(session,5,1,'Changement de contenu')
 
     logger.info("✅ Seed de conversation terminé avec succès !")
 
