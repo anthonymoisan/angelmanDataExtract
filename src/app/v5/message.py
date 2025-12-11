@@ -344,10 +344,8 @@ def api_get_conversations_for_person_private(people_public_id: int):
 def api_get_messages_for_conversation_private(conversation_id: int):
     """
     GET /api/v5/conversations/<conversation_id>/messages
-    Retourne la liste des messages de la conversation, triés par created_at ASC.
-    Avec informations de reply :
-      - reply_to_message_id
-      - reply_body_text
+    Retourne la liste des messages de la conversation, triés par created_at ASC,
+    avec informations de reply et réactions.
     """
     with get_session() as session:
         conv = session.execute(
@@ -359,19 +357,35 @@ def api_get_messages_for_conversation_private(conversation_id: int):
 
         rows = get_messages_for_conversation(session, conversation_id)
 
-        messages = [
-            {
-                "message_id": r.id,
-                "body_text": r.body_text,
-                "pseudo": r.pseudo,
-                "sender_people_id": r.sender_people_id,
-                "created_at": _dt_to_str(r.created_at),
-                "reply_to_message_id": r.reply_to_message_id,
-                "reply_body_text": r.reply_body_text,
-            }
-            for r in rows
-        ]
+        # On agrège les réactions par message_id
+        messages_by_id: dict[int, dict] = {}
 
+        for r in rows:
+            msg = messages_by_id.get(r.message_id)
+            if msg is None:
+                msg = {
+                    "message_id": r.message_id,
+                    "body_text": r.body_text,
+                    "pseudo": r.author_pseudo,
+                    "sender_people_id": r.sender_people_id,
+                    "created_at": _dt_to_str(r.created_at),
+                    "reply_to_message_id": r.reply_to_message_id,
+                    "reply_body_text": r.reply_body_text,
+                    "reactions": [],  # liste de réactions
+                }
+                messages_by_id[r.message_id] = msg
+
+            # Ajouter une réaction si présente
+            if getattr(r, "reaction_emoji", None) is not None:
+                msg["reactions"].append(
+                    {
+                        "emoji": r.reaction_emoji,
+                        "people_public_id": r.reaction_people_id,
+                        "pseudo": r.reaction_pseudo,
+                    }
+                )
+
+        messages = list(messages_by_id.values())
         return jsonify(messages), 200
 
 @bp.post("/conversations/<int:conversation_id>/members/<int:people_public_id>/metadata")

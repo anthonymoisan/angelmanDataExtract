@@ -45,26 +45,20 @@ def run():
         #for c in convs:
         logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
         
-        messages = get_messages_for_conversation(session,c.id)
-        for (
-            idMessage,
-            body,
-            pseudo,
-            created_at,
-            sender_people_id,
-            reply_to_message_id,
-            reply_body,
-        ) in messages:
-            logger.info(
-                f"---------- [message {idMessage} {created_at}] "
-                f"{pseudo} : {body} (sender={sender_people_id})"
-            )
+        rows = get_messages_for_conversation(session, c.id)
 
-            if reply_to_message_id is not None:
-                logger.info(
-                    f"----------   ↳ reply à l'id {reply_to_message_id} "
-                    f"avec body : {reply_body}"
+        for r in rows:
+            print(
+                f"[{r.message_id}] {r.author_pseudo} : {r.body_text} "
+                f"(reply_to={r.reply_to_message_id}, reply_body={r.reply_body_text})"
+            )
+            if r.reaction_emoji is not None:
+                print(
+                    f"   -> réaction {r.reaction_emoji} par {r.reaction_pseudo} "
+                    f"(people_id={r.reaction_people_id})"
                 )
+
+
 
                 
         

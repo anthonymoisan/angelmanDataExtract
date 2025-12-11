@@ -6,6 +6,8 @@ from angelmanSyndromeConnexion.models.people_public import PeoplePublic
 from angelmanSyndromeConnexion.models.message import Message
 from sqlalchemy.orm import aliased
 from sqlalchemy import select, desc, asc
+from datetime import datetime
+from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
 
 def get_conversations_for_person_sorted(session, people_public_id: int):
     """
@@ -46,35 +48,43 @@ def get_all_peoplePublic(session):
     '''
     return session.scalars(select(PeoplePublic)).all()
 
+
 def get_messages_for_conversation(session, conversation_id: int):
     """
     Retourne tous les messages d'une conversation donnée,
     triés par date de création croissante, avec :
-      - body_text               : texte du message
-      - pseudo                  : pseudo de l'auteur
-      - created_at              : date de création
-      - sender_people_id        : auteur
-      - id                      : id du message
-      - reply_to_message_id     : id du message auquel on répond (ou None)
-      - reply_body_text         : texte du message auquel on répond (ou None)
+      - message_id
+      - body_text
+      - author_pseudo
+      - created_at
+      - sender_people_id
+      - reply_to_message_id
+      - reply_body_text
+      - reaction_emoji
+      - reaction_pseudo
+      - reaction_people_id
     """
 
-    # alias pour le message auquel on répond
-    ParentMsg = aliased(Message)
+    ParentMsg = aliased(Message)          # pour le message auquel on répond
+    ReactionAuthor = aliased(PeoplePublic)  # auteur de la réaction
 
     stmt = (
         select(
-            Message.id,
-            Message.body_text,
-            PeoplePublic.pseudo,
-            Message.created_at,
-            Message.sender_people_id,
-            Message.reply_to_message_id,
+            Message.id.label("message_id"),
+            Message.body_text.label("body_text"),
+            PeoplePublic.pseudo.label("author_pseudo"),
+            Message.created_at.label("created_at"),
+            Message.sender_people_id.label("sender_people_id"),
+            Message.reply_to_message_id.label("reply_to_message_id"),
             ParentMsg.body_text.label("reply_body_text"),
+            MessageReaction.emoji.label("reaction_emoji"),
+            ReactionAuthor.pseudo.label("reaction_pseudo"),
+            MessageReaction.people_public_id.label("reaction_people_id"),
         )
         .join(PeoplePublic, Message.sender_people_id == PeoplePublic.id)
-        # LEFT JOIN sur le message parent (pour ne pas exclure les messages sans reply)
         .outerjoin(ParentMsg, Message.reply_to_message_id == ParentMsg.id)
+        .outerjoin(MessageReaction, MessageReaction.message_id == Message.id)
+        .outerjoin(ReactionAuthor, MessageReaction.people_public_id == ReactionAuthor.id)
         .where(Message.conversation_id == conversation_id)
         .order_by(asc(Message.created_at))
     )

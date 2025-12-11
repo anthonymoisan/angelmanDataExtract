@@ -42,7 +42,6 @@ def updateMessage(session, message_id: int, editor_people_id: int, new_text: str
     message.body_text = new_text
     message.status = "edited"
     message.edited_at = utc_now()
-    message.conversation.last_message_at = message.edited_at
     session.commit()
     session.refresh(message)
 
