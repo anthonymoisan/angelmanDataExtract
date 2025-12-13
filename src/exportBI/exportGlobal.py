@@ -72,7 +72,7 @@ def _buildDataFrameMapMapGlobal():
 
     # Filtrage des valeurs valides uniquement si les colonnes existent
     if not df_total.empty:
-        df_total = df_total[df_total["genotype"].isin(["Deletion", "Clinical", "Mutation", "UPD", "ICD", "Mosaic"])]
+        df_total = df_total[df_total["genotype"].isin(["I don't know","Deletion", "Clinical", "Mutation", "UPD", "ICD", "Mosaic"])]
         df_total = df_total[df_total["gender"].isin(["M", "F"])] 
         df_total["age"] = pd.to_numeric(df_total["age"], errors="coerce")
         df_total = df_total[df_total["age"].between(0, 120)]

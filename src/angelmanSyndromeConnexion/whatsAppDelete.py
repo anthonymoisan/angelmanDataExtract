@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from angelmanSyndromeConnexion.models.conversation import Conversation
 from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
 from angelmanSyndromeConnexion.models.message import Message
+from angelmanSyndromeConnexion.models.people_public import PeoplePublic
 
 def deleteMessageSoft(session, message_id: int) -> bool:
     """
@@ -67,6 +68,11 @@ def leave_conversation(
     if not member:
         return False
 
+    person = session.get(
+        PeoplePublic,
+        people_public_id
+    )
+
     # 2) Soft-delete de tous ses messages s'il le faut
     if soft_delete_own_messages:
         messages = (
@@ -88,15 +94,9 @@ def leave_conversation(
     session.delete(member)
     session.commit()
 
-    # 4) Recalculer last_message_at à partir des messages NON supprimés
-    last_msg_dt = session.execute(
-        select(func.max(Message.created_at)).where(
-            Message.conversation_id == conversation_id,
-            Message.status != "deleted",
-        )
-    ).scalar_one_or_none()
-
-    conv.last_message_at = last_msg_dt
+    # 4) Mise à jour des données de la conversation
+    conv.last_message_at = utc_now()
+    conv.title = person.pseudo + "a quitté la conversation"    
 
     # 5) Optionnel : si plus de membres + plus de messages non supprimés → supprimer la conversation
     if delete_empty_conversation:
@@ -111,3 +111,5 @@ def leave_conversation(
 
     session.commit()
     return True
+
+
