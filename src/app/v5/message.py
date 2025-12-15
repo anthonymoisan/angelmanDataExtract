@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from flask import Blueprint, request, jsonify
-from sqlalchemy import select
+from sqlalchemy import select,func
 
 from app.db import get_session
 
@@ -338,9 +338,11 @@ def api_get_conversations_for_person_private(people_public_id: int):
 def api_get_messages_for_conversation_private(conversation_id: int):
     """
     GET /api/v5/conversations/<conversation_id>/messages
-    Retourne la liste des messages de la conversation, triés par created_at ASC,
-    avec informations de reply et réactions.
+    Retourne la liste des messages triés ASC + reply + réactions.
+    Ajoute is_seen (Option A) sur les messages envoyés par le viewer (1-1).
     """
+    viewer_people_id = request.args.get("viewer_people_id", type=int)
+
     with get_session() as session:
         conv = session.execute(
             select(Conversation).where(Conversation.id == conversation_id)
@@ -349,9 +351,21 @@ def api_get_messages_for_conversation_private(conversation_id: int):
         if not conv:
             return jsonify({"error": "Conversation introuvable"}), 404
 
+        # --- Determine other_last_read_message_id (seulement 1–1 et viewer connu) ---
+        other_last_read_message_id = 0
+        if viewer_people_id is not None and not conv.is_group:
+            # Récupère l'autre membre (celui != viewer)
+            other_member = session.execute(
+                select(ConversationMember)
+                .where(ConversationMember.conversation_id == conversation_id)
+                .where(ConversationMember.people_public_id != viewer_people_id)
+            ).scalars().first()
+
+            if other_member and other_member.last_read_message_id:
+                other_last_read_message_id = int(other_member.last_read_message_id)
+
         rows = get_messages_for_conversation(session, conversation_id)
 
-        # On agrège les réactions par message_id
         messages_by_id: dict[int, dict] = {}
 
         for r in rows:
@@ -365,11 +379,19 @@ def api_get_messages_for_conversation_private(conversation_id: int):
                     "created_at": _dt_to_str(r.created_at),
                     "reply_to_message_id": r.reply_to_message_id,
                     "reply_body_text": r.reply_body_text,
-                    "reactions": [],  # liste de réactions
+                    "reactions": [],
                 }
+
+                # ✅ Ajout "vu" (Option A) : seulement si viewer connu et message envoyé par viewer
+                if viewer_people_id is not None and not conv.is_group:
+                    if r.sender_people_id == viewer_people_id:
+                        msg["is_seen"] = (r.message_id <= other_last_read_message_id)
+                    else:
+                        # tu peux omettre ce champ, ou le mettre à None
+                        msg["is_seen"] = None
+
                 messages_by_id[r.message_id] = msg
 
-            # Ajouter une réaction si présente
             if getattr(r, "reaction_emoji", None) is not None:
                 msg["reactions"].append(
                     {
@@ -378,9 +400,56 @@ def api_get_messages_for_conversation_private(conversation_id: int):
                         "pseudo": r.reaction_pseudo,
                     }
                 )
-
         messages = list(messages_by_id.values())
         return jsonify(messages), 200
+        
+@bp.post("/conversations/<int:conversation_id>/read")
+@ratelimit(20)
+@require_basic
+def api_mark_conversation_read_private(conversation_id: int):
+    """
+    POST /api/v5/conversations/<conversation_id>/read
+    Body:
+    {
+      "last_read_message_id": <int>
+    }
+
+    Met à jour ConversationMember.last_read_message_id / last_read_at
+    pour l'utilisateur connecté. Ne recule jamais.
+    """
+    payload = request.get_json(silent=True) or {}
+    people_public_id = payload.get("people_public_id")
+    last_read_message_id = payload.get("last_read_message_id")
+
+    if not isinstance(people_public_id, int) or not isinstance(last_read_message_id, int):
+        return jsonify({"error": "people_public_id et last_read_message_id sont requis"}), 400
+
+    with get_session() as session:
+        # Vérifie conversation
+        conv = session.execute(
+            select(Conversation).where(Conversation.id == conversation_id)
+        ).scalar_one_or_none()
+        if not conv:
+            return jsonify({"error": "Conversation introuvable"}), 404
+
+        # Vérifie membership
+        cm = session.execute(
+            select(ConversationMember)
+            .where(ConversationMember.conversation_id == conversation_id)
+            .where(ConversationMember.people_public_id == people_public_id)
+        ).scalar_one_or_none()
+
+        if not cm:
+            return jsonify({"error": "Membre introuvable dans cette conversation"}), 404
+
+        # ✅ ne jamais reculer
+        current = int(cm.last_read_message_id or 0)
+        if last_read_message_id > current:
+            cm.last_read_message_id = last_read_message_id
+            cm.last_read_at = func.now()
+            session.commit()
+
+        return jsonify({"ok": True}), 200
 
 @bp.post("/conversations/<int:conversation_id>/members/<int:people_public_id>/metadata")
 @ratelimit(3)
