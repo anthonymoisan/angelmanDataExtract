@@ -65,6 +65,9 @@ def get_or_create_private_conversation(session, p1_id: int, p2_id: int, title: s
     Sinon la crée puis renvoie la nouvelle conversation.
     """
 
+    if p1_id == p2_id:
+        raise ValueError("Impossible de créer une conversation privée avec soi-même (p1_id == p2_id)")
+
     # 1️⃣ Sélections directes (sans .subquery())
     sub1 = select(ConversationMember.conversation_id).where(
         ConversationMember.people_public_id == p1_id
@@ -184,4 +187,76 @@ def addMessageReaction(session,message_id, people_public_id,emoji) -> MessageRea
     session.flush()
     return messageReaction
 
+def addOrToggleMessageReaction(session, message_id: int, people_public_id: int, emoji: str) -> dict:
+    """
+    Si la réaction existe → la SUPPRIME.
+    Sinon → la CRÉE.
+
+    Retourne un dict :
+    {
+        "action": "added" | "removed",
+        "reaction": MessageReaction | None
+    }
+    """
+
+    # 1️⃣ Vérifier si la réaction existe déjà
+    existing = session.execute(
+        select(MessageReaction).where(
+            MessageReaction.message_id == message_id,
+            MessageReaction.people_public_id == people_public_id,
+            MessageReaction.emoji == emoji,
+        )
+    ).scalar_one_or_none()
+
+    if existing:
+        # 2️⃣ Elle existe → on la supprime (toggle OFF)
+        session.delete(existing)
+        session.commit()
+        return {"action": "removed", "reaction": None}
+
+    # 3️⃣ Sinon → on la crée (toggle ON)
+    reaction = MessageReaction(
+        message_id=message_id,
+        people_public_id=people_public_id,
+        emoji=emoji,
+        created_at=utc_now(),
+    )
+    session.add(reaction)
+    session.commit()
+    session.refresh(reaction)
+
+    return {"action": "added", "reaction": reaction}
+
+def toggleMessageReaction(session, message_id: int, people_public_id: int, emoji: str) -> tuple[bool, MessageReaction | None]:
+    """
+    Toggle réaction :
+      - si existe -> supprime et retourne (True, None)
+      - sinon -> crée et retourne (False, reaction)
+
+    Retour:
+      deleted (bool), reaction (MessageReaction|None)
+    """
+    existing = session.execute(
+        select(MessageReaction).where(
+            MessageReaction.message_id == message_id,
+            MessageReaction.people_public_id == people_public_id,
+            MessageReaction.emoji == emoji,
+        )
+    ).scalar_one_or_none()
+
+    if existing:
+        session.delete(existing)
+        session.commit()
+        return True, None
+
+    reaction = MessageReaction(
+        message_id=message_id,
+        people_public_id=people_public_id,
+        emoji=emoji,
+        created_at=utc_now(),
+    )
+    session.add(reaction)
+    session.commit()
+    session.refresh(reaction)
+    return False, reaction
 

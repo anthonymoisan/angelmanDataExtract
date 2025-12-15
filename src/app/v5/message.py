@@ -15,7 +15,7 @@ from angelmanSyndromeConnexion.whatsAppCreate import (
     get_or_create_private_conversation,
     addConversationMember,
     addMessage,
-    addMessageReaction,
+    toggleMessageReaction,
 )
 from angelmanSyndromeConnexion.whatsAppRead import(
     get_conversations_for_person_sorted,
@@ -118,12 +118,16 @@ def api_get_or_create_private_conversation_private():
     p2_id = data.get("p2_id")
     title = data.get("title")
 
+    if p1_id == p2_id:
+        return jsonify({"error": "p1_id et p2_id doivent être différents"}), 400
+
     if p1_id is None or p2_id is None:
         return jsonify({"error": "p1_id et p2_id sont requis"}), 400
 
     try:
         p1_id = int(p1_id)
         p2_id = int(p2_id)
+        title = f"Conversation {p1_id}-{p2_id}"
     except ValueError:
         return jsonify({"error": "p1_id et p2_id doivent être des entiers"}), 400
 
@@ -275,14 +279,6 @@ def api_add_message_private(conversation_id: int):
 @ratelimit(3)
 @require_basic
 def api_add_message_reaction_private(message_id: int):
-    """
-    POST /api/private/messages/<message_id>/reactions
-    Body JSON :
-    {
-      "people_public_id": 123,
-      "emoji": "👍"
-    }
-    """
     data = request.get_json(silent=True) or {}
     people_public_id = data.get("people_public_id")
     emoji = data.get("emoji")
@@ -296,27 +292,25 @@ def api_add_message_reaction_private(message_id: int):
         return jsonify({"error": "people_public_id doit être un entier"}), 400
 
     with get_session() as session:
-        msg = session.execute(
-            select(Message).where(Message.id == message_id)
-        ).scalar_one_or_none()
+        msg = session.execute(select(Message).where(Message.id == message_id)).scalar_one_or_none()
         if not msg:
             return jsonify({"error": "Message introuvable"}), 404
 
-        person = session.execute(
-            select(PeoplePublic).where(PeoplePublic.id == people_public_id)
-        ).scalar_one_or_none()
+        person = session.execute(select(PeoplePublic).where(PeoplePublic.id == people_public_id)).scalar_one_or_none()
         if not person:
             return jsonify({"error": "PeoplePublic introuvable"}), 404
 
-        reaction = addMessageReaction(
-            session,
-            message_id=message_id,
-            people_public_id=people_public_id,
-            emoji=emoji,
-        )
+        deleted, reaction = toggleMessageReaction(session, message_id, people_public_id, emoji)
 
-        return jsonify(reaction_to_dict(reaction)), 201
+        if deleted:
+            return jsonify({
+                "message_id": message_id,
+                "people_public_id": people_public_id,
+                "emoji": emoji,
+                "deleted": True
+            }), 200
 
+        return jsonify({**reaction_to_dict(reaction), "deleted": False}), 201
 @bp.get("/people/<int:people_public_id>/conversations")
 @ratelimit(3)
 @require_basic
