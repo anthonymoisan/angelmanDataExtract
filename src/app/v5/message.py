@@ -614,17 +614,23 @@ def api_get_member_ids_private(conversation_id: int):
         ids = get_member_ids_for_conversation(session, conversation_id)
 
         return jsonify({"conversation_id": conversation_id, "member_ids": ids}), 200
-    
+
+
 @bp.get("/conversations/<int:conversation_id>/messages/last")
 @ratelimit(5)
 @require_basic
 def api_get_last_message_private(conversation_id: int):
     """
     GET /api/v5/conversations/<conversation_id>/messages/last
-    Retourne le dernier message (non supprimé).
-    """
-    with get_session() as session:
+    Optionnel: ?viewer_people_id=<id>
 
+    - Retourne le dernier message (non supprimé)
+    - Ajoute is_seen (Option A) si viewer_people_id est fourni et conversation non group
+    - Refuse (403) si viewer_people_id n'est pas membre de la conversation
+    """
+    viewer_people_id = request.args.get("viewer_people_id", type=int)
+
+    with get_session() as session:
         conv = session.execute(
             select(Conversation).where(Conversation.id == conversation_id)
         ).scalar_one_or_none()
@@ -632,13 +638,47 @@ def api_get_last_message_private(conversation_id: int):
         if not conv:
             return jsonify({"error": "Conversation introuvable"}), 404
 
-        row = get_last_message_for_conversation(session, conversation_id)
+        # ✅ Sécurité : si viewer_people_id est fourni, il doit être membre
+        viewer_member = None
+        if viewer_people_id is not None:
+            viewer_member = session.execute(
+                select(ConversationMember).where(
+                    ConversationMember.conversation_id == conversation_id,
+                    ConversationMember.people_public_id == viewer_people_id,
+                )
+            ).scalar_one_or_none()
 
+            if not viewer_member:
+                return jsonify({"error": "forbidden (viewer not member)"}), 403
+
+        row = get_last_message_for_conversation(session, conversation_id)
         if row is None:
             return jsonify({"last_message": None}), 200
 
+        # ✅ Calcul "vu" (Option A)
+        is_seen = None
+
+        if viewer_people_id is not None and not conv.is_group:
+            # l'autre membre = n'importe quel membre différent du viewer
+            other_member = session.execute(
+                select(ConversationMember).where(
+                    ConversationMember.conversation_id == conversation_id,
+                    ConversationMember.people_public_id != viewer_people_id,
+                )
+            ).scalars().first()
+
+            other_last_read_message_id = int(other_member.last_read_message_id or 0) if other_member else 0
+
+            # is_seen uniquement si le dernier message a été envoyé par le viewer
+            sender_people_id = row.sender_people_id
+            if sender_people_id is not None and int(sender_people_id) == int(viewer_people_id):
+                is_seen = int(row.message_id) <= other_last_read_message_id
+
         return jsonify({
+            "message_id": int(row.message_id),
+            "sender_people_id": int(row.sender_people_id) if row.sender_people_id is not None else None,
             "body_text": row.body_text,
             "pseudo": row.pseudo,
-            "created_at": _dt_to_str(row.created_at)
+            "created_at": _dt_to_str(row.created_at),
+            "is_seen": is_seen,  # bool | null
         }), 200

@@ -101,16 +101,12 @@ def get_member_ids_for_conversation(session, conversation_id: int) -> list[int]:
     member_ids = session.scalars(stmt).all()
     return member_ids
 
+
 def get_last_message_for_conversation(session, conversation_id: int):
-    """
-    Retourne uniquement le dernier message non supprimé d'une conversation.
-    Inclus :
-      - body_text
-      - pseudo de l'auteur
-      - created_at
-    """
     stmt = (
         select(
+            Message.id.label("message_id"),
+            Message.sender_people_id.label("sender_people_id"),
             Message.body_text.label("body_text"),
             PeoplePublic.pseudo.label("pseudo"),
             Message.created_at.label("created_at"),
@@ -118,11 +114,12 @@ def get_last_message_for_conversation(session, conversation_id: int):
         .join(PeoplePublic, Message.sender_people_id == PeoplePublic.id)
         .where(
             Message.conversation_id == conversation_id,
-            Message.status != "deleted",  # ignorer les soft delete
+            Message.status != "deleted",
         )
-        .order_by(desc(Message.created_at))
+        .order_by(desc(Message.created_at), desc(Message.id))
         .limit(1)
     )
 
-    row = session.execute(stmt).first()
-    return row  # → Row(body_text=..., pseudo=..., created_at=...)
+    # ✅ mapping: accès garanti par row["sender_people_id"]
+    row = session.execute(stmt).mappings().first()
+    return row  # soit None, soit un dict-like  # → Row(message_id=..., sender_people_id=..., body_text=..., pseudo=..., created_at=...)
