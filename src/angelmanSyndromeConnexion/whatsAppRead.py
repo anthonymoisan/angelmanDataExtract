@@ -144,3 +144,96 @@ def get_unread_count(session, conversation_id: int, viewer_people_id: int) -> in
         Message.sender_people_id != viewer_people_id,  # optionnel mais conseillé
     )
     return int(session.execute(stmt).scalar_one())
+
+def get_conversations_summary_for_person(session, viewer_people_id: int):
+    CM_viewer = aliased(ConversationMember)
+    CM_other = aliased(ConversationMember)
+    PP_sender = aliased(PeoplePublic)
+    LM = aliased(Message)
+
+    last_msg_id_sq = (
+        select(
+            Message.conversation_id.label("conv_id"),
+            func.max(Message.id).label("last_message_id"),
+        )
+        .where(Message.status != "deleted")
+        .group_by(Message.conversation_id)
+        .subquery()
+    )
+
+    unread_count_sq = (
+        select(func.count(Message.id))
+        .where(
+            Message.conversation_id == Conversation.id,
+            Message.status != "deleted",
+            Message.id > func.coalesce(CM_viewer.last_read_message_id, 0),
+            Message.sender_people_id != viewer_people_id,
+        )
+        .correlate(Conversation, CM_viewer)
+        .scalar_subquery()
+    )
+
+    stmt = (
+        select(
+            Conversation.id.label("conversation_id"),
+            Conversation.title.label("title"),
+            Conversation.is_group.label("is_group"),
+            Conversation.created_at.label("created_at"),
+            Conversation.last_message_at.label("last_message_at"),
+
+            unread_count_sq.label("unread_count"),
+
+            CM_other.people_public_id.label("other_people_id"),
+            CM_other.last_read_message_id.label("other_last_read_message_id"),
+
+            LM.id.label("last_message_id"),
+            LM.sender_people_id.label("last_sender_people_id"),
+            LM.body_text.label("last_body_text"),
+            LM.created_at.label("last_created_at"),
+            PP_sender.pseudo.label("last_sender_pseudo"),
+        )
+        .join(CM_viewer,
+              and_(CM_viewer.conversation_id == Conversation.id,
+                   CM_viewer.people_public_id == viewer_people_id))
+        .outerjoin(CM_other,
+                   and_(CM_other.conversation_id == Conversation.id,
+                        CM_other.people_public_id != viewer_people_id))
+        .outerjoin(last_msg_id_sq, last_msg_id_sq.c.conv_id == Conversation.id)
+        .outerjoin(LM, LM.id == last_msg_id_sq.c.last_message_id)
+        .outerjoin(PP_sender, PP_sender.id == LM.sender_people_id)
+        .order_by(Conversation.last_message_at.desc(), Conversation.created_at.desc())
+    )
+
+    rows = session.execute(stmt).all()
+
+    out = []
+    for r in rows:
+        # Option A : is_seen seulement si dernier message envoyé par viewer (en 1-1)
+        is_seen = None
+        if (r.is_group is False and r.last_message_id is not None):
+            if (r.last_sender_people_id is not None and int(r.last_sender_people_id) == int(viewer_people_id)):
+                other_last = int(r.other_last_read_message_id or 0)
+                is_seen = int(r.last_message_id) <= other_last
+
+        out.append({
+            "id": int(r.conversation_id),
+            "title": r.title,
+            "is_group": bool(r.is_group),
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "last_message_at": r.last_message_at.isoformat() if r.last_message_at else None,
+
+            "unread_count": int(r.unread_count or 0),
+
+            "other_people_id": int(r.other_people_id) if r.other_people_id is not None and not r.is_group else None,
+
+            "last_message": None if r.last_message_id is None else {
+                "message_id": int(r.last_message_id),
+                "sender_people_id": int(r.last_sender_people_id) if r.last_sender_people_id is not None else None,
+                "pseudo": r.last_sender_pseudo or "",
+                "body_text": r.last_body_text or "",
+                "created_at": r.last_created_at.isoformat() if r.last_created_at else None,
+                "is_seen": is_seen,  # bool | None
+            }
+        })
+
+    return out

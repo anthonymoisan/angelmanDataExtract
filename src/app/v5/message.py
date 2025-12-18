@@ -22,6 +22,8 @@ from angelmanSyndromeConnexion.whatsAppRead import(
     get_messages_for_conversation,
     get_member_ids_for_conversation,
     get_last_message_for_conversation,
+    get_unread_count,
+    get_conversations_summary_for_person,
 )
 
 from angelmanSyndromeConnexion.whatsAppUpdate import(
@@ -682,3 +684,61 @@ def api_get_last_message_private(conversation_id: int):
             "created_at": _dt_to_str(row.created_at),
             "is_seen": is_seen,  # bool | null
         }), 200
+
+@bp.get("/people/<int:people_public_id>/conversationsUnRead")
+@ratelimit(5)
+@require_basic
+def api_get_conversations_for_person_privateUnRead(people_public_id: int):
+    with get_session() as session:
+        person = session.execute(
+            select(PeoplePublic).where(PeoplePublic.id == people_public_id)
+        ).scalar_one_or_none()
+        if not person:
+            return jsonify({"error": "PeoplePublic introuvable"}), 404
+
+        conversations = get_conversations_for_person_sorted(session, people_public_id)
+
+        out = []
+        for c in conversations:
+            unread = get_unread_count(session, c.id, people_public_id)
+            out.append({**conversation_to_dict(c), "unread_count": unread})
+
+        return jsonify(out), 200
+    
+
+@bp.get("/people/<int:people_public_id>/conversationsSummary")
+@ratelimit(5)
+@require_basic
+def api_get_conversations_summary_private(people_public_id: int):
+    """
+    GET /api/v5/people/<people_public_id>/conversationsSummary
+
+    Retourne une liste prête à afficher :
+      - conversation fields
+      - unread_count
+      - other_people_id (si 1–1)
+      - last_message {
+          message_id,
+          sender_people_id,
+          pseudo,
+          body_text,
+          created_at,
+          is_seen
+        }
+    """
+    with get_session() as session:
+        # 🔒 Sécurité : vérifier que la personne existe
+        person = session.execute(
+            select(PeoplePublic).where(PeoplePublic.id == people_public_id)
+        ).scalar_one_or_none()
+
+        if not person:
+            return jsonify({"error": "PeoplePublic introuvable"}), 404
+
+        # ✅ Appel UNIQUE à la couche métier
+        data = get_conversations_summary_for_person(
+            session,
+            viewer_people_id=people_public_id,
+        )
+
+        return jsonify(data), 200
