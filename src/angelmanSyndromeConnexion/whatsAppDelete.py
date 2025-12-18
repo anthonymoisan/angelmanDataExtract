@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from angelmanSyndromeConnexion.models.message import Message
-from datetime import datetime, timezone
-
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
@@ -22,14 +21,14 @@ def deleteMessageSoft(session, message_id: int) -> bool:
         return False
 
     msg.status = "deleted"
-    msg.deleted_at = datetime.now(timezone.utc)
+    msg.deleted_at = utc_now()
     msg.body_text = "Message supprimé"
 
     session.commit()
     return True
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(ZoneInfo("Europe/Paris"))
 
 
 def leave_conversation(

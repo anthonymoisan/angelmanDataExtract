@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from angelmanSyndromeConnexion.models.message import Message
 from sqlalchemy import select
+from zoneinfo import ZoneInfo
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(ZoneInfo("Europe/Paris"))
 
 #update des metaData pour un membre donné
 def setMemberMetaData(session,member,last_read_message_id):

@@ -5,8 +5,7 @@ from angelmanSyndromeConnexion.models.conversationMember import ConversationMemb
 from angelmanSyndromeConnexion.models.people_public import PeoplePublic
 from angelmanSyndromeConnexion.models.message import Message
 from sqlalchemy.orm import aliased
-from sqlalchemy import select, desc, asc
-from datetime import datetime
+from sqlalchemy import select, desc, asc, func, and_
 from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
 
 def get_conversations_for_person_sorted(session, people_public_id: int):
@@ -123,3 +122,25 @@ def get_last_message_for_conversation(session, conversation_id: int):
     # ✅ mapping: accès garanti par row["sender_people_id"]
     row = session.execute(stmt).mappings().first()
     return row  # soit None, soit un dict-like  # → Row(message_id=..., sender_people_id=..., body_text=..., pseudo=..., created_at=...)
+
+
+def get_unread_count(session, conversation_id: int, viewer_people_id: int) -> int:
+    member = session.execute(
+        select(ConversationMember).where(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.people_public_id == viewer_people_id,
+        )
+    ).scalar_one_or_none()
+
+    if not member:
+        raise PermissionError("viewer_people_id n'est pas membre de la conversation")
+
+    last_read_id = int(member.last_read_message_id or 0)
+
+    stmt = select(func.count()).select_from(Message).where(
+        Message.conversation_id == conversation_id,
+        Message.status != "deleted",
+        Message.id > last_read_id,
+        Message.sender_people_id != viewer_people_id,  # optionnel mais conseillé
+    )
+    return int(session.execute(stmt).scalar_one())

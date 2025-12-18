@@ -6,12 +6,13 @@ from angelmanSyndromeConnexion.models.conversation import Conversation
 from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
 from angelmanSyndromeConnexion.models.message import Message
 from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select, func
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(ZoneInfo("Europe/Paris"))
 
 def createConversationDump(session,title,is_group,created_at,last_message_at):
     conv = Conversation(

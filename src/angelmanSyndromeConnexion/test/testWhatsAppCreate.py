@@ -11,7 +11,8 @@ from tools.logger import setup_logger
 from tools.utilsTools import dropTable,createTable
 from angelmanSyndromeConnexion import error
 
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from angelmanSyndromeConnexion import models  # noqa: F401  <-- important
 from angelmanSyndromeConnexion.models.people_public import PeoplePublic
 from app.db import get_session  # ton helper de session (context manager)
@@ -31,7 +32,7 @@ from angelmanSyndromeConnexion.whatsAppUpdate import setMemberMetaData
 import traceback
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(ZoneInfo("Europe/Paris"))
 
 
 def runManuel():
