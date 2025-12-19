@@ -147,8 +147,11 @@ def get_unread_count(session, conversation_id: int, viewer_people_id: int) -> in
 
 def get_conversations_summary_for_person(session, viewer_people_id: int):
     CM_viewer = aliased(ConversationMember)
-    CM_other = aliased(ConversationMember)
-    PP_sender = aliased(PeoplePublic)
+    CM_other  = aliased(ConversationMember)
+
+    PP_sender = aliased(PeoplePublic)   # pseudo auteur du dernier msg
+    PP_other  = aliased(PeoplePublic)   # pseudo de l'autre membre
+
     LM = aliased(Message)
 
     last_msg_id_sq = (
@@ -185,6 +188,7 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
 
             CM_other.people_public_id.label("other_people_id"),
             CM_other.last_read_message_id.label("other_last_read_message_id"),
+            PP_other.pseudo.label("other_pseudo"),  # ✅ IMPORTANT
 
             LM.id.label("last_message_id"),
             LM.sender_people_id.label("last_sender_people_id"),
@@ -192,12 +196,21 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
             LM.created_at.label("last_created_at"),
             PP_sender.pseudo.label("last_sender_pseudo"),
         )
-        .join(CM_viewer,
-              and_(CM_viewer.conversation_id == Conversation.id,
-                   CM_viewer.people_public_id == viewer_people_id))
-        .outerjoin(CM_other,
-                   and_(CM_other.conversation_id == Conversation.id,
-                        CM_other.people_public_id != viewer_people_id))
+        .join(
+            CM_viewer,
+            and_(
+                CM_viewer.conversation_id == Conversation.id,
+                CM_viewer.people_public_id == viewer_people_id,
+            ),
+        )
+        .outerjoin(
+            CM_other,
+            and_(
+                CM_other.conversation_id == Conversation.id,
+                CM_other.people_public_id != viewer_people_id,
+            ),
+        )
+        .outerjoin(PP_other, PP_other.id == CM_other.people_public_id)  # ✅ join other pseudo
         .outerjoin(last_msg_id_sq, last_msg_id_sq.c.conv_id == Conversation.id)
         .outerjoin(LM, LM.id == last_msg_id_sq.c.last_message_id)
         .outerjoin(PP_sender, PP_sender.id == LM.sender_people_id)
@@ -208,23 +221,30 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
 
     out = []
     for r in rows:
-        # Option A : is_seen seulement si dernier message envoyé par viewer (en 1-1)
+        # ✅ is_seen seulement si dernier message envoyé par viewer (en 1-1)
         is_seen = None
         if (r.is_group is False and r.last_message_id is not None):
             if (r.last_sender_people_id is not None and int(r.last_sender_people_id) == int(viewer_people_id)):
                 other_last = int(r.other_last_read_message_id or 0)
                 is_seen = int(r.last_message_id) <= other_last
 
+        # ✅ Titre : 1-1 => "Chat avec <pseudo autre>", sinon titre existant
+        if not r.is_group:
+            other_pseudo = (r.other_pseudo or "").strip()
+            title = f"Chat avec {other_pseudo}" if other_pseudo else (r.title or "Chat privé")
+        else:
+            title = r.title or "Groupe"
+
         out.append({
             "id": int(r.conversation_id),
-            "title": r.title,
+            "title": title,
             "is_group": bool(r.is_group),
             "created_at": r.created_at.isoformat() if r.created_at else None,
             "last_message_at": r.last_message_at.isoformat() if r.last_message_at else None,
 
             "unread_count": int(r.unread_count or 0),
 
-            "other_people_id": int(r.other_people_id) if r.other_people_id is not None and not r.is_group else None,
+            "other_people_id": int(r.other_people_id) if (r.other_people_id is not None and not r.is_group) else None,
 
             "last_message": None if r.last_message_id is None else {
                 "message_id": int(r.last_message_id),
@@ -237,3 +257,4 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
         })
 
     return out
+
