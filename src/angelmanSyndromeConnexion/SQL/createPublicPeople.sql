@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS T_People_Public (
   id               INT UNSIGNED NOT NULL AUTO_INCREMENT,
   -- Données “quasi-publiques” / pseudonymisées
   city             VARCHAR(255)    NOT NULL,
+  country          VARCHAR(255)    NOT NULL,
+  country_code     VARCHAR(2)      NOT NULL,
   age_years        SMALLINT UNSIGNED NOT NULL, -- ex: 0..130
   pseudo           VARCHAR(255)    NOT NULL,
   

@@ -27,7 +27,7 @@ def fetch_photo(person_id: int) -> tuple[bytes | None, str | None]:
 def identity_public(person_id: int) -> dict | None:
     row = _run_query(text("""
                 SELECT
-                city, age_years, pseudo, status 
+                city, country, country_code, age_years, pseudo, status 
                 FROM T_People_Public 
                 WHERE id = :id
                 """),
@@ -145,6 +145,8 @@ def getRecordsPeople():
             SELECT
                 p.id,
                 p.city,
+                p.country,
+                p.country_code,
                 p.age_years,
                 i.firstname,
                 i.lastname,
@@ -180,6 +182,8 @@ def getRecordsPeople():
 
         pid = m["id"]
         city = m["city"]
+        country = m["country"]
+        country_code = m["country_code"]
         age = m["age_years"]
         fn  = crypto.decrypt_bytes_to_str_strict(m["firstname"])
         ln  = crypto.decrypt_bytes_to_str_strict(m["lastname"])
@@ -193,13 +197,15 @@ def getRecordsPeople():
             "firstname": fn,
             "lastname": ln,
             "city": city,                 # on prend la ville de la table publique
+            "country": country,
+            "country_code" : country_code,
             "age": age,                   # remap age_years -> age pour la sortie
             "genotype": gt,
             "longitude": long,
             "latitude": lat,
         })
 
-    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","age","genotype","longitude","latitude"])
+    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","country", "country_code", "age","genotype","longitude","latitude"])
 
     decrypt_end = time.perf_counter()
     logger.info(

@@ -7,7 +7,7 @@ from tools.logger import setup_logger
 from tools.utilsTools import _run_query, _run_in_transaction_with_conn
 import tools.crypto_utils as crypto
 from angelmanSyndromeConnexion import error
-from angelmanSyndromeConnexion.geo_utils import get_city
+from angelmanSyndromeConnexion.geo_utils import get_city,get_country_code, get_country
 from angelmanSyndromeConnexion.utils_image import (
     coerce_to_date, detect_mime_from_bytes, normalize_mime, recompress_image
 )
@@ -143,10 +143,10 @@ def create_person_and_identity(data) -> int:
         # 1) INSERT public
         res_pub = conn.execute(
             text("""
-                INSERT INTO `T_People_Public` (city, age_years,pseudo)
-                VALUES (:city, :age_years,:pseudo)
+                INSERT INTO `T_People_Public` (city, country, country_code, age_years,pseudo)
+                VALUES (:city, :country, :country_code, :age_years,:pseudo)
             """),
-            {"city": data["city"], "age_years": data["age"], "pseudo": data["pseudo"]},
+            {"city": data["city"], "country":data["country"], "country_code":data["country_code"], "age_years": data["age"], "pseudo": data["pseudo"]},
         )
 
         # Récup id (même connexion!)
@@ -257,7 +257,11 @@ def insertData(
         # NB: get_city attend (lat, lon)
         city_str = get_city(latitude, longitude) or ""  # fallback vide
         city = city_str.strip()
-        logger.info(city)
+        #logger.info(city)
+        country_str = get_country(latitude,longitude) or ""
+        country = country_str.strip()
+        code_country_str = get_country_code(latitude, longitude) or ""
+        code_country = code_country_str.strip()
 
         # -------- 3) Chiffrement --------
         fn_enc  = crypto.encrypt_str(firstname)
@@ -288,6 +292,8 @@ def insertData(
         # -------- 5) INSERT SQL paramétré --------
         data = {}
         data["city"] = city
+        data["country"] = country
+        data["country_code"] = code_country
         data["age"] = age
         data["pseudo"] = f"{firstname} {lastname[0]}."
         data["enc_firstname"] = fn_enc

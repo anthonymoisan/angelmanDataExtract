@@ -95,8 +95,8 @@ def main():
     start = time.time()
     try:
         
-        #_insertDataFrame(firstRow=False)
-        findId("anthonymoisan@yahoo.fr")
+        _insertDataFrame(firstRow=False)
+        #findId("anthonymoisan@yahoo.fr")
         #df = getRecordsPeople()
         #logger.info(df.head())
         #dictRes = fetch_person_decrypted(1)
@@ -107,12 +107,12 @@ def main():
         #logger.info("Id : %d", id)
         #logger.info("Authentification : %d", authenticate_email_password("anthonymoisan@yahoo.fr", "Mmas&37814", bAngelmanResult=False))
         
-        '''
+        """
         updateData(
             "victor.cochonneau@gmail.fr", 
             firstname="Anthony",
             dateOfBirth = "26/11/2019",
-            emailNewAddress = "anthonymoisan@yahoo.fr",
+            emailNewAddress = "anthonymoisan2@yahoo.fr",
             genotype = "Mutation",             
             password="Mmas|3783",
             longitude = "2.5",
@@ -120,7 +120,8 @@ def main():
             questionSecrete=2,
             reponseSecrete="Chun Connery"
         )
-        '''
+        """
+
         
         
    

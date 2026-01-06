@@ -10,7 +10,7 @@ from tools.utilsTools import _run_query
 import tools.crypto_utils as crypto
 
 from angelmanSyndromeConnexion import error
-from angelmanSyndromeConnexion.geo_utils import get_city
+from angelmanSyndromeConnexion.geo_utils import get_city, get_country, get_country_code
 from angelmanSyndromeConnexion.utils_image import (
     coerce_to_date, detect_mime_from_bytes, normalize_mime, recompress_image
 )
@@ -204,6 +204,15 @@ def updateData(
                 city_str = get_city(lat_val, lon_val) or ""
                 public_sets.append("city = :city")
                 public_params["city"] = city_str.strip()
+
+                country_str = get_country(lat_val, lon_val) or ""
+                public_sets.append("country = :country")
+                public_params["country"] = country_str.strip()
+
+                country_code_str = get_country_code(lat_val, lon_val) or ""
+                public_sets.append("country_code = :country_code")
+                public_params["country_code"] = country_code_str.strip()
+
         except Exception as e:
             logger.warning("Reverse geocoding ignoré: %s", e)
 
