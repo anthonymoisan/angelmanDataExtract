@@ -9,7 +9,7 @@ from angelmanSyndromeConnexion.error import (
 )
 from angelmanSyndromeConnexion.peopleCreate import insertData
 from angelmanSyndromeConnexion.peopleRead import(
-    giveId, fetch_person_decrypted, fetch_photo, getRecordsPeople, identity_public
+    giveId, fetch_person_decrypted, fetch_photo, getRecordsPeople, identity_public,getListPaysTranslate
 )
 from angelmanSyndromeConnexion.peopleUpdate import updateData
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
@@ -239,3 +239,26 @@ def get_idPerson():
         current_app.logger.exception("Unhandled error")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
+@bp.get("people/countriesTranslated")
+@require_basic
+def private_countries_translated():
+    """
+    Renvoie la liste des pays (traduits + triés) à partir des country_code distinct en DB.
+    Query params:
+      - locale (default: fr) ex: fr, en, es, pt_BR
+    """
+    try:
+        locale = request.args.get("locale", "fr").strip()
+
+        countries = getListPaysTranslate(locale=locale)
+        return jsonify({
+            "locale": locale,
+            "countries": countries,
+            "count": len(countries),
+        })
+
+    except Exception as e:
+        current_app.logger.exception(
+            "[Private_PROXY][COUNTRIES] countriesTranslated ERROR: %s", e
+        )
+        return jsonify({"error": f"countriesTranslated error: {e}"}), 500

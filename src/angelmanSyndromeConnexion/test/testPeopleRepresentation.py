@@ -12,7 +12,7 @@ from angelmanSyndromeConnexion.peopleAuth import(
     verifySecretAnswer, authenticate_and_get_id, authenticate_email_password
 )
 from angelmanSyndromeConnexion.peopleRead import( 
-    getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId,identity_public
+    getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId,identity_public, getListPaysTranslate
 )
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
 from angelmanSyndromeConnexion.peopleCreate import insertData
@@ -128,7 +128,7 @@ def main():
         #deleteDataById(5)
         #logger.info(getQuestionSecrete(8))
         #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
-
+        #logger.info(getListPaysTranslate("pl"))
         
         elapsed = time.time() - start
         

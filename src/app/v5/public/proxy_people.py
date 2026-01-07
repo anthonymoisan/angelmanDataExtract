@@ -16,6 +16,7 @@ from angelmanSyndromeConnexion.peopleRead import (
     fetch_photo,
     getRecordsPeople,
     identity_public,
+    getListPaysTranslate,
 )
 from angelmanSyndromeConnexion.peopleUpdate import updateData
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
@@ -376,4 +377,27 @@ def public_people_map():
         )
         return jsonify({"error": f"peopleMapRepresentation error: {e}"}), 500
 
+@bp.get("people/countriesTranslated")
+@require_public_app_key
+def public_countries_translated():
+    """
+    Renvoie la liste des pays (traduits + triés) à partir des country_code distinct en DB.
+    Query params:
+      - locale (default: fr) ex: fr, en, es, pt_BR
+    """
+    try:
+        locale = request.args.get("locale", "fr").strip()
+
+        countries = getListPaysTranslate(locale=locale)
+        return jsonify({
+            "locale": locale,
+            "countries": countries,
+            "count": len(countries),
+        })
+
+    except Exception as e:
+        current_app.logger.exception(
+            "[PUBLIC_PROXY][COUNTRIES] countriesTranslated ERROR: %s", e
+        )
+        return jsonify({"error": f"countriesTranslated error: {e}"}), 500
 

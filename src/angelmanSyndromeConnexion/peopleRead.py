@@ -8,6 +8,7 @@ from tools.logger import setup_logger
 from tools.utilsTools import _run_query
 import tools.crypto_utils as crypto
 import time
+from angelmanSyndromeConnexion.geo_utils import countries_from_iso2_list_sorted
 
 logger = setup_logger(debug=False)
 
@@ -244,3 +245,26 @@ def getQuestionSecrete(person_id: int) -> int | None:
         return int(crypto.decrypt_number(sq_enc)) if sq_enc is not None else None
     except Exception:
         return None
+
+
+def _getListPaysFromDataSet():
+    query = text("""SELECT DISTINCT country_code
+                FROM T_People_Public
+                WHERE status = 'active'
+                ORDER BY country_code
+                 """)
+    rows = _run_query(query=query, return_result=True,bAngelmanResult=False)
+    if(rows is None):
+        return None
+    country_codes = [row[0] for row in rows]
+    try:
+        return country_codes if country_codes is not None else None
+    except Exception:
+        return None
+    
+def getListPaysTranslate(locale: str = "fr"):
+    listcountry_codes = _getListPaysFromDataSet()
+    if not listcountry_codes:
+        return []
+    else:
+        return countries_from_iso2_list_sorted(listcountry_codes,locale=locale)

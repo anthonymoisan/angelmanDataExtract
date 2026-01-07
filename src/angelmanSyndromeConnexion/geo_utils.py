@@ -4,10 +4,16 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from threading import Lock
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Iterable, List
 
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderServiceError, GeocoderTimedOut, GeocoderUnavailable
+
+from functools import lru_cache
+import pycountry
+from babel import Locale
+import unicodedata
+
 
 # --- CONFIG ---
 _NOMINATIM_USER_AGENT = "ASConnexion/1.0 (contact: contact@fastfrance.org)"
@@ -139,3 +145,71 @@ def get_country_code(lat: float, lon: float) -> Optional[str]:
     """Renvoie le code pays ISO alpha-2 (ou None)."""
     p = get_place(lat, lon)
     return p.country_code if p and p.country_code else None
+
+@lru_cache(maxsize=1024)
+def country_name_from_iso2(country_code: str, locale: str = "fr") -> Optional[str]:
+    """
+    Convertit un ISO alpha-2 (ex: 'FR') -> nom du pays dans la langue demandée (ex: 'France').
+    locale: 'fr', 'fr_FR', 'en', 'es', ...
+    Retourne None si introuvable.
+    """
+    if not country_code:
+        return None
+
+    cc = country_code.strip().upper()
+    try:
+        country = pycountry.countries.get(alpha_2=cc)
+        if not country:
+            return None
+
+        # Babel utilise des locales, ex 'fr', 'en', 'pt_BR'
+        loc = Locale.parse(locale)
+        name = loc.territories.get(cc)
+        if name:
+            return name
+
+        # Fallback: nom anglais fourni par pycountry (souvent)
+        return getattr(country, "name", None)
+
+    except Exception:
+        return None
+    
+def _normalize_for_sort(s: str) -> str:
+    """
+    Normalise une chaîne pour un tri alphabétique robuste :
+    - supprime les accents
+    - lowercase
+    """
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", s)
+        if not unicodedata.combining(c)
+    ).casefold()
+
+
+def countries_from_iso2_list_sorted(
+    country_codes: Iterable[str],
+    locale: str = "fr",
+    unique: bool = True,
+    keep_none: bool = False,
+) -> List[Optional[str]]:
+    """
+    Convertit une liste de codes ISO alpha-2 en noms de pays localisés,
+    puis les trie par ordre alphabétique.
+    """
+    names: List[Optional[str]] = []
+
+    for code in country_codes:
+        name = country_name_from_iso2(code, locale)
+        if name is not None or keep_none:
+            names.append(name)
+
+    # Déduplication (en conservant l'ordre initial)
+    if unique:
+        names = list(dict.fromkeys(names))
+
+    # Tri alphabétique robuste
+    names.sort(
+        key=lambda x: _normalize_for_sort(x) if x is not None else ""
+    )
+
+    return names
