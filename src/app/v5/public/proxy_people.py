@@ -377,18 +377,22 @@ def public_people_map():
         )
         return jsonify({"error": f"peopleMapRepresentation error: {e}"}), 500
 
-@bp.get("people/countriesTranslated")
+@bp.get("/people/countriesTranslated")
 @require_public_app_key
 def public_countries_translated():
     """
-    Renvoie la liste des pays (traduits + triés) à partir des country_code distinct en DB.
+    Renvoie la liste des pays (code ISO alpha-2 + nom traduit),
+    triés alphabétiquement selon la langue demandée.
+
     Query params:
       - locale (default: fr) ex: fr, en, es, pt_BR
     """
     try:
         locale = request.args.get("locale", "fr").strip()
 
-        countries = getListPaysTranslate(locale=locale)
+        # Ex: [{'code': 'BR', 'name': 'Brésil'}, ...]
+        countries = getListPaysTranslate(locale=locale) or []
+
         return jsonify({
             "locale": locale,
             "countries": countries,
@@ -399,5 +403,7 @@ def public_countries_translated():
         current_app.logger.exception(
             "[PUBLIC_PROXY][COUNTRIES] countriesTranslated ERROR: %s", e
         )
-        return jsonify({"error": f"countriesTranslated error: {e}"}), 500
-
+        return jsonify({
+            "error": "countriesTranslated error",
+            "detail": str(e),
+        }), 500

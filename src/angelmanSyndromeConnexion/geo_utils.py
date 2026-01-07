@@ -186,30 +186,57 @@ def _normalize_for_sort(s: str) -> str:
     ).casefold()
 
 
-def countries_from_iso2_list_sorted(
+def _countries_from_iso2_list_sorted_tuples(
     country_codes: Iterable[str],
     locale: str = "fr",
     unique: bool = True,
     keep_none: bool = False,
-) -> List[Optional[str]]:
+) -> List[Tuple[str, Optional[str]]]:
     """
-    Convertit une liste de codes ISO alpha-2 en noms de pays localisés,
-    puis les trie par ordre alphabétique.
+    Convertit une liste de codes ISO alpha-2 en (code, nom localisé),
+    puis trie alphabétiquement sur le nom.
+
+    Returns:
+        Liste de tuples: [("FR","France"), ("DE","Allemagne"), ...]
+        Si keep_none=True, certains noms peuvent être None.
     """
-    names: List[Optional[str]] = []
+    items: List[Tuple[str, Optional[str]]] = []
 
     for code in country_codes:
-        name = country_name_from_iso2(code, locale)
-        if name is not None or keep_none:
-            names.append(name)
+        if not code:
+            continue
+        cc = code.strip().upper()
+        name = country_name_from_iso2(cc, locale)
 
-    # Déduplication (en conservant l'ordre initial)
+        if name is None and not keep_none:
+            continue
+
+        items.append((cc, name))
+
+    # Déduplication par code (en conservant le premier rencontré)
     if unique:
-        names = list(dict.fromkeys(names))
+        seen = set()
+        deduped: List[Tuple[str, Optional[str]]] = []
+        for cc, name in items:
+            if cc in seen:
+                continue
+            seen.add(cc)
+            deduped.append((cc, name))
+        items = deduped
 
-    # Tri alphabétique robuste
-    names.sort(
-        key=lambda x: _normalize_for_sort(x) if x is not None else ""
+    # Tri alphabétique robuste sur le nom (accent-insensitive)
+    items.sort(
+        key=lambda t: _normalize_for_sort(t[1]) if t[1] is not None else ""
     )
 
-    return names
+    return items
+
+def countries_from_iso2_list_sorted_dict(
+    country_codes: Iterable[str],
+    locale: str = "fr",
+    unique: bool = True,
+    keep_none: bool = False,
+) -> List[dict]:
+    return [{"code": c, "name": n} for c, n in _countries_from_iso2_list_sorted_tuples(
+        country_codes, locale=locale, unique=unique, keep_none=keep_none
+    )]

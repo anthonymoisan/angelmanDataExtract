@@ -8,7 +8,7 @@ from tools.logger import setup_logger
 from tools.utilsTools import _run_query
 import tools.crypto_utils as crypto
 import time
-from angelmanSyndromeConnexion.geo_utils import countries_from_iso2_list_sorted
+from angelmanSyndromeConnexion.geo_utils import countries_from_iso2_list_sorted_dict
 
 logger = setup_logger(debug=False)
 
@@ -267,4 +267,4 @@ def getListPaysTranslate(locale: str = "fr"):
     if not listcountry_codes:
         return []
     else:
-        return countries_from_iso2_list_sorted(listcountry_codes,locale=locale)
+        return countries_from_iso2_list_sorted_dict(listcountry_codes,locale=locale)
