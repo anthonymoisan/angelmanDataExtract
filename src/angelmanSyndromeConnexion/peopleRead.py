@@ -42,9 +42,9 @@ def identity_public(person_id: int) -> dict | None:
         return {
             "id": person_id,
             "city": r[0],
-            "age": r[1],
-            "pseudo" : r[2],
-            "status" : r[3],
+            "age": r[3],
+            "pseudo" : r[4],
+            "status" : r[5],
         }
 
 
