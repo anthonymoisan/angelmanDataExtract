@@ -28,6 +28,11 @@ def auth_login():
         return jsonify({"error": "email et password sont requis"}), 400
     try:
         person_id = authenticate_and_get_id(email, password, bAngelmanResult=False)
+        updated = update_person_connection_status(
+            person_id=person_id,
+            is_connected=True,
+        )
+
     except Exception:
         current_app.logger.exception("Erreur d'authentification")
         return jsonify({"error": "erreur serveur"}), 500
