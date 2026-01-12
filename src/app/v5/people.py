@@ -223,6 +223,24 @@ def api_delete_person_by_id(person_id: int):
         current_app.logger.exception("Erreur suppression par id")
         return jsonify({"error": f"erreur serveur: {e}"}), 500
 
+# Map People (JSON) — direct DB (getRecordsPeople)
+@bp.get("/peopleMapRepresentation")
+@require_basic
+def public_people_map():
+    """
+    Version publique de /api/v5/peopleMapRepresentation :
+    pas de HTTP interne, on appelle directement getRecordsPeople().
+    """
+    try:
+        df = getRecordsPeople()
+        return jsonify(df.to_dict(orient="records"))
+    except Exception as e:
+        current_app.logger.exception(
+            "[Private][MAP] peopleMapRepresentation ERROR: %s", e
+        )
+        return jsonify({"error": f"peopleMapRepresentation error: {e}"}), 500
+
+
 @bp.get("/people/lookup")
 @require_basic
 def get_idPerson():

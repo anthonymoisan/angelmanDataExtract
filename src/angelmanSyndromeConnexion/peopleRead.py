@@ -148,6 +148,7 @@ def getRecordsPeople():
                 p.city,
                 p.country,
                 p.country_code,
+                p.is_connected,
                 p.age_years,
                 i.firstname,
                 i.lastname,
@@ -185,6 +186,7 @@ def getRecordsPeople():
         city = m["city"]
         country = m["country"]
         country_code = m["country_code"]
+        is_connected = m["is_connected"]
         age = m["age_years"]
         fn  = crypto.decrypt_bytes_to_str_strict(m["firstname"])
         ln  = crypto.decrypt_bytes_to_str_strict(m["lastname"])
@@ -200,13 +202,14 @@ def getRecordsPeople():
             "city": city,                 # on prend la ville de la table publique
             "country": country,
             "country_code" : country_code,
+            "is_connected" : is_connected,
             "age": age,                   # remap age_years -> age pour la sortie
             "genotype": gt,
             "longitude": long,
             "latitude": lat,
         })
 
-    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","country", "country_code", "age","genotype","longitude","latitude"])
+    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","country", "country_code", "is_connected", "age","genotype","longitude","latitude"])
 
     decrypt_end = time.perf_counter()
     logger.info(
