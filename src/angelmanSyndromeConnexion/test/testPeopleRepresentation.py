@@ -9,7 +9,7 @@ if str(SRC_DIR) not in sys.path:
 from tools.logger import setup_logger
 from angelmanSyndromeConnexion.peopleUpdate import updateData
 from angelmanSyndromeConnexion.peopleAuth import(
-    verifySecretAnswer, authenticate_and_get_id, authenticate_email_password
+    verifySecretAnswer, authenticate_and_get_id, authenticate_email_password, update_person_connection_status
 )
 from angelmanSyndromeConnexion.peopleRead import( 
     getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId,identity_public, getListPaysTranslate
@@ -95,7 +95,7 @@ def main():
     start = time.time()
     try:
         
-        _insertDataFrame(firstRow=False)
+        #_insertDataFrame(firstRow=False)
         #findId("anthonymoisan@yahoo.fr")
         #df = getRecordsPeople()
         #logger.info(df.head())
@@ -122,7 +122,7 @@ def main():
         )
         """
 
-        
+        update_person_connection_status(person_id= 2, is_connected=False)
         
    
         #deleteDataById(5)

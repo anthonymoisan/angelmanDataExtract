@@ -129,3 +129,32 @@ def verifySecretAnswer(*, email: str | None = None, person_id: int | None = None
 
     return _norm(answer) == _norm(stored)
 
+
+def update_person_connection_status(
+    person_id: int,
+    is_connected: bool,
+) -> bool:
+    
+    params = {}
+
+    params["id"] = int(person_id)
+    params["is_connected"] = 1 if is_connected else 0
+    
+    try:  
+        _run_query(
+            text("""
+                UPDATE T_People_Public
+                SET is_connected = :is_connected
+                WHERE id = :id
+                  AND status = 'active'
+            """),
+            params=params,
+            return_result=False,
+            bAngelmanResult=False
+        )
+        return True
+    except Exception:
+        return False
+    
+    
+
