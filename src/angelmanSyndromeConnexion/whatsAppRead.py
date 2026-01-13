@@ -189,6 +189,7 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
             CM_other.people_public_id.label("other_people_id"),
             CM_other.last_read_message_id.label("other_last_read_message_id"),
             PP_other.pseudo.label("other_pseudo"),  # ✅ IMPORTANT
+            PP_other.is_connected.label("is_connected"),
 
             LM.id.label("last_message_id"),
             LM.sender_people_id.label("last_sender_people_id"),
@@ -239,6 +240,7 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
             "id": int(r.conversation_id),
             "title": title,
             "is_group": bool(r.is_group),
+            "is_connected" : bool(r.is_connected),
             "created_at": r.created_at.isoformat() if r.created_at else None,
             "last_message_at": r.last_message_at.isoformat() if r.last_message_at else None,
 

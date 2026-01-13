@@ -1,8 +1,9 @@
 # app/models/people_public.py
 from sqlalchemy import (
-    Column, Integer, String, SmallInteger, Enum, TIMESTAMP
+    Column, Integer, String, SmallInteger, Enum, TIMESTAMP,Boolean
 )
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.db import Base
 
 class PeoplePublic(Base):
@@ -12,7 +13,8 @@ class PeoplePublic(Base):
     city = Column(String(255), nullable=False)
     age_years = Column(SmallInteger, nullable=False)
     pseudo = Column(String(255), nullable=False)
-
+    is_connected : Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    
     status = Column(
         Enum("active", "anonymized", "deleted"),
         nullable=False,
