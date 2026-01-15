@@ -23,7 +23,7 @@ SMTP_HOST = _cfg["SMTP_HOST"]["SMTP"]
 SMTP_PORT = int(_cfg["SMTP_PORT"]["PORT"])  # 465 ou 587
 SMTP_USER = _cfg["SMTP_USER"]["USER"]
 SMTP_PASS = _cfg["SMTP_PASS"]["PASS"]
-MAIL_TO   = "contact@fastfrance.org"
+MAIL_TO   = "contact@angelmananalytics.org"
 MAIL_FROM = "asconnect@fastfrance.org"
 
 @bp.post("/contact")

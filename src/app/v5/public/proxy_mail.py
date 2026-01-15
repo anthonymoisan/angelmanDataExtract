@@ -30,7 +30,7 @@ SMTP_PORT = int(_cfg["SMTP_PORT"]["PORT"])
 SMTP_USER = _cfg["SMTP_USER"]["USER"]
 SMTP_PASS = _cfg["SMTP_PASS"]["PASS"]
 
-MAIL_TO   = "contact@fastfrance.org"
+MAIL_TO   = "contact@angelmananalytics.org"
 MAIL_FROM = "asconnect@fastfrance.org"
 
 
