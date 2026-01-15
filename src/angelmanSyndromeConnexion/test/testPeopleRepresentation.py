@@ -122,10 +122,10 @@ def main():
         )
         """
 
-        update_person_connection_status(person_id= 2, is_connected=False)
+        #update_person_connection_status(person_id= 2, is_connected=False)
         
    
-        #deleteDataById(5)
+        deleteDataById(56)
         #logger.info(getQuestionSecrete(8))
         #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
         #logger.info(getListPaysTranslate("pl"))
