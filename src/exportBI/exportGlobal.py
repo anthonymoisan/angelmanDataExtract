@@ -142,6 +142,7 @@ def _transformersMapGermany(df):
     return df
 
 def _transformersMapBrazil(df):
+    df = df.drop(columns={'estate','region','city','internal_id'})
     df["country"] = "Brazil"
     df["linkDashboard"] = config['IdDashboard']['ID_BRAZIL_ENGLISH']
     return df
@@ -159,7 +160,7 @@ def _transformersMapIndonesia(df):
     return df
 
 def _transformersMapMalaysia(df):
-    df = df.drop(columns={'city'})
+    df = df.drop(columns={'city','states'})
     df["country"] = "Malaysia"
     df["linkDashboard"] = config['IdDashboard']['ID_MALAYSIA_ENGLISH']
     return df
