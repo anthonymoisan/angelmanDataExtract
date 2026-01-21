@@ -14,6 +14,7 @@ from tools.crypto_utils import decrypt_dataframe
 from tools.logger import setup_logger
 from configparser import ConfigParser
 from exportBI.exportTools import T_ReaderAbstract
+from angelmanSyndromeConnexion.geo_utils import country_name_from_iso2
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -72,6 +73,11 @@ def _transformersMapASConnect(df):
     df = df.drop(columns={'created_at'})
 
     df["gender"] = 'M'
+
+    df["country"] = df["country_code"].map(
+    lambda x: country_name_from_iso2(x, locale="en")
+)
+
     return df
     
 
