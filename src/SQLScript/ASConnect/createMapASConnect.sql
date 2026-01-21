@@ -1,0 +1,9 @@
+CREATE TABLE T_MapASConnect (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    gender VARBINARY(512) NOT NULL,
+    country_code VARBINARY(512) NOT NULL,
+    genotype VARBINARY(512) NOT NULL,
+    age VARBINARY(64) NOT NULL,
+    groupAge VARBINARY(512) NOT NULL,
+    dateCreation VARBINARY(512) NOT NULL
+);

@@ -22,6 +22,7 @@ import exportBI.exportIndonesia as expIndonesia
 import exportBI.exportGreece as expGreece
 import exportBI.exportMalaysia as expMalaysia
 import exportBI.exportTurkey as expTurkey
+import exportBI.exportASConnect as expASConnect
 
 from tools.utilsTools import export_Table, send_email_alert
 import time
@@ -184,6 +185,10 @@ def export_mapGlobal():
     reader = expGlobal.T_MapGlobal()
     export_Table("T_MapGlobal", "Global/createMapGlobal.sql", reader)
 
+def export_mapASConnect():
+    reader = expASConnect.T_MapASConnect()
+    export_Table("T_MapASConnect", "ASConnect/createMapASConnect.sql", reader)
+
 def safe_export(export_func, label):
     try:
         logger.info(f"🟡 Export : {label}")
@@ -195,6 +200,7 @@ def safe_export(export_func, label):
 def main():
     start = time.time()
     try:
+        
         safe_export(export_DifficultiesSA_English, "DifficultiesSA EN")
         safe_export(export_capabilities_English, "Capabilities FR")
         safe_export(export_mapFrance_French, "Map France FR")
@@ -239,6 +245,9 @@ def main():
         safe_export(export_mapBrazil_Portuguese, "Map Brazil PT")
         
         safe_export(export_mapGlobal, "Map Global")
+
+        safe_export(export_mapASConnect, "Map AS Connect")
+
         elapsed = time.time() - start
         logger.info(f"\n✅ All exports are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)

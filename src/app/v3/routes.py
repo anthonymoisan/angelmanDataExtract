@@ -10,3 +10,10 @@ bp = Blueprint("v3", __name__)
 @ratelimit(5)
 def map_global():
     return _read_table_as_json("T_MapGlobal")
+
+
+@bp.get("/resources/Map_ASConnect")
+@require_basic
+@ratelimit(5)
+def map_ASConnect():
+    return _read_table_as_json("T_MapASConnect")

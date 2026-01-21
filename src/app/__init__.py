@@ -210,6 +210,10 @@ def create_app():
         <li>API in order for reading data from HDH for camps : <a href="./api/v6/resources/Camps">./api/v6/resources/Camps</a></li>
         <li>API in order for reading data from HDH for mdph : <a href="./api/v6/resources/Mdph">./api/v6/resources/Mdph</a></li>
         </ul>
+
+        API AS Connect Export BI
+        API in order for reading data from Map Global AS Connect : <a href="./api/v3/resources/Map_ASConnect">./api/v3/resources/Map_ASConnect</a>
+        <br><br>
         '''
 
     return app
