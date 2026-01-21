@@ -38,7 +38,7 @@ def readTable_with_retry(table_name, max_retries=3, delay_seconds=5):
             
 def _buildDataFrameMapASConnect():
     df_PeoplePublic = readTable_with_retry("T_People_Public")
-    cols = ['id', 'country_code', 'age_years', 'created_at']
+    cols = ['id', 'country_code', 'age_years', 'created_at', 'city']
     df_PeoplePublic = df_PeoplePublic.loc[:, df_PeoplePublic.columns.intersection(cols)]
     
     df_PeopleIdentity = readTable_with_retry("T_People_Identity")

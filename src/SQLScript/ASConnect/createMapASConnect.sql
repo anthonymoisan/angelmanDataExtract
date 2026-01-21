@@ -3,6 +3,7 @@ CREATE TABLE T_MapASConnect (
     gender VARBINARY(512) NOT NULL,
     country_code VARBINARY(512) NOT NULL,
     country VARBINARY(512) NOT NULL,
+    city VARBINARY(512) NOT NULL,
     genotype VARBINARY(512) NOT NULL,
     age VARBINARY(64) NOT NULL,
     groupAge VARBINARY(512) NOT NULL,
