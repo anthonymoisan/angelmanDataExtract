@@ -69,6 +69,7 @@ def _payload_people_from_request():
     src = _get_src()
     if request.content_type and request.content_type.startswith("multipart/form-data"):
         form = request.form
+        gender = form.get("gender")
         firstname = form.get("firstname")
         lastname = form.get("lastname")
         emailAddress = form.get("emailAddress")
@@ -81,8 +82,10 @@ def _payload_people_from_request():
         rSec = form.get("rSecrete")
         file = request.files.get("photo")
         photo_bytes = file.read() if file else None
+        is_info = form.get("is_info")
     else:
         data = request.get_json(silent=True) or {}
+        gender = form.get("gender")
         firstname = data.get("firstname")
         lastname = data.get("lastname")
         emailAddress = data.get("emailAddress")
@@ -94,6 +97,7 @@ def _payload_people_from_request():
         qSec = data.get("qSecrete")
         rSec = data.get("rSecrete")
         photo_b64 = data.get("photo_base64")
+        is_info = form.get("is_info")
         if photo_b64:
             if "," in photo_b64:
                 photo_b64 = photo_b64.split(",", 1)[1]
@@ -113,6 +117,7 @@ def _payload_people_from_request():
         raise ValidationError("latitude hors plage [-90, 90]")
 
     required = [
+        "gender",
         "firstname",
         "lastname",
         "emailAddress",
@@ -138,6 +143,7 @@ def _payload_people_from_request():
 
     dob = parse_date_any(dob_str)
     return (
+        gender,
         firstname,
         lastname,
         emailAddress,
@@ -149,6 +155,7 @@ def _payload_people_from_request():
         password,
         qSec,
         rSec,
+        is_info
     )
 
 # --------------------------------------------------------------------
@@ -285,6 +292,7 @@ def public_person_infoPublic(person_id: int):
 def public_create_person():
     try:
         (
+            gender,
             fn,
             ln,
             email,
@@ -296,8 +304,10 @@ def public_create_person():
             password,
             qSec,
             rSec,
+            is_info,
         ) = _payload_people_from_request()
         new_id = insertData(
+            gender,
             fn,
             ln,
             email,
@@ -309,6 +319,7 @@ def public_create_person():
             password,
             qSec,
             rSec,
+            is_info,
         )
         return jsonify({"status": "created", "id": new_id}), 201
     except AppError as e:

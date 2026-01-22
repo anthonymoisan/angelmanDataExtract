@@ -210,6 +210,7 @@ def insertData(
 
         id = create_person_and_identity(data)
         logger.info("Id create: %d", id)
+        return id
     except error.AppError:
         raise
     except Exception:

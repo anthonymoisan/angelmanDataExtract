@@ -132,41 +132,45 @@ def person_infoPublic(person_id: int):
 
 def _payload_people_from_request():
     """
-    Retourne (firstname, lastname, email, dob(date), genotype, photo_bytes, longC, latC, password, qSec, rSec).
+    Retourne (firstname, lastname, email, dob(date), genotype,
+              photo_bytes, longC, latC, password, qSec, rSec).
     Supporte multipart/form-data et JSON (photo_base64).
     """
     src = _get_src()
     if request.content_type and request.content_type.startswith("multipart/form-data"):
         form = request.form
-        firstname    = form.get("firstname")
-        lastname     = form.get("lastname")
+        gender = form.get("gender")
+        firstname = form.get("firstname")
+        lastname = form.get("lastname")
         emailAddress = form.get("emailAddress")
-        dob_str      = form.get("dateOfBirth")
-        genotype     = form.get("genotype")
-        long         = form.get("longitude")
-        lat          = form.get("latitude")
-        password     = form.get("password")
-        qSec         = form.get("qSecrete")
-        rSec         = form.get("rSecrete")
+        dob_str = form.get("dateOfBirth")
+        genotype = form.get("genotype")
+        long = form.get("longitude")
+        lat = form.get("latitude")
+        password = form.get("password")
+        qSec = form.get("qSecrete")
+        rSec = form.get("rSecrete")
         file = request.files.get("photo")
         photo_bytes = file.read() if file else None
+        is_info = form.get("is_info")
     else:
         data = request.get_json(silent=True) or {}
-        firstname    = data.get("firstname")
-        lastname     = data.get("lastname")
+        gender = form.get("gender")
+        firstname = data.get("firstname")
+        lastname = data.get("lastname")
         emailAddress = data.get("emailAddress")
-        dob_str      = data.get("dateOfBirth")
-        genotype     = data.get("genotype")
-        long         = data.get("longitude")
-        lat          = data.get("latitude")
-        password     = data.get("password")
-        qSec         = data.get("qSecrete")
-        rSec         = data.get("rSecrete")
-        photo_b64    = data.get("photo_base64")
+        dob_str = data.get("dateOfBirth")
+        genotype = data.get("genotype")
+        long = data.get("longitude")
+        lat = data.get("latitude")
+        password = data.get("password")
+        qSec = data.get("qSecrete")
+        rSec = data.get("rSecrete")
+        photo_b64 = data.get("photo_base64")
+        is_info = form.get("is_info")
         if photo_b64:
             if "," in photo_b64:
                 photo_b64 = photo_b64.split(",", 1)[1]
-            import base64
             photo_bytes = base64.b64decode(photo_b64)
         else:
             photo_bytes = None
@@ -174,7 +178,7 @@ def _payload_people_from_request():
     try:
         longC = float(str(long).replace(",", "."))
         latC = float(str(lat).replace(",", "."))
-    except ValueError:
+    except (TypeError, ValueError):
         raise ValidationError("longitude/latitude doivent être numériques")
 
     if not (-180.0 <= longC <= 180.0):
@@ -183,10 +187,23 @@ def _payload_people_from_request():
         raise ValidationError("latitude hors plage [-90, 90]")
 
     required = [
-        "firstname","lastname","emailAddress","dateOfBirth","genotype",
-        "longitude","latitude","password","qSecrete","rSecrete",
+        "gender",
+        "firstname",
+        "lastname",
+        "emailAddress",
+        "dateOfBirth",
+        "genotype",
+        "longitude",
+        "latitude",
+        "password",
+        "qSecrete",
+        "rSecrete",
     ]
-    def is_missing(v): return v is None or (isinstance(v, str) and v.strip() == "")
+
+    def is_missing(v):
+        return v is None or (isinstance(v, str) and v.strip() == "")
+
+    # src vient de _get_src() (fusion form/JSON)
     missing = [k for k in required if is_missing(src.get(k))]
     if missing:
         raise MissingFieldError(
@@ -195,14 +212,29 @@ def _payload_people_from_request():
         )
 
     dob = parse_date_any(dob_str)
-    return firstname, lastname, emailAddress, dob, genotype, photo_bytes, longC, latC, password, qSec, rSec
+    return (
+        gender,
+        firstname,
+        lastname,
+        emailAddress,
+        dob,
+        genotype,
+        photo_bytes,
+        longC,
+        latC,
+        password,
+        qSec,
+        rSec,
+        is_info
+    )
+
 
 @bp.post("/people")
 @require_basic
 def create_person():
     try:
-        fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec = _payload_people_from_request()
-        new_id = insertData(fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec)
+        gender, fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec, is_info = _payload_people_from_request()
+        new_id = insertData(gender, fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec, is_info)
         return jsonify({"status": "created", "id": new_id}), 201
     except AppError as e:
         raise e
