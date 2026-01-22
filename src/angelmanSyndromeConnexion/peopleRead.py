@@ -28,7 +28,7 @@ def fetch_photo(person_id: int) -> tuple[bytes | None, str | None]:
 def identity_public(person_id: int) -> dict | None:
     row = _run_query(text("""
                 SELECT
-                city, country, country_code, age_years, pseudo, status 
+                city, country, country_code, age_years, pseudo, status, gender, is_info
                 FROM T_People_Public 
                 WHERE id = :id
                 """),
@@ -45,6 +45,8 @@ def identity_public(person_id: int) -> dict | None:
             "age": r[3],
             "pseudo" : r[4],
             "status" : r[5],
+            "gender" : r[6],
+            "is_info" : r[7],
         }
 
 
@@ -52,7 +54,7 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
     row = _run_query(text("""
                 SELECT
                 p.id,
-                p.city, p.age_years, p.pseudo, p.status,
+                p.city, p.gender, p.age_years, p.pseudo, p.status, p.is_info,
                 i.firstname, i.lastname, i.emailAddress, i.dateOfBirth,
                 i.genotype, i.longitude, i.latitude, 
                 i.secret_question, i.secret_answer
@@ -70,21 +72,24 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
 
     r = row[0]
     city = r[1]
-    age = r[2]
-    pseudo = r[3]
-    status = r[4]
-    fn   = crypto.decrypt_bytes_to_str_strict(r[5])
-    ln   = crypto.decrypt_bytes_to_str_strict(r[6])
-    em   = crypto.decrypt_bytes_to_str_strict(r[7])
-    dobS = crypto.decrypt_bytes_to_str_strict(r[8])
-    gt   = crypto.decrypt_bytes_to_str_strict(r[9])
-    lon  = crypto.decrypt_number(r[10])
-    lat  = crypto.decrypt_number(r[11])
-    sq   = int(crypto.decrypt_number(r[12])) if r[12] is not None else None
-    sa   = crypto.decrypt_bytes_to_str_strict(r[13]) if r[13] is not None else None
+    gender = r[2]
+    age = r[3]
+    pseudo = r[4]
+    status = r[5]
+    is_info = r[6]
+    fn   = crypto.decrypt_bytes_to_str_strict(r[7])
+    ln   = crypto.decrypt_bytes_to_str_strict(r[8])
+    em   = crypto.decrypt_bytes_to_str_strict(r[9])
+    dobS = crypto.decrypt_bytes_to_str_strict(r[10])
+    gt   = crypto.decrypt_bytes_to_str_strict(r[11])
+    lon  = crypto.decrypt_number(r[12])
+    lat  = crypto.decrypt_number(r[13])
+    sq   = int(crypto.decrypt_number(r[14])) if r[14] is not None else None
+    sa   = crypto.decrypt_bytes_to_str_strict(r[15]) if r[15] is not None else None
 
     return {
         "id": r[0],
+        "gender" : gender,
         "firstname": fn,
         "lastname": ln,
         "pseudo" : pseudo,
@@ -98,6 +103,7 @@ def fetch_person_decrypted(person_id: int) -> dict | None:
         "latitude": lat,
         "secret_question": sq,
         "secret_answer": sa,
+        "is_info" : is_info,
     }
 
 
@@ -145,10 +151,12 @@ def getRecordsPeople():
         text("""
             SELECT
                 p.id,
+                p.gender,
                 p.city,
                 p.country,
                 p.country_code,
                 p.is_connected,
+                p.is_info,
                 p.age_years,
                 i.firstname,
                 i.lastname,
@@ -183,11 +191,14 @@ def getRecordsPeople():
             m = dict(row)      # fallback
 
         pid = m["id"]
+        gender = m["gender"]
         city = m["city"]
         country = m["country"]
         country_code = m["country_code"]
         is_connected = m["is_connected"]
+        is_info = m["is_info"]
         age = m["age_years"]
+        is_info = m["is_info"]
         fn  = crypto.decrypt_bytes_to_str_strict(m["firstname"])
         ln  = crypto.decrypt_bytes_to_str_strict(m["lastname"])
         gt  = crypto.decrypt_bytes_to_str_strict(m["genotype"])
@@ -197,19 +208,22 @@ def getRecordsPeople():
 
         data.append({
             "id": pid,
+            "gender" : gender,
             "firstname": fn,
             "lastname": ln,
             "city": city,                 # on prend la ville de la table publique
             "country": country,
             "country_code" : country_code,
             "is_connected" : is_connected,
+            "is_info" : is_info,
             "age": age,                   # remap age_years -> age pour la sortie
+            "is_info" : is_info,
             "genotype": gt,
             "longitude": long,
             "latitude": lat,
         })
 
-    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","country", "country_code", "is_connected", "age","genotype","longitude","latitude"])
+    df = pd.DataFrame(data, columns=["id","gender","firstname","lastname","city","country", "country_code", "is_connected", "is_info", "age","genotype","longitude","latitude"])
 
     decrypt_end = time.perf_counter()
     logger.info(

@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS T_People_Public (
   id               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  gender           VARCHAR(1)      NOT NULL,
   -- Données “quasi-publiques” / pseudonymisées
   city             VARCHAR(255)    NOT NULL,
   country          VARCHAR(255)    NOT NULL,
@@ -10,6 +11,7 @@ CREATE TABLE IF NOT EXISTS T_People_Public (
   status           ENUM('active','anonymized','deleted') NOT NULL DEFAULT 'active',
 
   is_connected TINYINT(1) NOT NULL DEFAULT 0,
+  is_info TINYINT(1) NOT NULL DEFAULT 0,
 
   -- Méta
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

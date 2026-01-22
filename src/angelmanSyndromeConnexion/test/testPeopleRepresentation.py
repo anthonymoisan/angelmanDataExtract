@@ -48,7 +48,7 @@ def _insertDataFrame(firstRow=False):
     countloop = 0
 
     for row in df.itertuples(index=False):
-        
+        gender      = getattr(row, "Gender")
         firstName   = getattr(row, "Firstname")
         lastName    = getattr(row, "Lastname")
         emailAdress = getattr(row, "Email")
@@ -60,6 +60,7 @@ def _insertDataFrame(firstRow=False):
         password    = getattr(row, "Password")
         questionSecrete = getattr(row, "QuestionSecrete")
         reponseSecrete = getattr(row, "ReponseSecrete")
+        is_info = getattr(row, "IsInfo")
 
         
         img_path = BASE / str(fileName)
@@ -77,7 +78,7 @@ def _insertDataFrame(firstRow=False):
         except Exception:
             logger.exception("Erreur lecture photo: %s", img_path)
 
-        insertData(firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude, password, questionSecrete, reponseSecrete)
+        insertData(gender, firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude, password, questionSecrete, reponseSecrete, is_info)
 
         countloop += 1
 
@@ -95,7 +96,7 @@ def main():
     start = time.time()
     try:
         
-        #_insertDataFrame(firstRow=False)
+        _insertDataFrame(firstRow=False)
         #findId("anthonymoisan@yahoo.fr")
         #df = getRecordsPeople()
         #logger.info(df.head())
@@ -125,7 +126,7 @@ def main():
         #update_person_connection_status(person_id= 2, is_connected=False)
         
    
-        deleteDataById(56)
+        #deleteDataById(56)
         #logger.info(getQuestionSecrete(8))
         #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
         #logger.info(getListPaysTranslate("pl"))
