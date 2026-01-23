@@ -38,7 +38,7 @@ def readTable_with_retry(table_name, max_retries=3, delay_seconds=5):
             
 def _buildDataFrameMapASConnect():
     df_PeoplePublic = readTable_with_retry("T_People_Public")
-    cols = ['id', 'country_code', 'age_years', 'created_at', 'city']
+    cols = ['id', 'country_code', 'age_years', 'created_at', 'city' , 'gender']
     df_PeoplePublic = df_PeoplePublic.loc[:, df_PeoplePublic.columns.intersection(cols)]
     
     df_PeopleIdentity = readTable_with_retry("T_People_Identity")
@@ -71,8 +71,6 @@ def _transformersMapASConnect(df):
 
     df['dateCreation'] = df['created_at'].dt.date
     df = df.drop(columns={'created_at'})
-
-    df["gender"] = 'M'
 
     df["country"] = df["country_code"].map(
     lambda x: country_name_from_iso2(x, locale="en")
