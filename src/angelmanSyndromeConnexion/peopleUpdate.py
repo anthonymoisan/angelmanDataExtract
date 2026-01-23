@@ -53,6 +53,7 @@ def age_years(dob: date, on_date: date | None = None) -> int:
 def updateData(
     email_address : str,
     *,
+    gender=None,
     firstname=None,
     lastname=None,
     dateOfBirth=None,        # date | str ISO
@@ -65,7 +66,8 @@ def updateData(
     password=None,           # str (Argon2)
     questionSecrete=None,    # 1..3
     reponseSecrete=None,     # str
-    delete_photo: bool=False
+    delete_photo: bool=False,
+    is_info: bool=False
 ) -> int:
     """
     Met à jour T_People_Identity (données chiffrées) ET T_People_Public (claires).
@@ -79,6 +81,7 @@ def updateData(
         raise error.ValidationError("Utilisateur introuvable pour cet email")
 
     # 2) Normalisations
+    gender          = gender if _is_str_filled(gender) else None
     firstname       = firstname if _is_str_filled(firstname) else None
     lastname        = lastname  if _is_str_filled(lastname)  else None
     genotype        = genotype  if _is_str_filled(genotype)  else None
@@ -194,6 +197,11 @@ def updateData(
     public_sets = []
     public_params = {"id": pid}
 
+    if gender is not None:
+        public_sets.append("gender = :gender")
+        public_params["gender"] = gender
+
+
     # city (clair). Si non fourni et lon/lat modifiés → reverse geocoding best-effort
     if city is not None:
         public_sets.append("city = :city")
@@ -235,6 +243,10 @@ def updateData(
         valueFirstName = person["firstname"]
         public_sets.append("pseudo = :pseudo")
         public_params["pseudo"] = f"{valueFirstName} {lastname[0]}."
+    
+    public_sets.append("is_info = :is_info")
+    public_params["is_info"] = is_info
+
     # 5) Exécutions SQL (seulement s’il y a quelque chose à modifier)
     affected = 0
 

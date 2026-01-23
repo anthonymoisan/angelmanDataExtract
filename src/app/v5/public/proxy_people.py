@@ -27,6 +27,7 @@ from app.common.security import require_public_app_key
 bp = Blueprint("public_people", __name__)
 register_error_handlers(bp)
 
+
 # --------------------------------------------------------------------
 # Utilitaires locaux (reprise des helpers de app/v5/people.py)
 # --------------------------------------------------------------------
@@ -85,7 +86,7 @@ def _payload_people_from_request():
         is_info = form.get("is_info")
     else:
         data = request.get_json(silent=True) or {}
-        gender = form.get("gender")
+        gender = data.get("gender")
         firstname = data.get("firstname")
         lastname = data.get("lastname")
         emailAddress = data.get("emailAddress")
@@ -140,7 +141,6 @@ def _payload_people_from_request():
             f"Champs manquants: {', '.join(missing)}",
             details={"missing": missing},
         )
-
     dob = parse_date_any(dob_str)
     return (
         gender,
@@ -174,7 +174,6 @@ def public_update_person():
     """
     try:
         src = _get_src() or {}
-
         email_current = (
             (src.get("emailAddress") if isinstance(src, dict) else None)
             or request.args.get("emailAddress")
@@ -198,6 +197,9 @@ def public_update_person():
             ("emailNewAddress", "emailNewAddress"),
             ("newEmail", "emailNewAddress"),
             ("reponseSecrete", "reponseSecrete"),
+            ("gender", "gender"),
+            ("is_info", "is_info"),
+
         ]:
             val = src.get(key_src)
             if isinstance(val, str):
@@ -221,6 +223,9 @@ def public_update_person():
 
         if "delete_photo" in src:
             kwargs["delete_photo"] = _to_bool(src.get("delete_photo"))
+
+        if "is_info" in src:
+            kwargs["is_info"] = _to_bool(src.get("is_info"))
 
         photo_bytes = None
         if request.content_type and request.content_type.startswith(

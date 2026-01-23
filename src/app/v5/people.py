@@ -55,6 +55,7 @@ def api_update_person():
 
         kwargs = {}
         for key_src, key_dst in [
+            ("gender", "gender"),
             ("firstname", "firstname"),
             ("lastname", "lastname"),
             ("genotype", "genotype"),
@@ -63,6 +64,7 @@ def api_update_person():
             ("emailNewAddress", "emailNewAddress"),
             ("newEmail", "emailNewAddress"),
             ("reponseSecrete", "reponseSecrete"),
+            ("is_info", "is_info"),
         ]:
             val = src.get(key_src)
             if isinstance(val, str):
@@ -84,6 +86,9 @@ def api_update_person():
 
         if "delete_photo" in src:
             kwargs["delete_photo"] = _to_bool(src.get("delete_photo"))
+
+        if "is_info" in src:
+            kwargs["is_info"] = _to_bool(src.get("is_info"))
 
         photo_bytes = None
         if request.content_type and request.content_type.startswith("multipart/form-data"):
@@ -155,7 +160,7 @@ def _payload_people_from_request():
         is_info = form.get("is_info")
     else:
         data = request.get_json(silent=True) or {}
-        gender = form.get("gender")
+        gender = data.get("gender")
         firstname = data.get("firstname")
         lastname = data.get("lastname")
         emailAddress = data.get("emailAddress")

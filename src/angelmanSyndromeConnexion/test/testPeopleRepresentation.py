@@ -108,9 +108,10 @@ def main():
         #logger.info("Id : %d", id)
         #logger.info("Authentification : %d", authenticate_email_password("anthonymoisan@yahoo.fr", "Mmas&37814", bAngelmanResult=False))
         
-        """
+        '''
         updateData(
-            "victor.cochonneau@gmail.fr", 
+            email_address="victor.cochonneau@gmail.fr", 
+            gender='M',
             firstname="Anthony",
             dateOfBirth = "26/11/2019",
             emailNewAddress = "anthonymoisan2@yahoo.fr",
@@ -119,9 +120,10 @@ def main():
             longitude = "2.5",
             latitude = "48",
             questionSecrete=2,
-            reponseSecrete="Chun Connery"
+            reponseSecrete="Chun Connery",
+            is_info=False
         )
-        """
+        '''
 
         #update_person_connection_status(person_id= 2, is_connected=False)
         
