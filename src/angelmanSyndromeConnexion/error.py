@@ -35,3 +35,7 @@ class DuplicateEmailError(AppError):
 class ValidationError(AppError):
     code = "validation_error"
     http_status = 400
+
+class BadLocalization(AppError):
+    code = "badLocalizationGPS"
+    http_status = 400

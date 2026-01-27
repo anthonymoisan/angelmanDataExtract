@@ -15,7 +15,7 @@ from angelmanSyndromeConnexion.peopleRead import(
     getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId,identity_public, getListPaysTranslate
 )
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
-from angelmanSyndromeConnexion.peopleCreate import insertData
+from angelmanSyndromeConnexion.peopleCreate import insertData, get_city
 
 import time
 from angelmanSyndromeConnexion import error
@@ -30,7 +30,7 @@ def _insertDataFrame(firstRow=False):
     dropTable("T_People_Public",bAngelmanResult=False)    
     
     wkdir = os.path.dirname(__file__)
-    df = pd.read_excel(f"{wkdir}/../../../data/Picture/DataAngelman.xlsx")
+    df = pd.read_excel(f"{wkdir}/../../../data/Picture/AS_people_4000_generated.xlsx")
     
     script_path2 = os.path.join(f"{wkdir}/../SQL/","createPublicPeople.sql")
     createTable(script_path2,bAngelmanResult=False)
@@ -43,7 +43,7 @@ def _insertDataFrame(firstRow=False):
     if (firstRow):
         loop = 1
     else:
-        loop = 1000
+        loop = 10
 
     countloop = 0
 
@@ -78,8 +78,10 @@ def _insertDataFrame(firstRow=False):
         except Exception:
             logger.exception("Erreur lecture photo: %s", img_path)
 
-        insertData(gender, firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude, password, questionSecrete, reponseSecrete, is_info)
-
+        try:
+            insertData(gender, firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude, password, questionSecrete, reponseSecrete, is_info)
+        except error.BadLocalization as e:
+            logger.error(e)
         countloop += 1
 
         logger.info("Deal with line %d",countloop)
@@ -132,7 +134,7 @@ def main():
         #logger.info(getQuestionSecrete(8))
         #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
         #logger.info(getListPaysTranslate("pl"))
-        
+        #logger.info("City : %s",get_city(43.75,7.59))
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

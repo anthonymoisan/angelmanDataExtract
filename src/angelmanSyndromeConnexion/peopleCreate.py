@@ -156,6 +156,8 @@ def insertData(
         country = country_str.strip()
         code_country_str = get_country_code(latitude, longitude) or ""
         code_country = code_country_str.strip()
+        if(city=="" or country_str=="" or code_country==""):
+            raise error.BadLocalization("We have an issue with your GPS localization")
 
         # -------- 3) Chiffrement --------
         fn_enc  = crypto.encrypt_str(firstname)
