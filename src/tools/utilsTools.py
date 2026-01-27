@@ -22,7 +22,7 @@ CONFIG_PATH = os.path.join(BASE_DIR, "../../angelman_viz_keys/Config2.ini")
 CONFIG_GMAIL_PATH = os.path.join(BASE_DIR, "../../angelman_viz_keys/Config4.ini")
 SQL_DIR = os.path.join(BASE_DIR, "../SQLScript")
 # Détection du contexte (local vs PythonAnywhere)
-LOCAL_CONNEXION = not os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower().startswith("pythonanywhere")
+LOCAL_CONNEXION = not os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower().startswith("eu.pythonanywhere")
 
 # ----- Config helpers -----
 def load_config(filepath: str) -> ConfigParser:
