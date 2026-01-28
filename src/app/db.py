@@ -22,7 +22,7 @@ except ImportError:
 
 LOCAL_CONNEXION = not os.environ.get(
     "PYTHONANYWHERE_DOMAIN", ""
-).lower().startswith("pythonanywhere")
+).lower().startswith("eu.pythonanywhere")
 
 # Lecture de la config DB (host, user, password, etc.)
 cfg = get_db_params(bAngelmanResult=False)
