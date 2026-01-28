@@ -326,9 +326,9 @@ def public_create_person():
             rSec,
             is_info,
         )
-        return jsonify({"status": "created", "id": new_id}), 201
+        return jsonify({"status": "created", "id": new_id}), 200
     except AppError as e:
-        raise e
+        return jsonify({"status": "validation error" , "message" : e.code}), e.http_status
     except Exception:
         current_app.logger.exception("Unhandled error (public_create_person)")
         return (

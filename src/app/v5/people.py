@@ -240,9 +240,9 @@ def create_person():
     try:
         gender, fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec, is_info = _payload_people_from_request()
         new_id = insertData(gender, fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec, is_info)
-        return jsonify({"status": "created", "id": new_id}), 201
+        return jsonify({"status": "created", "id": new_id}), 200
     except AppError as e:
-        raise e
+        return jsonify({"status": "validation error" , "message" : e.code}), e.http_status
     except Exception:
         current_app.logger.exception("Unhandled error")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
