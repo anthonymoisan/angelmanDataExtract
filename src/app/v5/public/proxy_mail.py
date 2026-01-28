@@ -1,8 +1,12 @@
 # app/v5/public/proxy_mail.py
 from __future__ import annotations
-import os, ssl, json
+
+import os
+import ssl
+import json
 from configparser import ConfigParser
 from email.message import EmailMessage
+from email.utils import parseaddr
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request, current_app
@@ -30,8 +34,23 @@ SMTP_PORT = int(_cfg["SMTP_PORT"]["PORT"])
 SMTP_USER = _cfg["SMTP_USER"]["USER"]
 SMTP_PASS = _cfg["SMTP_PASS"]["PASS"]
 
-MAIL_TO   = "contact@angelmananalytics.org"
-MAIL_FROM = "asconnect@fastfrance.org"
+MAIL_TO = "contact@angelmananalytics.org"
+
+# Fallback Reply-To si aucun mail_from fourni (ou invalide)
+MAIL_FROM_DEFAULT = "asconnect@fastfrance.org"
+
+
+def sanitize_email(value: str) -> str:
+    """Retourne un email normalisé ou '' si invalide."""
+    if not value:
+        return ""
+    _, email = parseaddr(str(value).strip())
+    email = (email or "").strip().lower()
+
+    # Anti header injection + validation basique
+    if "@" not in email or any(c in email for c in ("\r", "\n")):
+        return ""
+    return email
 
 
 # -------------------------------------------------------------------
@@ -53,8 +72,9 @@ def relay_contact_public():
     try:
         data = request.get_json(silent=True, force=False)
     except Exception:
-        # On log juste en debug si tu veux, mais pas verbeux
-        current_app.logger.debug("PUBLIC CONTACT: get_json() a levé une exception", exc_info=True)
+        current_app.logger.debug(
+            "PUBLIC CONTACT: get_json() a levé une exception", exc_info=True
+        )
 
     # 2) Si pas de dict, on tente à la main avec json.loads
     if not isinstance(data, dict):
@@ -67,7 +87,17 @@ def relay_contact_public():
 
     # À partir d'ici, data est un dict
     subject = sanitize_subject(data.get("subject", ""))
-    body    = sanitize_body(data.get("body", ""))
+    body = sanitize_body(data.get("body", ""))
+
+    # ---------------------------------------------------------------
+    # mail_from paramétrique (utilisé en Reply-To)
+    # ---------------------------------------------------------------
+    mail_from_param = sanitize_email(data.get("mail_from", ""))
+    reply_to = mail_from_param or MAIL_FROM_DEFAULT
+
+    # (Optionnel) rendre visible dans le corps si fourni
+    if mail_from_param:
+        body = f"Message de : {mail_from_param}\n\n{body}"
 
     # ---------------------------------------------------------------
     # CAPTCHA (copié du endpoint privé)
@@ -113,8 +143,11 @@ def relay_contact_public():
         subject if subject.startswith("AS Connect - ")
         else f"AS Connect - {subject}"
     )
+
+    # Important : garder From fixe (SMTP) pour SPF/DKIM/délivrabilité
     msg["From"] = SMTP_USER
-    msg["Reply-To"] = MAIL_FROM
+    msg["Reply-To"] = reply_to
+
     msg["To"] = MAIL_TO
     msg.set_content(body)
 
