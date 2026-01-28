@@ -43,9 +43,10 @@ def _insertDataFrame(firstRow=False):
     if (firstRow):
         loop = 1
     else:
-        loop = 10
+        loop = 10000
 
     countloop = 0
+    countGPSError = 0
 
     for row in df.itertuples(index=False):
         gender      = getattr(row, "Gender")
@@ -82,12 +83,15 @@ def _insertDataFrame(firstRow=False):
             insertData(gender, firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude, password, questionSecrete, reponseSecrete, is_info)
         except error.BadLocalization as e:
             logger.error(e)
+            countGPSError += 1
         countloop += 1
 
         logger.info("Deal with line %d",countloop)
 
         if(countloop == loop):
+            logger.info("-->GPS error %d",countGPSError)
             break
+
     
 
 def findId(email):

@@ -151,12 +151,10 @@ def getRecordsPeople():
         text("""
             SELECT
                 p.id,
-                p.gender,
                 p.city,
                 p.country,
                 p.country_code,
                 p.is_connected,
-                p.is_info,
                 p.age_years,
                 i.firstname,
                 i.lastname,
@@ -191,14 +189,11 @@ def getRecordsPeople():
             m = dict(row)      # fallback
 
         pid = m["id"]
-        gender = m["gender"]
         city = m["city"]
         country = m["country"]
         country_code = m["country_code"]
         is_connected = m["is_connected"]
-        is_info = m["is_info"]
         age = m["age_years"]
-        is_info = m["is_info"]
         fn  = crypto.decrypt_bytes_to_str_strict(m["firstname"])
         ln  = crypto.decrypt_bytes_to_str_strict(m["lastname"])
         gt  = crypto.decrypt_bytes_to_str_strict(m["genotype"])
@@ -208,22 +203,19 @@ def getRecordsPeople():
 
         data.append({
             "id": pid,
-            "gender" : gender,
             "firstname": fn,
             "lastname": ln,
             "city": city,                 # on prend la ville de la table publique
             "country": country,
             "country_code" : country_code,
             "is_connected" : is_connected,
-            "is_info" : is_info,
             "age": age,                   # remap age_years -> age pour la sortie
-            "is_info" : is_info,
             "genotype": gt,
             "longitude": long,
             "latitude": lat,
         })
 
-    df = pd.DataFrame(data, columns=["id","gender","firstname","lastname","city","country", "country_code", "is_connected", "is_info", "age","genotype","longitude","latitude"])
+    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","country", "country_code", "is_connected", "age","genotype","longitude","latitude"])
 
     decrypt_end = time.perf_counter()
     logger.info(
