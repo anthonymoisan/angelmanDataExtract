@@ -99,6 +99,7 @@ def insertData(
     is_info
 ):
     try:
+
         if not(gender=='M' or gender=='F'):
             raise TypeError("Gender doit être M or F")
             
@@ -213,8 +214,8 @@ def insertData(
         id = create_person_and_identity(data)
         logger.info("Id create: %d", id)
         return id
-    except error.AppError:
-        raise
+    except error.AppError as e:
+        raise e
     except Exception:
         logger.error("Insert failed in T_PublicPeople and T_PeopleIdentity", exc_info=True)
         raise

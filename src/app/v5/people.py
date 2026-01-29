@@ -284,15 +284,23 @@ def get_idPerson():
     try:
         email = request.args.get("email") or request.args.get("emailAddress")
         if not email or not email.strip():
-            raise MissingFieldError("email (query param) manquant", {"missing": ["email"]})
+            raise MissingFieldError(
+                "email (query param) manquant",
+                {"missing": ["email"]},
+            )
         person_id = giveId(email)
-        return (jsonify({"status": "not_found"}), 404) if person_id is None \
-               else (jsonify({"status": "found", "id": person_id}), 200)
+        if person_id is None:
+            return jsonify({"status": "Not found"}), 404
+        return jsonify({"status": "found", "id": person_id}), 200
     except AppError as e:
-        raise e
+        return jsonify({"status": "validation error" , "message" : e.code}), e.http_status
     except Exception:
-        current_app.logger.exception("Unhandled error")
-        return jsonify({"status": "error", "message": "Internal server error"}), 500
+        current_app.logger.exception("Unhandled error (public_lookup_person)")
+        return (
+            jsonify({"status": "error", "message": "Internal server error"}),
+            500,
+        )
+
 
 @bp.get("/people/countriesTranslated")
 @require_basic

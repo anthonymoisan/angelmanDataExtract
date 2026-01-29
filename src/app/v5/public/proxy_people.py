@@ -364,10 +364,10 @@ def public_lookup_person():
             )
         person_id = giveId(email)
         if person_id is None:
-            return jsonify({"status": "not_found"}), 404
+            return jsonify({"status": "Not found"}), 404
         return jsonify({"status": "found", "id": person_id}), 200
     except AppError as e:
-        raise e
+        return jsonify({"status": "validation error" , "message" : e.code}), e.http_status
     except Exception:
         current_app.logger.exception("Unhandled error (public_lookup_person)")
         return (
