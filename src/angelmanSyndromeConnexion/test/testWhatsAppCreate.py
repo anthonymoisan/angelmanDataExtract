@@ -24,6 +24,7 @@ from angelmanSyndromeConnexion.whatsAppCreate import (
     createConversationDump,
     createConversationMemberDump,
     createMessageDump,
+    create_group_conversation,
 )
 import pandas as pd
 
@@ -255,6 +256,31 @@ def runExcel():
                 row["created_at_message"],
             )
 
+def createMessagesConversationsFromExcel(wkdir):
+    dropTable("T_Message_Attachment",bAngelmanResult=False)
+    dropTable("T_Message_Reaction",bAngelmanResult=False)
+    dropTable("T_Message",bAngelmanResult=False)
+    dropTable("T_Conversation_Member",bAngelmanResult=False)
+    dropTable("T_Conversation",bAngelmanResult=False)
+    #dropTable("T_People_Public",bAngelmanResult=False)
+    
+    script_path = os.path.join(f"{wkdir}/../SQL/","createConversation.sql")
+    createTable(script_path,bAngelmanResult=False)
+    script_path = os.path.join(f"{wkdir}/../SQL/","createConversationMember.sql")
+    createTable(script_path,bAngelmanResult=False)
+    script_path = os.path.join(f"{wkdir}/../SQL/","createMessage.sql")
+    createTable(script_path,bAngelmanResult=False)
+    script_path = os.path.join(f"{wkdir}/../SQL/","createMessageAttachment.sql")
+    createTable(script_path,bAngelmanResult=False)
+    script_path = os.path.join(f"{wkdir}/../SQL/","createMessageReaction.sql")
+    createTable(script_path,bAngelmanResult=False)
+
+    runExcel()
+
+def create_GroupConversation():
+     with get_session() as session:
+        convGroup1 = create_group_conversation(session, "Group1")
+
 # Set up logger
 logger = setup_logger(debug=False)
     
@@ -264,26 +290,9 @@ def main():
     try:
         wkdir = os.path.dirname(__file__)
         
+        #createMessagesConversationsFromExcel(wkdir=wkdir)
+        create_GroupConversation()
         
-        dropTable("T_Message_Attachment",bAngelmanResult=False)
-        dropTable("T_Message_Reaction",bAngelmanResult=False)
-        dropTable("T_Message",bAngelmanResult=False)
-        dropTable("T_Conversation_Member",bAngelmanResult=False)
-        dropTable("T_Conversation",bAngelmanResult=False)
-        #dropTable("T_People_Public",bAngelmanResult=False)
-        
-        script_path = os.path.join(f"{wkdir}/../SQL/","createConversation.sql")
-        createTable(script_path,bAngelmanResult=False)
-        script_path = os.path.join(f"{wkdir}/../SQL/","createConversationMember.sql")
-        createTable(script_path,bAngelmanResult=False)
-        script_path = os.path.join(f"{wkdir}/../SQL/","createMessage.sql")
-        createTable(script_path,bAngelmanResult=False)
-        script_path = os.path.join(f"{wkdir}/../SQL/","createMessageAttachment.sql")
-        createTable(script_path,bAngelmanResult=False)
-        script_path = os.path.join(f"{wkdir}/../SQL/","createMessageReaction.sql")
-        createTable(script_path,bAngelmanResult=False)
-    
-        runExcel()
         elapsed = time.time() - start
         logger.info(f"\n✅ Tables for WhatsApp are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)

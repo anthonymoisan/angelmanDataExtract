@@ -120,6 +120,7 @@ def get_or_create_private_conversation(session, p1_id: int, p2_id: int, title: s
         is_group=False,
     )
 
+
     addConversationMember(session, new_conv.id, p1_id, "member")
     addConversationMember(session, new_conv.id, p2_id, "member")
 
@@ -156,6 +157,49 @@ def addConversationMember(session,conversation_id,people_public_id,role) -> Conv
     session.flush()  # obtenir les valeurs PK si besoin
 
     return convMember
+
+
+def create_group_conversation(session, title: str) -> Conversation:
+    """
+    Crée une conversation de groupe et ajoute toutes les personnes de T_People_Public
+    """
+
+    # 1) Créer la conversation
+    conv = Conversation(
+        title=title,
+        is_group=True,
+        created_at=utc_now(),
+        last_message_at=None,
+    )
+    session.add(conv)
+    session.flush()  # 🔑 récupère conv.id
+
+    # 2) Récupérer tous les people_public_id
+    people_ids = session.execute(
+        select(PeoplePublic.id)
+        .where(
+            PeoplePublic.status == "active"
+        )
+    ).scalars().all()
+
+    # 3) Bulk insert des membres
+    members = [
+        ConversationMember(
+            conversation_id=conv.id,
+            people_public_id=pid,
+            role="member",
+            joined_at=utc_now(),
+            last_read_message_id=None,
+            last_read_at=None,
+            is_muted=False,
+        )
+        for pid in people_ids
+    ]
+
+    session.bulk_save_objects(members)
+
+    session.commit()
+    return conv
 
 def addMessage(session,conv, sender_people_id,body_text,reply_to_message_id,has_attachments,status) -> Message:
     message = Message(
