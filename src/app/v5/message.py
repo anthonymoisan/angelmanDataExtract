@@ -26,6 +26,7 @@ from angelmanSyndromeConnexion.whatsAppRead import(
     get_unread_count,
     get_conversations_summary_for_person,
     get_group_conversations_for_person_sorted,
+    get_group_conversations_summary_for_person,
 )
 
 from angelmanSyndromeConnexion.whatsAppUpdate import(
@@ -829,4 +830,27 @@ def api_get_conversations_summary_private(people_public_id: int):
             viewer_people_id=people_public_id,
         )
 
+        return jsonify(data), 200
+
+@bp.get("/people/<int:people_public_id>/conversationsGroupSummary")
+@ratelimit(5)
+@require_basic
+def api_get_conversationsGroup_summary_private(people_public_id: int):
+    """
+    GET /api/v5/people/<id>/conversationsGroupSummary
+
+    Retourne une liste prête à afficher :
+      - conversation fields
+      - unread_count
+      - nombre de membres
+      - last_message { message_id, sender_people_id, pseudo, body_text, created_at, is_seen }
+    """
+    with get_session() as session:
+        person = session.execute(
+            select(PeoplePublic).where(PeoplePublic.id == people_public_id)
+        ).scalar_one_or_none()
+        if not person:
+            return jsonify({"error": "PeoplePublic introuvable"}), 404
+
+        data = get_group_conversations_summary_for_person(session, people_public_id)
         return jsonify(data), 200

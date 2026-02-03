@@ -238,7 +238,7 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
                 CM_viewer.people_public_id == viewer_people_id,
             ),
         )
-        .outerjoin(
+        .join(
             CM_other,
             and_(
                 CM_other.conversation_id == Conversation.id,
@@ -249,6 +249,7 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
         .outerjoin(last_msg_id_sq, last_msg_id_sq.c.conv_id == Conversation.id)
         .outerjoin(LM, LM.id == last_msg_id_sq.c.last_message_id)
         .outerjoin(PP_sender, PP_sender.id == LM.sender_people_id)
+        .where(Conversation.is_group.is_(False))   # ✅ AJOUT ICI
         .order_by(Conversation.last_message_at.desc(), Conversation.created_at.desc())
     )
 
@@ -289,6 +290,104 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
                 "body_text": r.last_body_text or "",
                 "created_at": r.last_created_at.isoformat() if r.last_created_at else None,
                 "is_seen": is_seen,  # bool | None
+            }
+        })
+
+    return out
+
+def get_group_conversations_summary_for_person(session, viewer_people_id: int):
+    CM_viewer = aliased(ConversationMember)
+
+    PP_sender = aliased(PeoplePublic)  # pseudo auteur du dernier msg
+    LM = aliased(Message)
+
+    # Dernier message (id max) par conversation (hors deleted)
+    last_msg_id_sq = (
+        select(
+            Message.conversation_id.label("conv_id"),
+            func.max(Message.id).label("last_message_id"),
+        )
+        .where(Message.status != "deleted")
+        .group_by(Message.conversation_id)
+        .subquery()
+    )
+
+    # Unread count pour viewer
+    unread_count_sq = (
+        select(func.count(Message.id))
+        .where(
+            Message.conversation_id == Conversation.id,
+            Message.status != "deleted",
+            Message.id > func.coalesce(CM_viewer.last_read_message_id, 0),
+            Message.sender_people_id != viewer_people_id,
+        )
+        .correlate(Conversation, CM_viewer)
+        .scalar_subquery()
+    )
+
+    # Nombre de membres dans le groupe
+    member_count_sq = (
+        select(func.count(ConversationMember.people_public_id))
+        .where(ConversationMember.conversation_id == Conversation.id)
+        .correlate(Conversation)
+        .scalar_subquery()
+    )
+
+    stmt = (
+        select(
+            Conversation.id.label("conversation_id"),
+            Conversation.title.label("title"),
+            Conversation.is_group.label("is_group"),
+            Conversation.created_at.label("created_at"),
+            Conversation.last_message_at.label("last_message_at"),
+
+            unread_count_sq.label("unread_count"),
+            member_count_sq.label("member_count"),
+
+            LM.id.label("last_message_id"),
+            LM.sender_people_id.label("last_sender_people_id"),
+            LM.body_text.label("last_body_text"),
+            LM.created_at.label("last_created_at"),
+            PP_sender.pseudo.label("last_sender_pseudo"),
+        )
+        .join(
+            CM_viewer,
+            and_(
+                CM_viewer.conversation_id == Conversation.id,
+                CM_viewer.people_public_id == viewer_people_id,
+            ),
+        )
+        .outerjoin(last_msg_id_sq, last_msg_id_sq.c.conv_id == Conversation.id)
+        .outerjoin(LM, LM.id == last_msg_id_sq.c.last_message_id)
+        .outerjoin(PP_sender, PP_sender.id == LM.sender_people_id)
+        .where(Conversation.is_group.is_(True))  # ✅ uniquement groupes
+        .order_by(Conversation.last_message_at.desc(), Conversation.created_at.desc())
+    )
+
+    rows = session.execute(stmt).all()
+
+    out = []
+    for r in rows:
+        title = (r.title or "").strip() or "Groupe"
+
+        out.append({
+            "id": int(r.conversation_id),
+            "title": title,
+            "is_group": True,
+            "member_count": int(r.member_count or 0),
+
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "last_message_at": r.last_message_at.isoformat() if r.last_message_at else None,
+
+            "unread_count": int(r.unread_count or 0),
+
+            "last_message": None if r.last_message_id is None else {
+                "message_id": int(r.last_message_id),
+                "sender_people_id": int(r.last_sender_people_id) if r.last_sender_people_id is not None else None,
+                "pseudo": r.last_sender_pseudo or "",
+                "body_text": r.last_body_text or "",
+                "created_at": r.last_created_at.isoformat() if r.last_created_at else None,
+                "is_seen": None,  # en groupe => pas pertinent (sauf si tu implémentes read receipts par membre)
             }
         })
 
