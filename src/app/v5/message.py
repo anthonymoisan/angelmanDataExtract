@@ -35,6 +35,7 @@ from angelmanSyndromeConnexion.whatsAppUpdate import(
 from angelmanSyndromeConnexion.whatsAppDelete import(
     deleteMessageSoft,
     leave_conversation,
+    leave_group_conversation,
 )
 
 from app.common.security import ratelimit
@@ -618,6 +619,44 @@ def api_leave_conversation_private(conversation_id: int):
             return jsonify(
                 {"error": "Conversation introuvable ou personne non membre"}
             ), 404
+
+        return jsonify({"success": True}), 200
+    
+@bp.post("/conversations/group/<int:conversation_id>/leave")
+@ratelimit(3)
+@require_basic
+def api_leave_conversationGroupe_private(conversation_id: int):
+    """
+    POST /api/v5/conversations/group/<conversation_id>/leave
+    Body JSON :
+    {
+      "people_public_id": 1,
+      "soft_delete_own_messages": true,   (optionnel, défaut: true)
+      "delete_empty_conversation": true   (optionnel, défaut: true)
+    }
+
+    people_public_id est déduit de l'utilisateur authentifié.
+    """
+    data = request.get_json(silent=True) or {}
+
+    people_public_id = data.get("people_public_id")
+    soft_delete_own_messages = bool(data.get("soft_delete_own_messages", True))
+    delete_empty_conversation = bool(data.get("delete_empty_conversation", True))
+
+    if people_public_id is None:
+        return jsonify({"error": "Utilisateur non authentifié"}), 401
+
+    with get_session() as session:
+        ok = leave_group_conversation(
+            session,
+            conversation_id=conversation_id,
+            people_public_id=int(people_public_id),
+            soft_delete_own_messages=soft_delete_own_messages,
+            delete_empty_conversation=delete_empty_conversation,
+        )
+
+        if not ok:
+            return jsonify({"error": "Conversation Group introuvable ou non membre"}), 404
 
         return jsonify({"success": True}), 200
     
