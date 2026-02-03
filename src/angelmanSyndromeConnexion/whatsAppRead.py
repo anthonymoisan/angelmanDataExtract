@@ -24,7 +24,10 @@ def get_conversations_for_person_sorted(session, people_public_id: int):
     # Requête principale
     stmt = (
         select(Conversation)
-        .where(Conversation.id.in_(subq))
+        .where(
+            Conversation.id.in_(subq),
+            Conversation.is_group.is_(False),
+            )
         .order_by(
             desc(Conversation.last_message_at),
             desc(Conversation.created_at),
@@ -33,6 +36,37 @@ def get_conversations_for_person_sorted(session, people_public_id: int):
 
     conversations = session.scalars(stmt).all()
     return conversations
+
+
+def get_group_conversations_for_person_sorted(
+    session,
+    people_public_id: int,
+):
+    """
+    Retourne toutes les groupes de conversations où `people_public_id` est membre,
+    triées de la plus récente à la plus ancienne :
+      - d'abord sur last_message_at DESC
+      - puis fallback sur created_at DESC
+    """
+    stmt = (
+        select(Conversation)
+        .join(
+            ConversationMember,
+            ConversationMember.conversation_id == Conversation.id,
+        )
+        .where(
+            ConversationMember.people_public_id == people_public_id,
+            Conversation.is_group.is_(True),
+        )
+        .order_by(
+            desc(func.coalesce(Conversation.last_message_at, Conversation.created_at)),
+            desc(Conversation.created_at),
+        )
+        .distinct()
+    )
+
+    return session.scalars(stmt).all()
+
 
 def get_all_conversation_members(session):
     """

@@ -21,12 +21,41 @@ from angelmanSyndromeConnexion.whatsAppRead import (
     get_messages_for_conversation,
     get_member_ids_for_conversation,
     get_last_message_for_conversation,
+    get_group_conversations_for_person_sorted,
 )
 
 import traceback
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+def runConversationsSansGroupe(session):
+    allPeople = get_all_peoplePublic(session)
+    p = allPeople[0]
+    #for p in allPeople:
+    convs = get_conversations_for_person_sorted(session, p.id)
+    logger.info("\nConversations triées pour %s :",p.pseudo)
+    
+    for c in convs:
+        logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
+    
+    #convs = get_messages_for_conversation(session, c.id)
+
+    #logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
+
+
+
+            
+    
+
+    #member_ids = get_member_ids_for_conversation(session,1)  
+    #lastMessage = get_last_message_for_conversation(session,1)
+    #logger.info(lastMessage)
+
+def runConversationsGroupe(session):
+    convs = get_group_conversations_for_person_sorted(session,4)
+    for c in convs:
+        logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -35,37 +64,9 @@ def run():
     now = utc_now()
 
     with get_session() as session:
-
-        allPeople = get_all_peoplePublic(session)
-        p = allPeople[0]
-        #for p in allPeople:
-        convs = get_conversations_for_person_sorted(session, p.id)
-        logger.info("\nConversations triées pour %s :",p.pseudo)
-        c = convs[1]
-        #for c in convs:
-        logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
+        runConversationsSansGroupe(session)
+        #runConversationsGroupe(session)
         
-        rows = get_messages_for_conversation(session, c.id)
-
-        for r in rows:
-            print(
-                f"[{r.message_id}] {r.author_pseudo} : {r.body_text} "
-                f"(reply_to={r.reply_to_message_id}, reply_body={r.reply_body_text})"
-            )
-            if r.reaction_emoji is not None:
-                print(
-                    f"   -> réaction {r.reaction_emoji} par {r.reaction_pseudo} "
-                    f"(people_id={r.reaction_people_id})"
-                )
-
-
-
-                
-        
-
-        #member_ids = get_member_ids_for_conversation(session,1)  
-        #lastMessage = get_last_message_for_conversation(session,1)
-        #logger.info(lastMessage)
 
     logger.info("✅ Seed de conversation terminé avec succès !")
 
