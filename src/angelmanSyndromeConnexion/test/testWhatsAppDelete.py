@@ -16,6 +16,7 @@ from app.db import get_session  # ton helper de session (context manager)
 from angelmanSyndromeConnexion.whatsAppDelete import(
     deleteMessageSoft,
     leave_conversation,
+    leave_group_conversation,
 )
 
 import traceback
@@ -27,7 +28,8 @@ def run():
     
     with get_session() as session:
         #deleteMessageSoft(session,6) 
-        leave_conversation(session,1,1)
+        #leave_conversation(session,1,1)
+        leave_group_conversation(session,11,1)
     
     logger.info("✅ Seed de conversation terminé avec succès !")
 
