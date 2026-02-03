@@ -193,3 +193,47 @@ def leave_group_conversation(
 
     session.commit()
     return True
+
+def delete_group_conversation(
+    session: Session,
+    conversation_id: int,
+    people_public_id: int,
+    hard_delete: bool = True,
+) -> bool:
+    conv = session.get(Conversation, conversation_id)
+    if not conv or not conv.is_group:
+        return False
+
+    member = session.get(
+        ConversationMember,
+        {"conversation_id": conversation_id, "people_public_id": people_public_id},
+    )
+    if not member:
+        return False
+
+    try:
+        if hard_delete:
+            session.execute(
+                Message.__table__.delete().where(Message.conversation_id == conversation_id)
+            )
+        else:
+            session.execute(
+                Message.__table__.update()
+                .where(Message.conversation_id == conversation_id)
+                .where(Message.status != "deleted")
+                .values(status="deleted")
+            )
+
+        session.execute(
+            ConversationMember.__table__.delete().where(
+                ConversationMember.conversation_id == conversation_id
+            )
+        )
+
+        session.delete(conv)
+        session.commit()
+        return True
+
+    except Exception:
+        session.rollback()
+        raise
