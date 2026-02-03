@@ -16,6 +16,7 @@ from angelmanSyndromeConnexion.whatsAppCreate import (
     addConversationMember,
     addMessage,
     toggleMessageReaction,
+    create_group_conversation,
 )
 from angelmanSyndromeConnexion.whatsAppRead import(
     get_conversations_for_person_sorted,
@@ -143,6 +144,31 @@ def api_get_or_create_private_conversation_private():
                 return jsonify({"error": f"PeoplePublic {pid} introuvable"}), 404
 
         conv = get_or_create_private_conversation(session, p1_id, p2_id, title)
+        return jsonify(conversation_to_dict(conv)), 200
+
+@bp.post("/conversations/group/all")
+@ratelimit(3)
+@require_basic
+def api_create_group_conversation_all_people():
+    """
+    POST /api/private/conversations/group/all
+    Body JSON :
+    {
+      "title": "Groupe général",
+    }
+    """
+
+    data = request.get_json(silent=True) or {}
+    title = (data.get("title") or "").strip()
+    
+    if not title:
+        return jsonify({"error": "title est requis"}), 400
+
+    
+    with get_session() as session:
+        conv = create_group_conversation(session, title=title)
+
+        session.commit()
         return jsonify(conversation_to_dict(conv)), 200
 
 
