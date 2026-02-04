@@ -914,8 +914,7 @@ def api_public_getIdWithFilters():
         "people_public_id": 12 (id Admin)
       }
     """
-    data = request.get_json(silent=True) or {}
-    people_public_id = data.get("people_public_id")
+    people_public_id = request.args.get("people_public_id", type=int)
     if people_public_id is None or not isinstance(people_public_id, int):
         return jsonify({"error": "Champ 'people_public_id' requis (int)."}), 400
     with get_session() as session:
