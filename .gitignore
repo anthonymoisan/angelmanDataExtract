@@ -235,3 +235,6 @@ data/Picture/Conversation.xlsx
 data/Picture/DataAngelman.xlsx
 data/Picture/EiffelTower.jpg
 data/Picture/kiosque.jpeg
+src/app/v5/public/proxy_message.py
+data/Picture/~$AS_people_4000_generated.xlsx
+.gitignore

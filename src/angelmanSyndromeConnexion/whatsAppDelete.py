@@ -210,6 +210,9 @@ def delete_group_conversation(
     )
     if not member:
         return False
+    
+    if not member.role == 'admin':
+        return False
 
     try:
         if hard_delete:

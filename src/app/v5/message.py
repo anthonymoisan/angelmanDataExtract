@@ -38,6 +38,7 @@ from angelmanSyndromeConnexion.whatsAppDelete import(
     deleteMessageSoft,
     leave_conversation,
     leave_group_conversation,
+    delete_group_conversation,
 )
 
 from app.common.security import ratelimit
@@ -150,29 +151,64 @@ def api_get_or_create_private_conversation_private():
         return jsonify(conversation_to_dict(conv)), 200
 
 
-@bp.post("/conversations/group/all")
+@bp.post("/conversations/group")
 @ratelimit(3)
 @require_basic
 def api_create_group_conversation_all_people():
     """
-    POST /api/public/conversations/group/all
-    Body JSON :
-    {
-      "title": "Groupe général",
-    }
+    POST /api/public/conversations/group
+    Body:
+      {
+        "title": "Groupe 6",
+        "people_public_id": 12,
+        "listIdPeoplesMember": [34, 56, 78]
+      }
     """
 
     data = request.get_json(silent=True) or {}
     title = (data.get("title") or "").strip()
+    people_public_id = data.get("people_public_id")
+    list_ids = data.get("listIdPeoplesMember")
 
-    if not title:
-        return jsonify({"error": "title est requis"}), 400
+    if not title or not isinstance(title, str):
+        return jsonify({"error": "Champ 'title' requis (string)."}), 400
+
+    if people_public_id is None or not isinstance(people_public_id, int):
+        return jsonify({"error": "Champ 'people_public_id' requis (int)."}), 400
+
+    if list_ids is None or not isinstance(list_ids, list) or not all(isinstance(x, int) for x in list_ids):
+        return jsonify({"error": "Champ 'listIdPeoplesMember' requis (list[int])."}), 400
 
     
     with get_session() as session:
-        conv = create_group_conversation(session, title=title)
+        # Vérifier que l'admin existe
+        admin_exists = session.execute(
+            select(PeoplePublic.id).where(PeoplePublic.id == people_public_id)
+        ).scalar_one_or_none()
+        if not admin_exists:
+            return jsonify({"error": "Admin PeoplePublic introuvable"}), 404
 
-        session.commit()
+        # Vérifier que tous les membres existent (optionnel mais recommandé)
+        unique_members = {pid for pid in list_ids if pid and pid != people_public_id}
+        if unique_members:
+            existing = set(session.execute(
+                select(PeoplePublic.id).where(PeoplePublic.id.in_(unique_members))
+            ).scalars().all())
+
+            missing = sorted(list(unique_members - existing))
+            if missing:
+                return jsonify({
+                    "error": "Certains PeoplePublic sont introuvables",
+                    "missing_ids": missing
+                }), 404
+
+        conv = create_group_conversation(
+            session=session,
+            people_public_id=people_public_id,
+            listIdPeoplesMember=list_ids,
+            title=title,
+        )
+
         return jsonify(conversation_to_dict(conv)), 200
 
 # =========================================
@@ -854,3 +890,29 @@ def api_get_conversationsGroup_summary_private(people_public_id: int):
 
         data = get_group_conversations_summary_for_person(session, people_public_id)
         return jsonify(data), 200
+    
+@bp.delete("/conversations/group/<int:conversation_id>")
+@ratelimit(5)
+@require_basic
+def api_private_delete_group_conversation(conversation_id: int):
+    data = request.get_json(silent=True) or {}
+
+    people_public_id = data.get("people_public_id")
+    hard_delete = data.get("hard_delete", True)
+
+    if people_public_id is None or not isinstance(people_public_id, int):
+        return jsonify({"error": "Champ 'people_public_id' requis (int)."}), 400
+    if not isinstance(hard_delete, bool):
+        return jsonify({"error": "Champ 'hard_delete' doit être un booléen."}), 400
+
+    with get_session() as session:
+        ok = delete_group_conversation(
+            session=session,
+            conversation_id=conversation_id,
+            people_public_id=people_public_id,
+            hard_delete=hard_delete,
+        )
+        if not ok:
+            return jsonify({"error": "Suppression impossible"}), 403
+
+        return jsonify({"success": True}), 200

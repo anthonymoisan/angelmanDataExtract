@@ -31,7 +31,7 @@ def run():
         #deleteMessageSoft(session,6) 
         #leave_conversation(session,1,1)
         #leave_group_conversation(session,11,1)
-        delete_group_conversation(session,12,1)
+        delete_group_conversation(session,18,1)
     
     logger.info("✅ Seed de conversation terminé avec succès !")
 

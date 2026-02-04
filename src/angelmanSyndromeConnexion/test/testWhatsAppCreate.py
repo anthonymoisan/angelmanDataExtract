@@ -279,7 +279,7 @@ def createMessagesConversationsFromExcel(wkdir):
 
 def create_GroupConversation():
      with get_session() as session:
-        convGroup1 = create_group_conversation(session, "Group1")
+        convGroup1 = create_group_conversation(session, 1, [2,3,4], "Group10")
 
 # Set up logger
 logger = setup_logger(debug=False)

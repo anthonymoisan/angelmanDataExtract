@@ -8,6 +8,7 @@ from angelmanSyndromeConnexion.models.message import Message
 from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from typing import List
 
 from sqlalchemy import select, func
 
@@ -159,7 +160,7 @@ def addConversationMember(session,conversation_id,people_public_id,role) -> Conv
     return convMember
 
 
-def create_group_conversation(session, title: str) -> Conversation:
+def create_group_conversation(session, people_public_id, listIdPeoplesMember: List[int], title: str) -> Conversation:
     """
     Crée une conversation de groupe et ajoute toutes les personnes de T_People_Public
     """
@@ -174,13 +175,7 @@ def create_group_conversation(session, title: str) -> Conversation:
     session.add(conv)
     session.flush()  # 🔑 récupère conv.id
 
-    # 2) Récupérer tous les people_public_id
-    people_ids = session.execute(
-        select(PeoplePublic.id)
-        .where(
-            PeoplePublic.status == "active"
-        )
-    ).scalars().all()
+    unique_members = {pid for pid in listIdPeoplesMember if pid and pid != people_public_id}
 
     # 3) Bulk insert des membres
     members = [
@@ -193,10 +188,22 @@ def create_group_conversation(session, title: str) -> Conversation:
             last_read_at=None,
             is_muted=False,
         )
-        for pid in people_ids
+        for pid in unique_members
     ]
 
     session.bulk_save_objects(members)
+
+    convAdminMember = ConversationMember(
+        conversation_id=conv.id,
+        people_public_id=people_public_id,
+        role="admin",
+        joined_at=utc_now(),
+        last_read_message_id=None,
+        last_read_at=None,
+        is_muted=False,
+    )
+
+    session.add(convAdminMember)
 
     session.commit()
     return conv
