@@ -393,3 +393,9 @@ def get_group_conversations_summary_for_person(session, viewer_people_id: int):
 
     return out
 
+def getIdWithFilters(session, id_admin):
+    """
+    Retourne la liste des IDs PeoplePublic, sauf l'ID exclu
+    """
+    stmt = select(PeoplePublic.id).where(PeoplePublic.id != id_admin)
+    return session.scalars(stmt).all()
