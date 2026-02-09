@@ -338,6 +338,7 @@ def get_group_conversations_summary_for_person(session, viewer_people_id: int):
             Conversation.id.label("conversation_id"),
             Conversation.title.label("title"),
             Conversation.is_group.label("is_group"),
+            Conversation.idAdmin.label("idAdmin"),
             Conversation.created_at.label("created_at"),
             Conversation.last_message_at.label("last_message_at"),
 
@@ -374,6 +375,7 @@ def get_group_conversations_summary_for_person(session, viewer_people_id: int):
             "id": int(r.conversation_id),
             "title": title,
             "is_group": True,
+            "idAdmin" : int(r.idAdmin or 0),
             "member_count": int(r.member_count or 0),
 
             "created_at": r.created_at.isoformat() if r.created_at else None,
@@ -392,10 +394,3 @@ def get_group_conversations_summary_for_person(session, viewer_people_id: int):
         })
 
     return out
-
-def getIdWithFilters(session, id_admin):
-    """
-    Retourne la liste des IDs PeoplePublic, sauf l'ID exclu
-    """
-    stmt = select(PeoplePublic.id).where(PeoplePublic.id != id_admin)
-    return session.scalars(stmt).all()

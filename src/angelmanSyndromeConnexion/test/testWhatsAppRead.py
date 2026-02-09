@@ -22,7 +22,6 @@ from angelmanSyndromeConnexion.whatsAppRead import (
     get_member_ids_for_conversation,
     get_last_message_for_conversation,
     get_group_conversations_for_person_sorted,
-    getIdWithFilters,
 )
 
 import traceback
@@ -59,7 +58,7 @@ def runConversationsGroupe(session):
     for c in convs:
         logger.info(f"- [{c.id}] {c.title} | last_message_at={c.last_message_at}")
     '''
-    logger.info(getIdWithFilters(session,1))
+
 
 # Set up logger
 logger = setup_logger(debug=False)

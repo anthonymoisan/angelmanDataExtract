@@ -27,7 +27,6 @@ from angelmanSyndromeConnexion.whatsAppRead import(
     get_conversations_summary_for_person,
     get_group_conversations_for_person_sorted,
     get_group_conversations_summary_for_person,
-    getIdWithFilters,
 )
 
 from angelmanSyndromeConnexion.whatsAppUpdate import(
@@ -904,21 +903,4 @@ def api_public_delete_group_conversation(conversation_id: int):
 
         return jsonify({"success": True}), 200
 
-
-@bp.get("/people/conversations/group/filters")
-@require_public_app_key  
-def api_public_getIdWithFilters():
-    """
-    GET /api/public/conversations/group/filters
-    Body:
-      {
-        "people_public_id": 12 (id Admin)
-      }
-    """
-    people_public_id = request.args.get("people_public_id", type=int)
-    if people_public_id is None or not isinstance(people_public_id, int):
-        return jsonify({"error": "Champ 'people_public_id' requis (int)."}), 400
-    with get_session() as session:
-        listIds = getIdWithFilters(session, people_public_id)
-        return jsonify(listIds), 200
   
