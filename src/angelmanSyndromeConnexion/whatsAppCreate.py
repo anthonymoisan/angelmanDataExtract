@@ -160,50 +160,44 @@ def addConversationMember(session,conversation_id,people_public_id,role) -> Conv
     return convMember
 
 
-def create_group_conversation(session, people_public_id, listIdPeoplesMember: List[int], title: str) -> Conversation:
+def create_group_conversation(session, people_public_admin_id, listIdPeoplesMember: List[int], title: str) -> Conversation:
     """
-    Crée une conversation de groupe et ajoute toutes les personnes de T_People_Public
+    Crée une conversation de groupe, définit l'admin (idAdmin),
+    et ajoute les membres + l'admin dans ConversationMember.
     """
+    now = utc_now()
 
-    # 1) Créer la conversation
+    # 1) Créer la conversation avec l'admin
     conv = Conversation(
         title=title,
         is_group=True,
-        created_at=utc_now(),
+        idAdmin=people_public_admin_id,   # ✅ nouveau champ
+        created_at=now,
         last_message_at=None,
     )
     session.add(conv)
     session.flush()  # 🔑 récupère conv.id
 
-    unique_members = {pid for pid in listIdPeoplesMember if pid and pid != people_public_id}
+    # 2) Nettoyage + dédoublonnage (inclure l'admin quoi qu'il arrive)
+    unique_member_ids = {pid for pid in listIdPeoplesMember if pid}
+    unique_member_ids.add(people_public_admin_id)
 
-    # 3) Bulk insert des membres
-    members = [
-        ConversationMember(
-            conversation_id=conv.id,
-            people_public_id=pid,
-            role="member",
-            joined_at=utc_now(),
-            last_read_message_id=None,
-            last_read_at=None,
-            is_muted=False,
+    # 3) Créer les ConversationMember (admin + members)
+    members = []
+    for pid in unique_member_ids:
+        members.append(
+            ConversationMember(
+                conversation_id=conv.id,
+                people_public_id=pid,
+                role="admin" if pid == people_public_admin_id else "member",
+                joined_at=now,
+                last_read_message_id=None,
+                last_read_at=None,
+                is_muted=False,
+            )
         )
-        for pid in unique_members
-    ]
 
     session.bulk_save_objects(members)
-
-    convAdminMember = ConversationMember(
-        conversation_id=conv.id,
-        people_public_id=people_public_id,
-        role="admin",
-        joined_at=utc_now(),
-        last_read_message_id=None,
-        last_read_at=None,
-        is_muted=False,
-    )
-
-    session.add(convAdminMember)
 
     session.commit()
     return conv
