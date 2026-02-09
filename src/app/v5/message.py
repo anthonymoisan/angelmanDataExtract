@@ -61,6 +61,7 @@ def conversation_to_dict(conv: Conversation):
         "id": conv.id,
         "title": conv.title,
         "is_group": conv.is_group,
+        "people_public_admin_id" : conv.idAdmin,
         "created_at": _dt_to_str(conv.created_at),
         "last_message_at": _dt_to_str(conv.last_message_at),
     }
@@ -161,21 +162,21 @@ def api_create_group_conversation_all_people():
     Body:
       {
         "title": "Groupe 6",
-        "people_public_id": 12,
+        "people_public_admin_id": 12,
         "listIdPeoplesMember": [34, 56, 78]
       }
     """
 
     data = request.get_json(silent=True) or {}
     title = (data.get("title") or "").strip()
-    people_public_id = data.get("people_public_id")
+    people_public_admin_id = data.get("people_public_admin_id")
     list_ids = data.get("listIdPeoplesMember")
 
     if not title or not isinstance(title, str):
         return jsonify({"error": "Champ 'title' requis (string)."}), 400
 
-    if people_public_id is None or not isinstance(people_public_id, int):
-        return jsonify({"error": "Champ 'people_public_id' requis (int)."}), 400
+    if people_public_admin_id is None or not isinstance(people_public_admin_id, int):
+        return jsonify({"error": "Champ 'people_public_admin_id' requis (int)."}), 400
 
     if list_ids is None or not isinstance(list_ids, list) or not all(isinstance(x, int) for x in list_ids):
         return jsonify({"error": "Champ 'listIdPeoplesMember' requis (list[int])."}), 400
@@ -184,13 +185,13 @@ def api_create_group_conversation_all_people():
     with get_session() as session:
         # Vérifier que l'admin existe
         admin_exists = session.execute(
-            select(PeoplePublic.id).where(PeoplePublic.id == people_public_id)
+            select(PeoplePublic.id).where(PeoplePublic.id == people_public_admin_id)
         ).scalar_one_or_none()
         if not admin_exists:
             return jsonify({"error": "Admin PeoplePublic introuvable"}), 404
 
         # Vérifier que tous les membres existent (optionnel mais recommandé)
-        unique_members = {pid for pid in list_ids if pid and pid != people_public_id}
+        unique_members = {pid for pid in list_ids if pid and pid != people_public_admin_id}
         if unique_members:
             existing = set(session.execute(
                 select(PeoplePublic.id).where(PeoplePublic.id.in_(unique_members))
@@ -205,7 +206,7 @@ def api_create_group_conversation_all_people():
 
         conv = create_group_conversation(
             session=session,
-            people_public_id=people_public_id,
+            people_public_admin_id=people_public_admin_id,
             listIdPeoplesMember=list_ids,
             title=title,
         )
@@ -898,11 +899,11 @@ def api_get_conversationsGroup_summary_private(people_public_id: int):
 def api_private_delete_group_conversation(conversation_id: int):
     data = request.get_json(silent=True) or {}
 
-    people_public_id = data.get("people_public_id")
+    people_public_admin_id = data.get("people_public_admin_id")
     hard_delete = data.get("hard_delete", True)
 
-    if people_public_id is None or not isinstance(people_public_id, int):
-        return jsonify({"error": "Champ 'people_public_id' requis (int)."}), 400
+    if people_public_admin_id is None or not isinstance(people_public_admin_id, int):
+        return jsonify({"error": "Champ 'people_public_admin_id' requis (int)."}), 400
     if not isinstance(hard_delete, bool):
         return jsonify({"error": "Champ 'hard_delete' doit être un booléen."}), 400
 
@@ -910,7 +911,7 @@ def api_private_delete_group_conversation(conversation_id: int):
         ok = delete_group_conversation(
             session=session,
             conversation_id=conversation_id,
-            people_public_id=people_public_id,
+            people_public_admin_id=people_public_admin_id,
             hard_delete=hard_delete,
         )
         if not ok:

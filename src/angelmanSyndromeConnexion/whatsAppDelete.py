@@ -197,19 +197,19 @@ def leave_group_conversation(
 def delete_group_conversation(
     session: Session,
     conversation_id: int,
-    people_admin_public_id: int,
+    people_public_admin_id: int,
     hard_delete: bool = True,
 ) -> bool:
     conv = session.get(Conversation, conversation_id)
     if not conv or not conv.is_group:
         return False
     
-    if conv.idAdmin != people_admin_public_id:
+    if conv.idAdmin != people_public_admin_id:
         return False
 
     member = session.get(
         ConversationMember,
-        {"conversation_id": conversation_id, "people_public_id": people_admin_public_id},
+        {"conversation_id": conversation_id, "people_public_id": people_public_admin_id},
     )
     if not member:
         return False
