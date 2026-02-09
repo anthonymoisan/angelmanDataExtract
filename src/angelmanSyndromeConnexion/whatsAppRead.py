@@ -158,7 +158,17 @@ def get_last_message_for_conversation(session, conversation_id: int):
     return row  # soit None, soit un dict-like  # → Row(message_id=..., sender_people_id=..., body_text=..., pseudo=..., created_at=...)
 
 
-def get_unread_count(session, conversation_id: int, viewer_people_id: int) -> int:
+def get_unread_count_chat(session, conversation_id: int, viewer_people_id: int) -> int:
+
+    # 1️⃣ Récupérer la conversation
+    conv = session.get(Conversation, conversation_id)
+    if not conv:
+        raise ValueError("Conversation inexistante")
+
+    # ✅ Règle métier : pas d'unread pour les groupes
+    if conv.is_group:
+        return 0
+    
     member = session.execute(
         select(ConversationMember).where(
             ConversationMember.conversation_id == conversation_id,
@@ -178,6 +188,38 @@ def get_unread_count(session, conversation_id: int, viewer_people_id: int) -> in
         Message.sender_people_id != viewer_people_id,  # optionnel mais conseillé
     )
     return int(session.execute(stmt).scalar_one())
+
+def get_unread_count_GroupChat(session, conversation_id: int, viewer_people_id: int) -> int:
+
+    # 1️⃣ Récupérer la conversation
+    conv = session.get(Conversation, conversation_id)
+    if not conv:
+        raise ValueError("Conversation inexistante")
+
+    # ✅ Règle métier : pas d'unread pour les groupes
+    if not conv.is_group:
+        return 0
+    
+    member = session.execute(
+        select(ConversationMember).where(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.people_public_id == viewer_people_id,
+        )
+    ).scalar_one_or_none()
+
+    if not member:
+        raise PermissionError("viewer_people_id n'est pas membre de la conversation")
+
+    last_read_id = int(member.last_read_message_id or 0)
+
+    stmt = select(func.count()).select_from(Message).where(
+        Message.conversation_id == conversation_id,
+        Message.status != "deleted",
+        Message.id > last_read_id,
+        Message.sender_people_id != viewer_people_id,  # optionnel mais conseillé
+    )
+    return int(session.execute(stmt).scalar_one())
+
 
 def get_conversations_summary_for_person(session, viewer_people_id: int):
     CM_viewer = aliased(ConversationMember)

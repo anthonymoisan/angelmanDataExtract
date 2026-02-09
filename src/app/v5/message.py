@@ -23,7 +23,8 @@ from angelmanSyndromeConnexion.whatsAppRead import(
     get_messages_for_conversation,
     get_member_ids_for_conversation,
     get_last_message_for_conversation,
-    get_unread_count,
+    get_unread_count_chat,
+    get_unread_count_GroupChat,
     get_conversations_summary_for_person,
     get_group_conversations_for_person_sorted,
     get_group_conversations_summary_for_person,
@@ -826,11 +827,30 @@ def api_get_conversations_for_person_privateUnRead(people_public_id: int):
 
         out = []
         for c in conversations:
-            unread = get_unread_count(session, c.id, people_public_id)
+            unread = get_unread_count_chat(session, c.id, people_public_id)
             out.append({**conversation_to_dict(c), "unread_count": unread})
 
         return jsonify(out), 200
-    
+
+@bp.get("/people/<int:people_public_id>/conversationsUnReadGroup")
+@ratelimit(5)
+@require_basic
+def api_get_conversations_for_person_privateUnReadGroup(people_public_id: int):
+    with get_session() as session:
+        person = session.execute(
+            select(PeoplePublic).where(PeoplePublic.id == people_public_id)
+        ).scalar_one_or_none()
+        if not person:
+            return jsonify({"error": "PeoplePublic introuvable"}), 404
+
+        conversations = get_group_conversations_for_person_sorted(session, people_public_id)
+
+        out = []
+        for c in conversations:
+            unread = get_unread_count_GroupChat(session, c.id, people_public_id)
+            out.append({**conversation_to_dict(c), "unread_count": unread})
+
+        return jsonify(out), 200
 
 @bp.get("/people/<int:people_public_id>/conversationsSummary")
 @ratelimit(5)
