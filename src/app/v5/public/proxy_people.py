@@ -23,10 +23,39 @@ from angelmanSyndromeConnexion.peopleDelete import deleteDataById
 
 from ..common import _get_src, parse_date_any, register_error_handlers
 from app.common.security import require_public_app_key
+from PIL import UnidentifiedImageError
+from angelmanSyndromeConnexion.utils_image import recompress_image
 
 bp = Blueprint("public_people", __name__)
 register_error_handlers(bp)
 
+
+'''
+    Convertisseur d'image nécessaire pour preview heic ou heif
+'''
+@bp.post("/utils/convert-photo")
+@require_public_app_key
+def public_convert_photo():
+    """
+    Reçoit un fichier (multipart) et renvoie un JPEG (bytes) pour preview.
+    """
+    if "photo" not in request.files:
+        return jsonify({"error": "missing photo"}), 400
+
+    f = request.files["photo"]
+    blob = f.read()
+    if not blob:
+        return jsonify({"error": "empty file"}), 400
+
+    try:
+        out, mime = recompress_image(blob, target_format="JPEG", quality=85)
+        if not out:
+            return jsonify({"error": "convert failed"}), 400
+        return Response(out, mimetype=mime or "image/jpeg")
+    except UnidentifiedImageError as e:
+        return jsonify({"error": str(e)}), 415
+    except Exception as e:
+        return jsonify({"error": f"convert error: {e}"}), 500
 
 # --------------------------------------------------------------------
 # Utilitaires locaux (reprise des helpers de app/v5/people.py)

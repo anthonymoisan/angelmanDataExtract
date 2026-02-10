@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 import pandas as pd
 from sqlalchemy import text
-
+from angelmanSyndromeConnexion.utils_image import recompress_image, normalize_mime
 from tools.logger import setup_logger
 from tools.utilsTools import _run_query
 import tools.crypto_utils as crypto
@@ -15,15 +15,40 @@ logger = setup_logger(debug=False)
 
 def fetch_photo(person_id: int) -> tuple[bytes | None, str | None]:
     rows = _run_query(
-        text("SELECT photo, photo_mime FROM T_People_Identity WHERE person_id=:person_id"),
+        text(
+            "SELECT photo, photo_mime "
+            "FROM T_People_Identity "
+            "WHERE person_id=:person_id"
+        ),
         return_result=True,
         params={"person_id": int(person_id)},
-        bAngelmanResult=False
+        bAngelmanResult=False,
     )
+
     if not rows:
         return None, None
+
     photo, mime = rows[0]
-    return photo, (mime or "image/jpeg")
+    if not photo:
+        return None, None
+
+    mime = normalize_mime(mime) or "image/jpeg"
+
+    # 🔁 Recompression automatique si HEIC / HEIF
+    if mime in ("image/heic", "image/heif"):
+        try:
+            new_blob, new_mime = recompress_image(
+                photo,
+                target_format="JPEG",   # ou "WEBP" si tu préfères
+                quality=85,
+            )
+            if new_blob:
+                return new_blob, new_mime
+        except Exception:
+            # fallback silencieux (ne pas casser l'API)
+            pass
+
+    return photo, mime
 
 def identity_public(person_id: int) -> dict | None:
     row = _run_query(text("""

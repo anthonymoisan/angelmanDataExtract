@@ -44,5 +44,5 @@ CREATE TABLE IF NOT EXISTS T_People_Identity (
   CONSTRAINT ck_photo_mime_presence
     CHECK ((photo IS NULL AND photo_mime IS NULL) OR (photo IS NOT NULL AND photo_mime IS NOT NULL)),
   CONSTRAINT ck_photo_mime_allowed
-    CHECK (photo_mime IS NULL OR photo_mime IN ('image/jpeg','image/jpg', 'image/png','image/webp'))
+    CHECK (photo_mime IS NULL OR photo_mime IN ('image/jpeg','image/jpg', 'image/png','image/webp', 'image/heic', 'image/heif'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

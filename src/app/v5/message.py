@@ -44,10 +44,39 @@ from angelmanSyndromeConnexion.whatsAppDelete import(
 
 from app.common.security import ratelimit
 from app.common.basic_auth import require_basic,require_internal
+from PIL import UnidentifiedImageError
+from angelmanSyndromeConnexion.utils_image import recompress_image
 
 bp = Blueprint("v5_message", __name__)
 bp.before_request(require_internal)
 
+'''
+    Convertisseur d'image nécessaire pour preview heic ou heif
+'''
+@bp.post("/utils/convert-photo")
+@ratelimit(3)
+@require_basic
+def public_convert_photo():
+    """
+    Reçoit un fichier (multipart) et renvoie un JPEG (bytes) pour preview.
+    """
+    if "photo" not in request.files:
+        return jsonify({"error": "missing photo"}), 400
+
+    f = request.files["photo"]
+    blob = f.read()
+    if not blob:
+        return jsonify({"error": "empty file"}), 400
+
+    try:
+        out, mime = recompress_image(blob, target_format="JPEG", quality=85)
+        if not out:
+            return jsonify({"error": "convert failed"}), 400
+        return Response(out, mimetype=mime or "image/jpeg")
+    except UnidentifiedImageError as e:
+        return jsonify({"error": str(e)}), 415
+    except Exception as e:
+        return jsonify({"error": f"convert error: {e}"}), 500
 # -----------------------
 # Helpers de sérialisation
 # -----------------------

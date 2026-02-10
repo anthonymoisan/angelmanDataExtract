@@ -17,6 +17,19 @@ from tools.utilsTools import _run_query
 
 logger = setup_logger(debug=False)
 
+# -------------------------------------------------------
+#  (Optionnel) Support HEIC/HEIF via pillow-heif
+#  pip install pillow-heif
+# -------------------------------------------------------
+HEIF_ENABLED = False
+try:
+    import pillow_heif  # type: ignore
+
+    pillow_heif.register_heif_opener()
+    HEIF_ENABLED = True
+except Exception:
+    HEIF_ENABLED = False
+
 # -----------------------------
 #  Images (recompression / MIME)
 # -----------------------------
@@ -25,11 +38,22 @@ TARGET_FORMAT = "WEBP"  # ou "JPEG"
 QUALITY = 80
 RESAMPLE = getattr(getattr(Image, "Resampling", Image), "LANCZOS", Image.BICUBIC)
 
+
 def recompress_image(blob, target_format: str = TARGET_FORMAT, quality: int = QUALITY):
     if not blob:
         return None, None
 
-    im = Image.open(io.BytesIO(blob))
+    try:
+        im = Image.open(io.BytesIO(blob))
+    except UnidentifiedImageError:
+        # Si HEIC/HEIF arrive sans support activé, l'erreur Pillow est peu explicite.
+        if not HEIF_ENABLED:
+            raise UnidentifiedImageError(
+                "Format HEIC/HEIF potentiellement détecté mais support non activé. "
+                "Installez pillow-heif (pip install pillow-heif) et redémarrez le service."
+            )
+        raise
+
     im = ImageOps.exif_transpose(im)
 
     w, h = im.size
@@ -60,10 +84,30 @@ def recompress_image(blob, target_format: str = TARGET_FORMAT, quality: int = QU
 
     return out.getvalue(), mime
 
-CANONICAL_MIME = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}
-ALIASES = {"image/jpg": "image/jpeg", "image/pjpeg": "image/jpeg"}
+
+CANONICAL_MIME = {
+    "JPEG": "image/jpeg",
+    "PNG": "image/png",
+    "WEBP": "image/webp",
+    # Ajout HEIC/HEIF (dépend de pillow-heif pour l'ouverture/détection)
+    "HEIC": "image/heic",
+    "HEIF": "image/heif",
+}
+
+ALIASES = {
+    "image/jpg": "image/jpeg",
+    "image/pjpeg": "image/jpeg",
+    # variantes parfois rencontrées
+    "image/heic-sequence": "image/heic",
+    "image/heif-sequence": "image/heif",
+}
+
 
 def detect_mime_from_bytes(b: bytes) -> str | None:
+    """
+    Détection "réelle" via le contenu.
+    Fonctionne pour HEIC/HEIF si pillow-heif est installé et register_heif_opener() a été appelé.
+    """
     try:
         with Image.open(io.BytesIO(b)) as im:
             fmt = (im.format or "").upper()
@@ -71,10 +115,12 @@ def detect_mime_from_bytes(b: bytes) -> str | None:
     except Exception:
         return None
 
+
 def normalize_mime(mime: str | None) -> str | None:
     if mime is None:
         return None
     return ALIASES.get(mime, mime)
+
 
 # -----------------------------
 #  Dates / coercion
@@ -99,8 +145,10 @@ def coerce_to_date(d) -> date:
                 except Exception:
                     pass
             from . import error
+
             raise error.BadDateFormatError(f"Format de date invalide: {d!r}")
     raise TypeError(f"Type de date non supporté: {type(d)}")
+
 
 # (facultatif) utilitaire de migration de photos – exemple d’usage:
 def recompress_all_people_photos():
@@ -111,8 +159,12 @@ def recompress_all_people_photos():
             new_blob, new_mime = recompress_image(blob)
             if new_blob and len(new_blob) < len(blob):
                 SQL_UPDATE = text("UPDATE T_ASPeople SET photo = :p, photo_mime = :m WHERE id = :id")
-                _run_query(SQL_UPDATE, params={"p": new_blob, "m": new_mime, "id": pid},bAngelmanResult=False)
+                _run_query(
+                    SQL_UPDATE,
+                    params={"p": new_blob, "m": new_mime, "id": pid},
+                    bAngelmanResult=False,
+                )
         except UnidentifiedImageError:
-            logger.warning("Blob non image ignoré (id=%s)", pid)
+            logger.warning("Blob non image ou format non supporté ignoré (id=%s)", pid)
         except Exception as e:
             logger.warning("[WARN] id=%s: %s", pid, e, exc_info=True)

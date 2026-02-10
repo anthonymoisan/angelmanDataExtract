@@ -120,30 +120,36 @@ def insertData(
             # Détection MIME robuste (indépendant de l'extension)
             detected_mime = detect_mime_from_bytes(photo)  # p.ex. "image/jpeg"
             src_mime = normalize_mime(detected_mime or "image/jpeg")
-            if src_mime not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
+            ALLOWED_MIMES = {"image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic", "image/heif"}
+            if src_mime not in ALLOWED_MIMES:
                 raise error.InvalidMimeTypeError(f"MIME non autorisé: {src_mime}")
 
-            # Tenter une recompression (doit renvoyer (blob, mime) ou (None, None))
+            # Recompression
             try:
                 new_blob, new_mime = recompress_image(photo)
             except Exception as e:
                 logger.warning("Recompression échouée: %s", e, exc_info=True)
                 new_blob, new_mime = None, None
 
-            # Choisir la meilleure version (garder original si pas plus petit)
-            if new_blob and len(new_blob) < len(photo):
+            # Pour HEIC/HEIF: recompression obligatoire (évite de stocker un format peu compatible)
+            if src_mime in {"image/heic", "image/heif"}:
+                if not new_blob:
+                    raise error.InvalidMimeTypeError(
+                        "Photo HEIC/HEIF non traitable (pillow-heif manquant ou image invalide)."
+                    )
                 photo_blob_final = new_blob
-                photo_mime_final = normalize_mime(new_mime or src_mime)
+                photo_mime_final = normalize_mime(new_mime)
             else:
-                photo_blob_final = photo
-                photo_mime_final = src_mime
+                # Choisir la meilleure version (garder original si pas plus petit)
+                if new_blob and len(new_blob) < len(photo):
+                    photo_blob_final = new_blob
+                    photo_mime_final = normalize_mime(new_mime or src_mime)
+                else:
+                    photo_blob_final = photo
+                    photo_mime_final = src_mime
 
-            # Contrôle de taille APRÈS recompression/fallback (contrainte DB)
             if len(photo_blob_final) > 4 * 1024 * 1024:
                 raise error.PhotoTooLargeError("Photo > 4 MiB après recompression")
-        else:
-            photo_blob_final = None
-            photo_mime_final = None  # cohérence avec vos CHECK
 
         # -------- 2) Dérivations applicatives --------
         age = age_years(dob)
