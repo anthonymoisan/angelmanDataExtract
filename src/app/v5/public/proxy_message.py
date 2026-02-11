@@ -44,7 +44,7 @@ from angelmanSyndromeConnexion.whatsAppDelete import(
 
 from app.common.security import require_public_app_key
 
-from tools.crypto_utils import decrypt_bytes_to_str_strict  # ou le bon module
+from tools.crypto_utils import decrypt_bytes_to_str_strict, DecryptError
 
 
 bp = Blueprint("messages_public", __name__, url_prefix="/api/public")
@@ -68,6 +68,19 @@ def conversation_to_dict(conv: Conversation):
         "last_message_at": _dt_to_str(conv.last_message_at),
     }
 
+def decrypt_or_plain(v):
+    if v is None:
+        return None
+    # v peut être bytes/memoryview/str selon la colonne/driver
+    try:
+        return decrypt_bytes_to_str_strict(v)
+    except DecryptError:
+        # fallback: si c'est déjà du texte
+        if isinstance(v, (bytes, bytearray)):
+            return v.decode("utf-8", errors="replace")
+        if isinstance(v, memoryview):
+            return v.tobytes().decode("utf-8", errors="replace")
+        return str(v)
 
 def member_to_dict(m: ConversationMember):
     return {
@@ -463,12 +476,12 @@ def api_get_messages_for_conversation_public(conversation_id: int):
             if msg is None:
                 msg = {
                     "message_id": r.message_id,
-                    "body_text": r.body_text,
+                    "body_text": decrypt_or_plain(r.body_text) if r.body_text else None,
                     "pseudo": r.author_pseudo,
                     "sender_people_id": r.sender_people_id,
                     "created_at": _dt_to_str(r.created_at),
                     "reply_to_message_id": r.reply_to_message_id,
-                    "reply_body_text": r.reply_body_text,
+                    "reply_body_text": decrypt_or_plain(r.reply_body_text) if r.reply_body_text else None,
                     "reactions": [],
                 }
 

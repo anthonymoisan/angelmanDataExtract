@@ -46,7 +46,7 @@ from app.common.security import ratelimit
 from app.common.basic_auth import require_basic,require_internal
 from PIL import UnidentifiedImageError
 from angelmanSyndromeConnexion.utils_image import recompress_image
-from tools.crypto_utils import decrypt_bytes_to_str_strict
+from tools.crypto_utils import decrypt_bytes_to_str_strict, DecryptError
 
 bp = Blueprint("v5_message", __name__)
 bp.before_request(require_internal)
@@ -84,6 +84,20 @@ def public_convert_photo():
 
 def _dt_to_str(dt):
     return dt.isoformat() if dt is not None else None
+
+def decrypt_or_plain(v):
+    if v is None:
+        return None
+    # v peut être bytes/memoryview/str selon la colonne/driver
+    try:
+        return decrypt_bytes_to_str_strict(v)
+    except DecryptError:
+        # fallback: si c'est déjà du texte
+        if isinstance(v, (bytes, bytearray)):
+            return v.decode("utf-8", errors="replace")
+        if isinstance(v, memoryview):
+            return v.tobytes().decode("utf-8", errors="replace")
+        return str(v)
 
 
 def conversation_to_dict(conv: Conversation):
@@ -498,12 +512,12 @@ def api_get_messages_for_conversation_private(conversation_id: int):
             if msg is None:
                 msg = {
                     "message_id": r.message_id,
-                    "body_text": r.body_text,
+                    "body_text":  decrypt_or_plain(r.body_text) if r.body_text else None,
                     "pseudo": r.author_pseudo,
                     "sender_people_id": r.sender_people_id,
                     "created_at": _dt_to_str(r.created_at),
                     "reply_to_message_id": r.reply_to_message_id,
-                    "reply_body_text": r.reply_body_text,
+                    "reply_body_text": decrypt_or_plain(r.reply_body_text) if r.reply_body_text else None,
                     "reactions": [],
                 }
 
