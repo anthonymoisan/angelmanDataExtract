@@ -4,6 +4,7 @@ from datetime import datetime
 from angelmanSyndromeConnexion.models.message import Message
 from sqlalchemy import select
 from zoneinfo import ZoneInfo
+from tools.crypto_utils import encrypt_str
 
 def utc_now() -> datetime:
     return datetime.now(ZoneInfo("Europe/Paris"))
@@ -40,7 +41,7 @@ def updateMessage(session, message_id: int, editor_people_id: int, new_text: str
         raise PermissionError("Vous ne pouvez modifier que vos propres messages")
 
     # 4️⃣ Appliquer les modifications
-    message.body_text = new_text
+    message.body_text = encrypt_str(new_text)
     message.status = "edited"
     message.edited_at = utc_now()
     session.commit()

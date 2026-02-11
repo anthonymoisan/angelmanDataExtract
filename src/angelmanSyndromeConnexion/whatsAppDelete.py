@@ -11,6 +11,7 @@ from angelmanSyndromeConnexion.models.conversation import Conversation
 from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
 from angelmanSyndromeConnexion.models.message import Message
 from angelmanSyndromeConnexion.models.people_public import PeoplePublic
+from tools.crypto_utils import encrypt_str
 
 def deleteMessageSoft(session, message_id: int) -> bool:
     """
@@ -22,7 +23,7 @@ def deleteMessageSoft(session, message_id: int) -> bool:
 
     msg.status = "deleted"
     msg.deleted_at = utc_now()
-    msg.body_text = "Message supprimé"
+    msg.body_text = encrypt_str("Message supprimé")
 
     session.commit()
     return True
