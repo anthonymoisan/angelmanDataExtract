@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS T_Message (
   conversation_id    BIGINT UNSIGNED NOT NULL,
   sender_people_id   INT UNSIGNED    NOT NULL,
   
-  body_text          TEXT            NULL, -- message texte (peut être vide si seulement PJ)
+  body_text           VARBINARY(65000)            NULL, -- message texte (peut être vide si seulement PJ)
   reply_to_message_id BIGINT UNSIGNED NULL, -- pour les réponses/thread
 
   has_attachments    TINYINT(1) NOT NULL DEFAULT 0,

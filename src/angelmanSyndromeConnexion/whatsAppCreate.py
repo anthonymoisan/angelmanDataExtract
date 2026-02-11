@@ -9,6 +9,7 @@ from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import List
+from tools.crypto_utils import encrypt_str
 
 from sqlalchemy import select, func
 
@@ -206,7 +207,7 @@ def addMessage(session,conv, sender_people_id,body_text,reply_to_message_id,has_
     message = Message(
         conversation_id=conv.id,
         sender_people_id=sender_people_id,
-        body_text=body_text,
+        body_text=encrypt_str(body_text),
         reply_to_message_id=reply_to_message_id,
         has_attachments=has_attachments,
         status=status,

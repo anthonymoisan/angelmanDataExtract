@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     BigInteger, Integer, String, Text, Enum,
-    Boolean, ForeignKey, TIMESTAMP
+    Boolean, ForeignKey, TIMESTAMP, LargeBinary
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
@@ -26,7 +26,8 @@ class Message(Base):
         nullable=False,
     )
 
-    body_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    body_text: Mapped[bytes | None] = mapped_column(LargeBinary(length=65000), nullable=True)
+
     reply_to_message_id: Mapped[int | None] = mapped_column(
         BigInteger,
         ForeignKey("T_Message.id", ondelete="SET NULL"),

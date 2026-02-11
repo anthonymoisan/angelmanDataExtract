@@ -46,6 +46,7 @@ from app.common.security import ratelimit
 from app.common.basic_auth import require_basic,require_internal
 from PIL import UnidentifiedImageError
 from angelmanSyndromeConnexion.utils_image import recompress_image
+from tools.crypto_utils import decrypt_bytes_to_str_strict
 
 bp = Blueprint("v5_message", __name__)
 bp.before_request(require_internal)
@@ -109,11 +110,15 @@ def member_to_dict(m: ConversationMember):
 
 
 def message_to_dict(msg: Message):
+
+    body = None
+    if msg.body_text is not None:
+        body = decrypt_bytes_to_str_strict(msg.body_text) 
     return {
         "id": msg.id,
         "conversation_id": msg.conversation_id,
         "sender_people_id": msg.sender_people_id,
-        "body_text": msg.body_text,
+        "body_text": body,
         "reply_to_message_id": msg.reply_to_message_id,
         "has_attachments": msg.has_attachments,
         "status": msg.status,
