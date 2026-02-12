@@ -44,7 +44,7 @@ from angelmanSyndromeConnexion.whatsAppDelete import(
 
 from app.common.security import require_public_app_key
 
-from tools.crypto_utils import decrypt_bytes_to_str_strict, DecryptError
+from tools.crypto_utils import decrypt_or_plain
 
 
 bp = Blueprint("messages_public", __name__, url_prefix="/api/public")
@@ -69,20 +69,6 @@ def conversation_to_dict(conv: Conversation):
         "last_message_at": _dt_to_str(conv.last_message_at),
     }
 
-def decrypt_or_plain(v):
-    if v is None:
-        return None
-    # v peut être bytes/memoryview/str selon la colonne/driver
-    try:
-        return decrypt_bytes_to_str_strict(v)
-    except DecryptError:
-        # fallback: si c'est déjà du texte
-        if isinstance(v, (bytes, bytearray)):
-            return v.decode("utf-8", errors="replace")
-        if isinstance(v, memoryview):
-            return v.tobytes().decode("utf-8", errors="replace")
-        return str(v)
-
 def member_to_dict(m: ConversationMember):
     return {
         "conversation_id": m.conversation_id,
@@ -98,7 +84,7 @@ def member_to_dict(m: ConversationMember):
 def message_to_dict(msg: Message):
     body = None
     if msg.body_text is not None:
-        body = decrypt_bytes_to_str_strict(msg.body_text)
+        body = decrypt_or_plain(msg.body_text)
 
     return {
         "id": msg.id,
@@ -810,8 +796,8 @@ def api_get_last_message_public(conversation_id: int):
         return jsonify({
             "message_id": int(row.message_id),
             "sender_people_id": int(row.sender_people_id) if row.sender_people_id is not None else None,
-            "body_text": row.body_text,
-            "pseudo": row.pseudo,
+            "body_text": decrypt_or_plain(row.body_text),
+            "pseudo": decrypt_or_plain(row.pseudo),
             "created_at": _dt_to_str(row.created_at),
             "is_seen": is_seen,  # bool | null
         }), 200

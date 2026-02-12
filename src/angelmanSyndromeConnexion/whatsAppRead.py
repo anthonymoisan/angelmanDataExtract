@@ -7,6 +7,7 @@ from angelmanSyndromeConnexion.models.message import Message
 from sqlalchemy.orm import aliased
 from sqlalchemy import select, desc, asc, func, and_
 from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
+from tools.crypto_utils import decrypt_or_plain
 
 def get_conversations_for_person_sorted(session, people_public_id: int):
     """
@@ -221,6 +222,7 @@ def get_unread_count_GroupChat(session, conversation_id: int, viewer_people_id: 
     return int(session.execute(stmt).scalar_one())
 
 
+
 def get_conversations_summary_for_person(session, viewer_people_id: int):
     CM_viewer = aliased(ConversationMember)
     CM_other  = aliased(ConversationMember)
@@ -329,7 +331,7 @@ def get_conversations_summary_for_person(session, viewer_people_id: int):
                 "message_id": int(r.last_message_id),
                 "sender_people_id": int(r.last_sender_people_id) if r.last_sender_people_id is not None else None,
                 "pseudo": r.last_sender_pseudo or "",
-                "body_text": r.last_body_text or "",
+                "body_text": decrypt_or_plain(r.last_body_text) or "",
                 "created_at": r.last_created_at.isoformat() if r.last_created_at else None,
                 "is_seen": is_seen,  # bool | None
             }
@@ -429,7 +431,7 @@ def get_group_conversations_summary_for_person(session, viewer_people_id: int):
                 "message_id": int(r.last_message_id),
                 "sender_people_id": int(r.last_sender_people_id) if r.last_sender_people_id is not None else None,
                 "pseudo": r.last_sender_pseudo or "",
-                "body_text": r.last_body_text or "",
+                "body_text": decrypt_or_plain(r.last_body_text) or "",
                 "created_at": r.last_created_at.isoformat() if r.last_created_at else None,
                 "is_seen": None,  # en groupe => pas pertinent (sauf si tu implémentes read receipts par membre)
             }

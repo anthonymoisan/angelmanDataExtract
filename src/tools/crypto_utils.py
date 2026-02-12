@@ -115,6 +115,21 @@ def encrypt_date_like(d) -> bytes:
 class DecryptError(Exception):
     pass
 
+def decrypt_or_plain(v):
+    if v is None:
+        return None
+    # v peut être bytes/memoryview/str selon la colonne/driver
+    try:
+        return decrypt_bytes_to_str_strict(v)
+    except DecryptError:
+        # fallback: si c'est déjà du texte
+        if isinstance(v, (bytes, bytearray)):
+            return v.decode("utf-8", errors="replace")
+        if isinstance(v, memoryview):
+            return v.tobytes().decode("utf-8", errors="replace")
+        return str(v)
+
+
 def decrypt_bytes_to_str_strict(b: Union[bytes, memoryview, str]) -> str:
     if b is None:
         raise DecryptError("Valeur None non déchiffrable")

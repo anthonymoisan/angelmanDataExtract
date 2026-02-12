@@ -46,7 +46,7 @@ from app.common.security import ratelimit
 from app.common.basic_auth import require_basic,require_internal
 from PIL import UnidentifiedImageError
 from angelmanSyndromeConnexion.utils_image import recompress_image
-from tools.crypto_utils import decrypt_bytes_to_str_strict, DecryptError
+from tools.crypto_utils import decrypt_or_plain
 
 bp = Blueprint("v5_message", __name__)
 bp.before_request(require_internal)
@@ -85,21 +85,6 @@ def public_convert_photo():
 def _dt_to_str(dt):
     return dt.isoformat() if dt is not None else None
 
-def decrypt_or_plain(v):
-    if v is None:
-        return None
-    # v peut être bytes/memoryview/str selon la colonne/driver
-    try:
-        return decrypt_bytes_to_str_strict(v)
-    except DecryptError:
-        # fallback: si c'est déjà du texte
-        if isinstance(v, (bytes, bytearray)):
-            return v.decode("utf-8", errors="replace")
-        if isinstance(v, memoryview):
-            return v.tobytes().decode("utf-8", errors="replace")
-        return str(v)
-
-
 def conversation_to_dict(conv: Conversation):
     return {
         "id": conv.id,
@@ -128,7 +113,7 @@ def message_to_dict(msg: Message):
 
     body = None
     if msg.body_text is not None:
-        body = decrypt_bytes_to_str_strict(msg.body_text) 
+        body = decrypt_or_plain(msg.body_text) 
     return {
         "id": msg.id,
         "conversation_id": msg.conversation_id,
@@ -855,7 +840,7 @@ def api_get_last_message_private(conversation_id: int):
         return jsonify({
             "message_id": int(row.message_id),
             "sender_people_id": int(row.sender_people_id) if row.sender_people_id is not None else None,
-            "body_text": row.body_text,
+            "body_text": decrypt_or_plain(row.body_text),
             "pseudo": row.pseudo,
             "created_at": _dt_to_str(row.created_at),
             "is_seen": is_seen,  # bool | null
