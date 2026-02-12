@@ -17,13 +17,13 @@ from angelmanSyndromeConnexion.utils_image import (
 )
 from angelmanSyndromeConnexion.peopleRead import giveId, fetch_person_decrypted_simple
 
-from angelmanSyndromeConnexion.geo_utils2 import get_place_maptiler
+from angelmanSyndromeConnexion.geo_utils3 import get_place_here
 
 logger = setup_logger(debug=False)
 
 _cfg = ConfigParser()
 _cfg.read(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "angelman_viz_keys", "Config5.ini")))
-_PUBLIC_KEY = (_cfg.get("PUBLIC", "APP_MAPTILER_KEY", fallback="") or "").strip()
+_PUBLIC_KEY = (_cfg.get("PUBLIC", "APP_HERE_KEY", fallback="") or "").strip()
 
 
 def _to_float_or_none(v):
@@ -216,7 +216,7 @@ def updateData(
     elif lat_changed or lon_changed:
         try:
             if (lat_val is not None) and (lon_val is not None):
-                geoPlace = get_place_maptiler(lat_val,lon_val,_PUBLIC_KEY)
+                geoPlace = get_place_here(lat_val,lon_val,_PUBLIC_KEY)
                 city_str = geoPlace.city or ""
                 public_sets.append("city = :city")
                 public_params["city"] = city_str.strip()

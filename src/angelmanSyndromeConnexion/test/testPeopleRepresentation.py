@@ -16,7 +16,8 @@ from angelmanSyndromeConnexion.peopleRead import(
 )
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
 from angelmanSyndromeConnexion.peopleCreate import insertData
-from angelmanSyndromeConnexion.geo_utils2 import get_place_maptiler
+#from angelmanSyndromeConnexion.geo_utils2 import get_place_maptiler
+from angelmanSyndromeConnexion.geo_utils3 import get_place_here
 
 import time
 from angelmanSyndromeConnexion import error
@@ -140,6 +141,7 @@ def main():
         #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
         #logger.info(getListPaysTranslate("pl"))
         #logger.info(get_place_maptiler(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
+        logger.info(get_place_here(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

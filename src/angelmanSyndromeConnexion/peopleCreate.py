@@ -14,13 +14,13 @@ from angelmanSyndromeConnexion.utils_image import (
 from angelmanSyndromeConnexion.whatsAppCreate import bulk_add_new_person_to_all_global_group_conversations_conn
 from configparser import ConfigParser
 import os
-from angelmanSyndromeConnexion.geo_utils2 import get_place_maptiler
+from angelmanSyndromeConnexion.geo_utils3 import get_place_here
 
 logger = setup_logger(debug=False)
 
 _cfg = ConfigParser()
 _cfg.read(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "angelman_viz_keys", "Config5.ini")))
-_PUBLIC_KEY = (_cfg.get("PUBLIC", "APP_MAPTILER_KEY", fallback="") or "").strip()
+_PUBLIC_KEY = (_cfg.get("PUBLIC", "APP_HERE_KEY", fallback="") or "").strip()
 
 
 
@@ -166,7 +166,7 @@ def insertData(
 
         # Reverse géocoding best-effort (NE DOIT PAS planter l'insert)
         # NB: get_city attend (lat, lon)
-        geoPlace = get_place_maptiler(latitude,longitude,_PUBLIC_KEY)
+        geoPlace = get_place_here(latitude,longitude,_PUBLIC_KEY)
         city_str = geoPlace.city or ""  # fallback vide
         city = city_str.strip()
         #logger.info(city)
