@@ -63,6 +63,7 @@ def conversation_to_dict(conv: Conversation):
         "id": conv.id,
         "title": conv.title,
         "is_group": conv.is_group,
+        "is_global": conv.is_global,
         "people_public_admin_id" : conv.idAdmin,
         "created_at": _dt_to_str(conv.created_at),
         "last_message_at": _dt_to_str(conv.last_message_at),

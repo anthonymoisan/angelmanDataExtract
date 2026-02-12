@@ -15,7 +15,8 @@ from angelmanSyndromeConnexion.peopleRead import(
     getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId,identity_public, getListPaysTranslate
 )
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
-from angelmanSyndromeConnexion.peopleCreate import insertData, get_city
+from angelmanSyndromeConnexion.peopleCreate import insertData
+from angelmanSyndromeConnexion.geo_utils2 import get_place_maptiler
 
 import time
 from angelmanSyndromeConnexion import error
@@ -102,7 +103,7 @@ def main():
     start = time.time()
     try:
         
-        _insertDataFrame(firstRow=False)
+        #_insertDataFrame(firstRow=False)
         #findId("anthonymoisan@yahoo.fr")
         #df = getRecordsPeople()
         #logger.info(df.head())
@@ -138,7 +139,7 @@ def main():
         #logger.info(getQuestionSecrete(8))
         #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
         #logger.info(getListPaysTranslate("pl"))
-        #logger.info("City : %s",get_city(43.75,7.59))
+        #logger.info(get_place_maptiler(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

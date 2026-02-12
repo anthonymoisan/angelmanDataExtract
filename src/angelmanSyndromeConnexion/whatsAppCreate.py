@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 from typing import List
 from tools.crypto_utils import encrypt_str
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 
 def utc_now() -> datetime:
     return datetime.now(ZoneInfo("Europe/Paris"))
@@ -51,10 +51,11 @@ def createMessageDump(session,conversation_id,sender_people_id,body_text,created
     return message
 
 # Create a new Conversation
-def _createConversation(session,title,is_group) -> Conversation:
+def _createConversation(session,title,is_group,is_global) -> Conversation:
     conv = Conversation(
             title=title,
             is_group=is_group,
+            is_global = is_global,
             created_at=utc_now(),
             last_message_at=None,
         )
@@ -120,6 +121,7 @@ def get_or_create_private_conversation(session, p1_id: int, p2_id: int, title: s
         session,
         title=conv_title,
         is_group=False,
+        is_global=False,
     )
 
 
@@ -160,6 +162,23 @@ def addConversationMember(session,conversation_id,people_public_id,role) -> Conv
 
     return convMember
 
+def bulk_add_new_person_to_all_global_group_conversations_conn(conn, people_public_id: int) -> None:
+    # Insère un membership pour toutes les conversations globales de groupe
+    # joined_at / last_read_at : mêmes valeurs pour tous (NOW())
+    conn.execute(text("""
+        INSERT INTO T_Conversation_Member
+            (conversation_id, people_public_id, role, last_read_message_id, last_read_at, is_muted, joined_at)
+        SELECT
+            c.id,
+            :pid,
+            'member',
+            NULL,
+            NULL,
+            0,
+            NOW()
+        FROM T_Conversation c
+        WHERE c.is_group = 1 AND c.is_global = 1
+    """), {"pid": people_public_id})
 
 def create_group_conversation(session, people_public_admin_id, listIdPeoplesMember: List[int], title: str) -> Conversation:
     """
@@ -168,20 +187,31 @@ def create_group_conversation(session, people_public_admin_id, listIdPeoplesMemb
     """
     now = utc_now()
 
+    # 0) Nettoyage + dédoublonnage (inclure l'admin quoi qu'il arrive)
+    unique_member_ids = {pid for pid in listIdPeoplesMember if pid}
+    unique_member_ids.add(people_public_admin_id)
+    
+    # 🔎 Récupérer tous les IDs PeoplePublic en base
+    all_people_ids = set(
+        session.execute(
+            select(PeoplePublic.id)
+        ).scalars().all()
+    )
+
+    # ✅ Vérifier si c'est une conversation globale
+    global_conversation = (unique_member_ids == all_people_ids)
+
     # 1) Créer la conversation avec l'admin
     conv = Conversation(
         title=title,
         is_group=True,
+        is_global=global_conversation,
         idAdmin=people_public_admin_id,   # ✅ nouveau champ
         created_at=now,
         last_message_at=None,
     )
     session.add(conv)
     session.flush()  # 🔑 récupère conv.id
-
-    # 2) Nettoyage + dédoublonnage (inclure l'admin quoi qu'il arrive)
-    unique_member_ids = {pid for pid in listIdPeoplesMember if pid}
-    unique_member_ids.add(people_public_admin_id)
 
     # 3) Créer les ConversationMember (admin + members)
     members = []

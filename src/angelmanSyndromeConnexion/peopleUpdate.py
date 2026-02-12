@@ -10,13 +10,20 @@ from tools.utilsTools import _run_query
 import tools.crypto_utils as crypto
 
 from angelmanSyndromeConnexion import error
-from angelmanSyndromeConnexion.geo_utils import get_city, get_country, get_country_code
+from configparser import ConfigParser
+import os
 from angelmanSyndromeConnexion.utils_image import (
     coerce_to_date, detect_mime_from_bytes, normalize_mime, recompress_image
 )
 from angelmanSyndromeConnexion.peopleRead import giveId, fetch_person_decrypted_simple
 
+from angelmanSyndromeConnexion.geo_utils2 import get_place_maptiler
+
 logger = setup_logger(debug=False)
+
+_cfg = ConfigParser()
+_cfg.read(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "angelman_viz_keys", "Config5.ini")))
+_PUBLIC_KEY = (_cfg.get("PUBLIC", "APP_MAPTILER_KEY", fallback="") or "").strip()
 
 
 def _to_float_or_none(v):
@@ -209,15 +216,16 @@ def updateData(
     elif lat_changed or lon_changed:
         try:
             if (lat_val is not None) and (lon_val is not None):
-                city_str = get_city(lat_val, lon_val) or ""
+                geoPlace = get_place_maptiler(lat_val,lon_val,_PUBLIC_KEY)
+                city_str = geoPlace.city or ""
                 public_sets.append("city = :city")
                 public_params["city"] = city_str.strip()
 
-                country_str = get_country(lat_val, lon_val) or ""
+                country_str = geoPlace.country or ""
                 public_sets.append("country = :country")
                 public_params["country"] = country_str.strip()
 
-                country_code_str = get_country_code(lat_val, lon_val) or ""
+                country_code_str = geoPlace.country_code or ""
                 public_sets.append("country_code = :country_code")
                 public_params["country_code"] = country_code_str.strip()
 

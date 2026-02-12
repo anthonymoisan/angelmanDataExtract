@@ -172,7 +172,7 @@ def _payload_people_from_request():
         qSec = data.get("qSecrete")
         rSec = data.get("rSecrete")
         photo_b64 = data.get("photo_base64")
-        is_info = form.get("is_info")
+        is_info = data.get("is_info")
         if photo_b64:
             if "," in photo_b64:
                 photo_b64 = photo_b64.split(",", 1)[1]

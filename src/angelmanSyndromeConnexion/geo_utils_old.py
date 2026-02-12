@@ -16,7 +16,7 @@ import unicodedata
 
 
 # --- CONFIG ---
-_NOMINATIM_USER_AGENT = "ASConnexion/1.0 (contact: contact@fastfrance.org)"
+_NOMINATIM_USER_AGENT = "ASConnexion/1.0 (contact: contact@angelmananalytics.org)"
 _TIMEOUT_SECONDS = 6
 _MAX_RETRIES = 3
 _BACKOFF_BASE = 0.8            # backoff exponentiel doux

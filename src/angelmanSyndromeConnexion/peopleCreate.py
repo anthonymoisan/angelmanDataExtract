@@ -7,12 +7,21 @@ from tools.logger import setup_logger
 from tools.utilsTools import _run_query, _run_in_transaction_with_conn
 import tools.crypto_utils as crypto
 from angelmanSyndromeConnexion import error
-from angelmanSyndromeConnexion.geo_utils import get_city,get_country_code, get_country
+
 from angelmanSyndromeConnexion.utils_image import (
     coerce_to_date, detect_mime_from_bytes, normalize_mime, recompress_image
 )
+from angelmanSyndromeConnexion.whatsAppCreate import bulk_add_new_person_to_all_global_group_conversations_conn
+from configparser import ConfigParser
+import os
+from angelmanSyndromeConnexion.geo_utils2 import get_place_maptiler
 
 logger = setup_logger(debug=False)
+
+_cfg = ConfigParser()
+_cfg.read(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "angelman_viz_keys", "Config5.ini")))
+_PUBLIC_KEY = (_cfg.get("PUBLIC", "APP_MAPTILER_KEY", fallback="") or "").strip()
+
 
 
 def age_years(dob: date, on_date: date | None = None) -> int:
@@ -79,6 +88,7 @@ def create_person_and_identity(data) -> int:
                 "secret_ans": data["enc_secret_ans"],
             },
         )
+        bulk_add_new_person_to_all_global_group_conversations_conn(conn,int(pid));
         return int(pid)
 
     return _run_in_transaction_with_conn(worker,bAngelmanResult=False)
@@ -156,12 +166,13 @@ def insertData(
 
         # Reverse géocoding best-effort (NE DOIT PAS planter l'insert)
         # NB: get_city attend (lat, lon)
-        city_str = get_city(latitude, longitude) or ""  # fallback vide
+        geoPlace = get_place_maptiler(latitude,longitude,_PUBLIC_KEY)
+        city_str = geoPlace.city or ""  # fallback vide
         city = city_str.strip()
         #logger.info(city)
-        country_str = get_country(latitude,longitude) or ""
+        country_str = geoPlace.country or ""
         country = country_str.strip()
-        code_country_str = get_country_code(latitude, longitude) or ""
+        code_country_str = geoPlace.country_code or ""
         code_country = code_country_str.strip()
         if(city=="" or country_str=="" or code_country==""):
             raise error.BadLocalization("We have an issue with your GPS localization")
@@ -218,6 +229,7 @@ def insertData(
         data["is_info"] = is_info
 
         id = create_person_and_identity(data)
+
         logger.info("Id create: %d", id)
         return id
     except error.AppError as e:

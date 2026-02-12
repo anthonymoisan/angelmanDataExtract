@@ -8,7 +8,7 @@ from tools.logger import setup_logger
 from tools.utilsTools import _run_query
 import tools.crypto_utils as crypto
 import time
-from angelmanSyndromeConnexion.geo_utils import countries_from_iso2_list_sorted_dict
+from angelmanSyndromeConnexion.geo_utils2 import countries_from_iso2_list_sorted_dict
 
 logger = setup_logger(debug=False)
 

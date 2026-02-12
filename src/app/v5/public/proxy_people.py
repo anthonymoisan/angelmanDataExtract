@@ -97,6 +97,7 @@ def _payload_people_from_request():
     Supporte multipart/form-data et JSON (photo_base64).
     """
     src = _get_src()
+
     if request.content_type and request.content_type.startswith("multipart/form-data"):
         form = request.form
         gender = form.get("gender")
@@ -127,13 +128,18 @@ def _payload_people_from_request():
         qSec = data.get("qSecrete")
         rSec = data.get("rSecrete")
         photo_b64 = data.get("photo_base64")
-        is_info = form.get("is_info")
+        is_info = data.get("is_info")
         if photo_b64:
             if "," in photo_b64:
                 photo_b64 = photo_b64.split(",", 1)[1]
             photo_bytes = base64.b64decode(photo_b64)
         else:
             photo_bytes = None
+
+    # ✅ check présence avant cast
+    if long is None or lat is None:
+        raise ValidationError("longitude/latitude requis")
+
 
     try:
         longC = float(str(long).replace(",", "."))
@@ -357,7 +363,7 @@ def public_create_person():
         )
         return jsonify({"status": "created", "id": new_id}), 200
     except AppError as e:
-        return jsonify({"status": "validation error" , "message" : e.code}), e.http_status
+        return jsonify({"status": "validation error" , "code": e.code,"message": str(e),}), e.http_status
     except Exception:
         current_app.logger.exception("Unhandled error (public_create_person)")
         return (
