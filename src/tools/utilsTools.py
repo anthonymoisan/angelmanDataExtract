@@ -31,28 +31,40 @@ def load_config(filepath: str) -> ConfigParser:
         return config
     raise FileNotFoundError(f"Config file not found: {filepath}")
 
-def get_db_params(bAngelmanResult=True):
+import os
+
+def get_db_params(*, bAngelmanResult: bool = True, asconnect_env: str | None = None):
     cfg = load_config(CONFIG_PATH)
-    if(bAngelmanResult):
-        return {
-            "ssh_host": cfg['SSH']['SSH_HOST'],
-            "ssh_user": cfg['SSH']['SSH_USERNAME'],
-            "ssh_pass": cfg['SSH']['SSH_PASSWORD'],
-            "db_host":  cfg['MySQL']['DB_HOST'],
-            "db_user":  cfg['MySQL']['DB_USERNAME'],
-            "db_pass":  cfg['MySQL']['DB_PASSWORD'],
-            "db_name":  cfg['MySQL']['DB_NAME'],
-        }
+
+    # Par défaut, on lit une variable d'env (pratique en prod / PythonAnywhere)
+    # Valeurs attendues : "prod" ou "test"
+    asconnect_env = (asconnect_env or os.getenv("ASCONNECT_ENV", "prod")).lower()
+    if asconnect_env not in ("prod", "test"):
+        raise ValueError(f"ASCONNECT_ENV must be 'prod' or 'test' (got {asconnect_env!r})")
+
+    # 1) AngelmanResult (True) : toujours prod
+    if bAngelmanResult:
+        db_pass = cfg["MySQL"]["DB_PASSWORD"]
+        db_name = cfg["MySQL"]["DB_NAME"]
+
+    # 2) ASConnect (False) : switch prod/test
     else:
-        return {
-            "ssh_host": cfg['SSH']['SSH_HOST'],
-            "ssh_user": cfg['SSH']['SSH_USERNAME'],
-            "ssh_pass": cfg['SSH']['SSH_PASSWORD'],
-            "db_host":  cfg['MySQL']['DB_HOST'],
-            "db_user":  cfg['MySQL']['DB_USERNAME'],
-            "db_pass":  cfg['MySQL']['DB_PASSWORDAS'],
-            "db_name":  cfg['MySQL']['DB_NAMEAS'],
-        }
+        if asconnect_env == "test":
+            db_pass = cfg["MySQL"]["DB_PASSWORDTESTAS"]
+            db_name = cfg["MySQL"]["DB_NAMETESTAS"]
+        else:
+            db_pass = cfg["MySQL"]["DB_PASSWORDAS"]
+            db_name = cfg["MySQL"]["DB_NAMEAS"]
+
+    return {
+        "ssh_host": cfg["SSH"]["SSH_HOST"],
+        "ssh_user": cfg["SSH"]["SSH_USERNAME"],
+        "ssh_pass": cfg["SSH"]["SSH_PASSWORD"],
+        "db_host":  cfg["MySQL"]["DB_HOST"],
+        "db_user":  cfg["MySQL"]["DB_USERNAME"],
+        "db_pass":  db_pass,
+        "db_name":  db_name,
+    }
     
 # ----- Email -----
 def send_email_alert(title: str, message: str) -> None:
@@ -78,12 +90,12 @@ def _build_db_url(params, local_port=None) -> str:
     port = local_port if local_port else 3306
     return f"mysql+pymysql://{params['db_user']}:{params['db_pass']}@{host}:{port}/{params['db_name']}"
 
-def _run_in_transaction_with_conn(worker_fn, *, max_retries=3, bAngelmanResult=True):
+def _run_in_transaction_with_conn(worker_fn, *, max_retries=3, bAngelmanResult=True, asconnect_env=None):
     """
     Exécute worker_fn(conn) dans UNE transaction/connexion.
     Retourne la valeur renvoyée par worker_fn.
     """
-    cfg = get_db_params(bAngelmanResult)
+    cfg = get_db_params(bAngelmanResult=bAngelmanResult,asconnect_env=asconnect_env)
 
     def _do(db_url: str):
         engine = create_engine(db_url, pool_pre_ping=True, future=True)
@@ -225,14 +237,14 @@ def _insert_df(DATABASE_URL, table_name, df, if_exists='replace'):
         engine.dispose()
 
 # ----- Public helpers -----
-def _run_query(query, *, return_result=False, scalar=False, max_retries=3, params=None, bAngelmanResult=True):
+def _run_query(query, *, return_result=False, scalar=False, max_retries=3, params=None, bAngelmanResult=True, asconnect_env=None):
     """
     Exécute une requête avec gestion du tunnel SSH si nécessaire.
     - params: dict des bind params
     - return_result: fetchall()
     - scalar: scalar()
     """
-    cfg = get_db_params(bAngelmanResult)
+    cfg = get_db_params(bAngelmanResult=bAngelmanResult,asconnect_env=asconnect_env)
     attempt = 0
     while attempt < max_retries:
         try:
@@ -257,8 +269,8 @@ def _run_query(query, *, return_result=False, scalar=False, max_retries=3, param
             else:
                 raise
 
-def _insert_data(df, table_name, if_exists='replace',bAngelmanResult=True):
-    cfg = get_db_params(bAngelmanResult)
+def _insert_data(df, table_name, if_exists='replace',bAngelmanResult=True, asconnect_env=None):
+    cfg = get_db_params(bAngelmanResult=bAngelmanResult, asconnect_env=asconnect_env)
     max_retries = 3
     attempt = 0
     while attempt < max_retries:
