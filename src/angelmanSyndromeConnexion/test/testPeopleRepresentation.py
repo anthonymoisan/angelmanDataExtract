@@ -100,6 +100,27 @@ def findId(email):
     id = giveId(email)
     logger.info("Id : %d",id)
 
+#permet de supprimer les individus jusqu'à un idMaximum
+def cleanDataBase(idMax):
+    for i in range(idMax):
+        try:
+            ok = deleteDataById(i)
+            if ok :
+                logger.info(f"ID {i} delete !")
+        except Exception as e:
+            # Ignore si l'ID n'existe pas
+            logger.info(f"ID {i} skipped ({e})")
+            continue
+
+def cleanPeople(id):
+    try:
+        ok = deleteDataById(id)
+        if ok :
+            logger.info(f"ID {id} delete !")
+    except Exception as e:
+        # Ignore si l'ID n'existe pas
+        logger.info(f"ID {id} skipped ({e})")
+
 def main():
     start = time.time()
     try:
@@ -141,7 +162,9 @@ def main():
         #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
         #logger.info(getListPaysTranslate("pl"))
         #logger.info(get_place_maptiler(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
-        logger.info(get_place_here(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
+        #logger.info(get_place_here(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
+        #cleanDataBase(5)
+        cleanPeople(4020)
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

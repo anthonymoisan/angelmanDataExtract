@@ -3,9 +3,14 @@ https://www.youtube.com/watch?v=Bx_jHawKn5A&ab_channel=CodewithJosh
 0) Open a bash Console
 
 1) Make a virtual env
+ENV DE PROD
 mkvirtualenv myvirtualenv --python=/usr/bin/python3.10
+ENV DE TEST
+mkvirtualenv myvirtualenvtest --python=/usr/bin/python3.10
 
 2) git clone your project
+git clone -b brancheGroup --single-branch https://github.com/anthonymoisan/angelmanDataExtract.git
+
 
 3) cd angelmanExtractData puis cd/src
 
