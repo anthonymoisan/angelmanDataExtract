@@ -38,6 +38,8 @@ def get_db_params(*, bAngelmanResult: bool = True, asconnect_env: str | None = N
 
     # Par défaut, on lit une variable d'env (pratique en prod / PythonAnywhere)
     # Valeurs attendues : "prod" ou "test"
+
+    bForceTest = True
     asconnect_env = (asconnect_env or os.getenv("ASCONNECT_ENV", "prod")).lower()
     if asconnect_env not in ("prod", "test"):
         raise ValueError(f"ASCONNECT_ENV must be 'prod' or 'test' (got {asconnect_env!r})")
@@ -49,10 +51,12 @@ def get_db_params(*, bAngelmanResult: bool = True, asconnect_env: str | None = N
 
     # 2) ASConnect (False) : switch prod/test
     else:
-        if asconnect_env == "test":
+        if (asconnect_env == "test") or (bForceTest):
+            logger.info("BASE DE TEST")
             db_pass = cfg["MySQL"]["DB_PASSWORDTESTAS"]
             db_name = cfg["MySQL"]["DB_NAMETESTAS"]
         else:
+            logger.info("BASE DE PROD")
             db_pass = cfg["MySQL"]["DB_PASSWORDAS"]
             db_name = cfg["MySQL"]["DB_NAMEAS"]
 
