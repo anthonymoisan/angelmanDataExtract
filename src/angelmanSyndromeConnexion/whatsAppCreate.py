@@ -51,11 +51,10 @@ def createMessageDump(session,conversation_id,sender_people_id,body_text,created
     return message
 
 # Create a new Conversation
-def _createConversation(session,title,is_group,is_global) -> Conversation:
+def _createConversation(session,title,is_group) -> Conversation:
     conv = Conversation(
             title=title,
             is_group=is_group,
-            is_global = is_global,
             created_at=utc_now(),
             last_message_at=None,
         )
@@ -121,7 +120,6 @@ def get_or_create_private_conversation(session, p1_id: int, p2_id: int, title: s
         session,
         title=conv_title,
         is_group=False,
-        is_global=False,
     )
 
 
@@ -177,7 +175,9 @@ def bulk_add_new_person_to_all_global_group_conversations_conn(conn, people_publ
             0,
             NOW()
         FROM T_Conversation c
-        WHERE c.is_group = 1 AND c.is_global = 1
+        WHERE c.is_group = 1
+        AND c.last_message_at IS NOT NULL
+        AND c.last_message_at >= (NOW() - INTERVAL 10 DAY)
     """), {"pid": people_public_id})
 
 def create_group_conversation(session, people_public_admin_id, listIdPeoplesMember: List[int], title: str) -> Conversation:
@@ -190,22 +190,11 @@ def create_group_conversation(session, people_public_admin_id, listIdPeoplesMemb
     # 0) Nettoyage + dédoublonnage (inclure l'admin quoi qu'il arrive)
     unique_member_ids = {pid for pid in listIdPeoplesMember if pid}
     unique_member_ids.add(people_public_admin_id)
-    
-    # 🔎 Récupérer tous les IDs PeoplePublic en base
-    all_people_ids = set(
-        session.execute(
-            select(PeoplePublic.id)
-        ).scalars().all()
-    )
-
-    # ✅ Vérifier si c'est une conversation globale
-    global_conversation = (unique_member_ids == all_people_ids)
 
     # 1) Créer la conversation avec l'admin
     conv = Conversation(
         title=title,
         is_group=True,
-        is_global=global_conversation,
         idAdmin=people_public_admin_id,   # ✅ nouveau champ
         created_at=now,
         last_message_at=None,

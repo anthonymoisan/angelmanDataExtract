@@ -2,7 +2,6 @@ CREATE TABLE IF NOT EXISTS T_Conversation (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   title           VARCHAR(255)     NULL,
   is_group        TINYINT(1)       NOT NULL DEFAULT 0,
-  is_global       TINYINT(1)       NOT NULL DEFAULT 0,  -- ✅ nouveau champ
   idAdmin         INT UNSIGNED     NULL,
 
   created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -17,6 +16,6 @@ CREATE TABLE IF NOT EXISTS T_Conversation (
     ON UPDATE CASCADE,
 
   INDEX idx_conv_admin (idAdmin),
-  INDEX idx_conv_last_message (last_message_at),
-  INDEX idx_conv_is_global (is_global)   -- utile si tu filtres souvent dessus
+  INDEX idx_conv_last_message (last_message_at)
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
