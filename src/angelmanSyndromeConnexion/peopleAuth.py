@@ -7,6 +7,7 @@ import unicodedata
 from tools.logger import setup_logger
 from tools.utilsTools import _run_query
 import tools.crypto_utils as crypto  # email_sha256, verify_password_argon2
+from angelmanSyndromeConnexion.peopleUpdate import setLang
 
 logger = setup_logger(debug=False)
 
@@ -64,7 +65,7 @@ def authenticate_email_password(email: str, password: str, bAngelmanResult:bool)
         return False
 
 
-def authenticate_and_get_id(email: str, password: str, bAngelmanResult=False) -> Optional[int]:
+def authenticate_and_get_id(email: str, password: str, lang:str, bAngelmanResult=False) -> Optional[int]:
     """
     Retourne l'ID de l'utilisateur si les identifiants sont valides, sinon None.
     """
@@ -74,6 +75,7 @@ def authenticate_and_get_id(email: str, password: str, bAngelmanResult=False) ->
             return None
         pid, stored_hash_bytes = row
         if crypto.verify_password_argon2(password, stored_hash_bytes):
+            setLang(pid, lang=lang)
             return pid
         return None
     except Exception:

@@ -7,7 +7,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from tools.logger import setup_logger
-from angelmanSyndromeConnexion.peopleUpdate import updateData
+from angelmanSyndromeConnexion.peopleUpdate import updateData, setLang
 from angelmanSyndromeConnexion.peopleAuth import(
     verifySecretAnswer, authenticate_and_get_id, authenticate_email_password, update_person_connection_status
 )
@@ -22,6 +22,7 @@ from angelmanSyndromeConnexion.geo_utils3 import get_place_here
 import time
 from angelmanSyndromeConnexion import error
 from tools.utilsTools import dropTable,createTable
+
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -165,6 +166,10 @@ def main():
         #logger.info(get_place_here(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         #cleanDataBase(5)
         #cleanPeople(4067)
+
+        setLang(4044, 'fr')
+
+
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")

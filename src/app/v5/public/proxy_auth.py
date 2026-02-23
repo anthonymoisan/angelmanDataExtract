@@ -37,12 +37,13 @@ def public_login():
 
   email = (data.get("email") or "").strip()
   password = data.get("password") or ""
+  lang = (data.get("lang") or "fr").strip().lower()
 
   if not email or not password:
     return jsonify({"error": "email et password sont requis"}), 400
 
   
-  person_id = authenticate_and_get_id(email, password, bAngelmanResult=False)
+  person_id = authenticate_and_get_id(email, password, lang=lang, bAngelmanResult=False)
 
   if person_id is None:
     return jsonify({"ok": False, "message": "identifiants invalides"}), 401

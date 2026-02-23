@@ -16,7 +16,8 @@ from angelmanSyndromeConnexion.utils_image import (
     coerce_to_date, detect_mime_from_bytes, normalize_mime, recompress_image
 )
 from angelmanSyndromeConnexion.peopleRead import giveId, fetch_person_decrypted_simple
-
+from angelmanSyndromeConnexion.models.people_public import PeoplePublic
+from app.db import get_session
 from angelmanSyndromeConnexion.geo_utils3 import get_place_here
 
 logger = setup_logger(debug=False)
@@ -56,6 +57,14 @@ def age_years(dob: date, on_date: date | None = None) -> int:
         years -= 1
     return years
 
+# Change l'affectation de langue sur un People en fonction de son choix de connexion
+def setLang(idPeople, lang: str):
+    with get_session() as session:
+        person = session.get(PeoplePublic, idPeople)
+        if not person:
+            raise ValueError("Person not found")
+
+        person.setLang(lang)
 
 def updateData(
     email_address : str,
