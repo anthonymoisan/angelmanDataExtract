@@ -129,7 +129,7 @@ def main():
         #findId("anthonymoisan@yahoo.fr")
         #df = getRecordsPeople()
         #logger.info(df.head())
-        #dictRes = fetch_person_decrypted(1)
+        #dictRes = fetch_person_decrypted(4068)
         #logger.info(dictRes)
         #dictR = identity_public(1)
         #logger.info(dictR)
@@ -164,7 +164,7 @@ def main():
         #logger.info(get_place_maptiler(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         #logger.info(get_place_here(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         #cleanDataBase(5)
-        cleanPeople(4020)
+        #cleanPeople(4067)
         elapsed = time.time() - start
         
         logger.info(f"\n✅ Tables for AS People are ok with an execution time in {elapsed:.2f} secondes.")
