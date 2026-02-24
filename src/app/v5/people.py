@@ -158,6 +158,7 @@ def _payload_people_from_request():
         file = request.files.get("photo")
         photo_bytes = file.read() if file else None
         is_info = form.get("is_info")
+        lang = form.get("lang")
     else:
         data = request.get_json(silent=True) or {}
         gender = data.get("gender")
@@ -173,6 +174,7 @@ def _payload_people_from_request():
         rSec = data.get("rSecrete")
         photo_b64 = data.get("photo_base64")
         is_info = data.get("is_info")
+        lang = data.get("lang")
         if photo_b64:
             if "," in photo_b64:
                 photo_b64 = photo_b64.split(",", 1)[1]
@@ -203,6 +205,8 @@ def _payload_people_from_request():
         "password",
         "qSecrete",
         "rSecrete",
+        "is_info",
+        "lang",
     ]
 
     def is_missing(v):
@@ -230,7 +234,8 @@ def _payload_people_from_request():
         password,
         qSec,
         rSec,
-        is_info
+        is_info,
+        lang
     )
 
 
@@ -238,8 +243,8 @@ def _payload_people_from_request():
 @require_basic
 def create_person():
     try:
-        gender, fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec, is_info = _payload_people_from_request()
-        new_id = insertData(gender, fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec, is_info)
+        gender, fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec, is_info, lang = _payload_people_from_request()
+        new_id = insertData(gender, fn, ln, email, dob, gt, photo_bytes, long, lat, password, qSec, rSec, is_info, lang)
         return jsonify({"status": "created", "id": new_id}), 200
     except AppError as e:
         return jsonify({"status": "validation error" , "message" : e.code}), e.http_status

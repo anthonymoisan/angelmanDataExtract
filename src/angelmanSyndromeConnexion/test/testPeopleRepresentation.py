@@ -33,7 +33,7 @@ def _insertDataFrame(firstRow=False):
     dropTable("T_People_Public",bAngelmanResult=False)    
     
     wkdir = os.path.dirname(__file__)
-    df = pd.read_excel(f"{wkdir}/../../../data/Picture/AS_people_4000_generated.xlsx")
+    df = pd.read_excel(f"{wkdir}/../../../data/Picture/DataAngelman.xlsx")
     
     script_path2 = os.path.join(f"{wkdir}/../SQL/","createPublicPeople.sql")
     createTable(script_path2,bAngelmanResult=False)
@@ -65,6 +65,7 @@ def _insertDataFrame(firstRow=False):
         questionSecrete = getattr(row, "QuestionSecrete")
         reponseSecrete = getattr(row, "ReponseSecrete")
         is_info = getattr(row, "IsInfo")
+        lang = getattr(row, "Lang")
 
         
         img_path = BASE / str(fileName)
@@ -83,7 +84,7 @@ def _insertDataFrame(firstRow=False):
             logger.exception("Erreur lecture photo: %s", img_path)
 
         try:
-            insertData(gender, firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude, password, questionSecrete, reponseSecrete, is_info)
+            insertData(gender, firstName, lastName, emailAdress, dateOfBirth, genotype, photo_data, longitude, latitude, password, questionSecrete, reponseSecrete, is_info, lang)
         except error.BadLocalization as e:
             logger.error(e)
             countGPSError += 1
@@ -121,6 +122,23 @@ def cleanPeople(id):
     except Exception as e:
         # Ignore si l'ID n'existe pas
         logger.info(f"ID {id} skipped ({e})")
+
+def createPeople():
+    gender = "M"
+    firstname = "George"
+    lastname = "Wilson"
+    emailAddress = "George.Wilson@exemple.com"
+    dateOfBirth = "24/11/2013"
+    genotype = "Délétion"
+    photo = None
+    longitude = 2
+    latitude = 48
+    password = "Mmas&3783"
+    questionSecrete = 1 # int 1..3
+    reponseSecrete = "Truc"   # str (sera chiffrée)
+    is_info = 1
+    lang = "en"
+    insertData(gender,firstname,lastname,emailAddress, dateOfBirth,genotype,photo,longitude,latitude,password,questionSecrete,reponseSecrete,is_info,lang)
 
 def main():
     start = time.time()
@@ -165,9 +183,12 @@ def main():
         #logger.info(get_place_maptiler(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         #logger.info(get_place_here(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         #cleanDataBase(5)
-        #cleanPeople(4067)
+        #cleanPeople(4044)
+        #cleanPeople(4048)
 
-        setLang(4044, 'fr')
+        #setLang(4044, 'en')
+        createPeople()
+
 
 
         elapsed = time.time() - start

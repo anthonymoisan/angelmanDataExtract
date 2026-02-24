@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS T_Conversation (
   title           VARCHAR(255)     NULL,
   is_group        TINYINT(1)       NOT NULL DEFAULT 0,
   idAdmin         INT UNSIGNED     NULL,
-
   created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_message_at TIMESTAMP NULL DEFAULT NULL,
 

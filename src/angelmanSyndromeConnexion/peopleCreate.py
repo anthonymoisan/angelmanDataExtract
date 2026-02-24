@@ -38,13 +38,15 @@ def create_person_and_identity(data) -> int:
     Retourne person_id créé dans T_People_Public.
     """
     def worker(conn):
+
+        langUser = data["lang"]
         # 1) INSERT public
         res_pub = conn.execute(
             text("""
-                INSERT INTO `T_People_Public` (city, gender, country, country_code, age_years,pseudo, is_info)
-                VALUES (:city, :gender, :country, :country_code, :age_years,:pseudo, :is_info)
+                INSERT INTO `T_People_Public` (city, gender, country, country_code, lang, age_years,pseudo, is_info)
+                VALUES (:city, :gender, :country, :country_code, :lang, :age_years,:pseudo, :is_info)
             """),
-            {"city": data["city"], "gender":data["gender"],"country":data["country"], "country_code":data["country_code"], "age_years": data["age"], "pseudo": data["pseudo"], "is_info": data["is_info"]},
+            {"city": data["city"], "gender":data["gender"],"country":data["country"], "country_code":data["country_code"], "lang":langUser, "age_years": data["age"], "pseudo": data["pseudo"], "is_info": data["is_info"]},
         )
 
         # Récup id (même connexion!)
@@ -106,7 +108,8 @@ def insertData(
     password,
     questionSecrete, # int 1..3
     reponseSecrete,   # str (sera chiffrée)
-    is_info
+    is_info,
+    lang
 ):
     try:
 
@@ -114,10 +117,6 @@ def insertData(
             raise TypeError("Gender doit être M or F")
             
         # -------- 1) Validations minimales --------
-        if not isinstance(dateOfBirth, date):
-            # Convertir côté appelant si nécessaire pour garantir un datetime.date
-            raise TypeError("dateOfBirth doit être un datetime.date")
-
         dob = coerce_to_date(dateOfBirth)
         if dob > date.today():
             raise error.FutureDateError("dateOfBirth ne peut pas être dans le futur")
@@ -227,6 +226,7 @@ def insertData(
         data["enc_secret_q"] = secret_que_enc
         data["enc_secret_ans"] = secret_ans_enc
         data["is_info"] = is_info
+        data["lang"] = lang
 
         id = create_person_and_identity(data)
 

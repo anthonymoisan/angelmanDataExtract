@@ -55,3 +55,9 @@ class Conversation(Base):
         back_populates="conversation",
         cascade="all, delete-orphan",
     )
+
+    langs: Mapped[list["ConversationLang"]] = relationship(
+    "ConversationLang",
+    back_populates="conversation",
+    cascade="all, delete-orphan",
+    )

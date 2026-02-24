@@ -9,7 +9,8 @@ from tools.utilsTools import _run_query
 import tools.crypto_utils as crypto
 import time
 from angelmanSyndromeConnexion.geo_utils3 import countries_from_iso2_list_sorted_dict
-
+from angelmanSyndromeConnexion.models.people_public import PeoplePublic
+from sqlalchemy import select
 logger = setup_logger(debug=False)
 
 
@@ -254,6 +255,9 @@ def getRecordsPeople():
 
     return df
 
+def getLang(session, idPeople: int) -> str | None:
+    stmt = select(PeoplePublic.lang).where(PeoplePublic.id == idPeople)
+    return session.execute(stmt).scalar_one_or_none()
 
 def giveId(email_real):
     sha = crypto.email_sha256(email_real)
@@ -264,6 +268,7 @@ def giveId(email_real):
         bAngelmanResult=False
     )
     return int(row[0][0]) if row else None
+
 
 def getQuestionSecrete(person_id: int) -> int | None:
     rows = _run_query(

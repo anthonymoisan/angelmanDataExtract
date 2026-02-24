@@ -4,14 +4,19 @@ from datetime import datetime
 from angelmanSyndromeConnexion.models.people_public import PeoplePublic  # wrapper T_People_Public
 from angelmanSyndromeConnexion.models.conversation import Conversation
 from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
+from angelmanSyndromeConnexion.models.conversationLang import ConversationLang
 from angelmanSyndromeConnexion.models.message import Message
 from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
-from datetime import datetime
+from datetime import datetime,timedelta
+from angelmanSyndromeConnexion.peopleRead import getLang
+
 from zoneinfo import ZoneInfo
 from typing import List
 from tools.crypto_utils import encrypt_str
+from app.db import Session
 
-from sqlalchemy import select, func, text
+from sqlalchemy import and_, exists, insert, literal, select, func
+
 
 def utc_now() -> datetime:
     return datetime.now(ZoneInfo("Europe/Paris"))
@@ -26,6 +31,34 @@ def createConversationDump(session,title,is_group,created_at,last_message_at):
     session.add(conv)
     session.flush()
     return conv
+
+
+def createConversationLangDump(session, conversation_id: int, lang: str):
+    # 1 langue -> on délègue au helper
+    return _add_new_conv_langs(session, conversation_id, [lang])
+
+def _add_new_conv_langs(session, conversation_id: int, conv_langs: list[str]):
+    created_or_existing = []
+
+    for lang in conv_langs:
+        existing = session.execute(
+            select(ConversationLang).where(
+                ConversationLang.conversation_id == conversation_id,
+                ConversationLang.lang == lang,
+            )
+        ).scalar_one_or_none()
+
+        if existing:
+            created_or_existing.append(existing)
+            continue
+
+        conv_lang = ConversationLang(conversation_id=conversation_id, lang=lang)
+        session.add(conv_lang)
+        created_or_existing.append(conv_lang)
+
+    # Un seul flush à la fin = mieux
+    session.flush()
+    return created_or_existing
 
 def createConversationMemberDump(session,conversation_id,people_public_id,last_read_message_id,last_read_at,joined_at):
     member = ConversationMember(
@@ -122,7 +155,7 @@ def get_or_create_private_conversation(session, p1_id: int, p2_id: int, title: s
         is_group=False,
     )
 
-
+    _add_new_conv_langs(session, new_conv.id, [getLang(session,p1_id)])
     addConversationMember(session, new_conv.id, p1_id, "member")
     addConversationMember(session, new_conv.id, p2_id, "member")
 
@@ -160,63 +193,139 @@ def addConversationMember(session,conversation_id,people_public_id,role) -> Conv
 
     return convMember
 
-def bulk_add_new_person_to_all_global_group_conversations_conn(conn, people_public_id: int) -> None:
-    # Insère un membership pour toutes les conversations globales de groupe
-    # joined_at / last_read_at : mêmes valeurs pour tous (NOW())
-    conn.execute(text("""
-        INSERT INTO T_Conversation_Member
-            (conversation_id, people_public_id, role, last_read_message_id, last_read_at, is_muted, joined_at)
-        SELECT
-            c.id,
-            :pid,
-            'member',
-            NULL,
-            NULL,
-            0,
-            NOW()
-        FROM T_Conversation c
-        WHERE c.is_group = 1
-        AND c.last_message_at IS NOT NULL
-        AND c.last_message_at >= (NOW() - INTERVAL 10 DAY)
-    """), {"pid": people_public_id})
 
-def create_group_conversation(session, people_public_admin_id, listIdPeoplesMember: List[int], title: str) -> Conversation:
+def bulk_add_new_person_to_all_global_group_conversations_conn(
+    conn,
+    people_public_id: int,
+) -> None:
+    #Créer toutes les conversations actives de groupe de moins de 10jours dans la langue sélectionnée par la personne
+    now = utc_now()
+    limit_date = now - timedelta(days=10)
+
+    c = Conversation
+    p = PeoplePublic
+    cl = ConversationLang
+    cm = ConversationMember
+
+    # NOT EXISTS (SELECT 1 FROM T_Conversation_Member cm WHERE cm.conversation_id = c.id AND cm.people_public_id = :pid)
+    member_exists = exists(
+        select(1).where(
+            and_(
+                cm.conversation_id == c.id,
+                cm.people_public_id == people_public_id,
+            )
+        )
+    )
+
+    stmt = (
+        insert(cm)
+        .from_select(
+            [
+                cm.conversation_id,
+                cm.people_public_id,
+                cm.role,
+                cm.last_read_message_id,
+                cm.last_read_at,
+                cm.is_muted,
+                cm.joined_at,
+            ],
+            select(
+                c.id,
+                literal(people_public_id),
+                literal("member"),
+                literal(None),
+                literal(None),
+                literal(0),
+                literal(now),
+            )
+            .select_from(c)
+            .join(p, p.id == people_public_id)
+            .join(
+                cl,
+                and_(
+                    cl.conversation_id == c.id,
+                    cl.lang == p.lang,
+                ),
+            )
+            .where(
+                and_(
+                    c.is_group == 1,
+                    c.last_message_at.is_not(None),
+                    c.last_message_at >= limit_date,
+                    ~member_exists,
+                )
+            )
+        )
+    )
+
+    conn.execute(stmt)
+
+def create_group_conversation(
+    session: Session,
+    people_public_admin_id: int,
+    langs: List[str],                      # ✅ multi-langues
+    listIdPeoplesMember: List[int],
+    title: str
+) -> Conversation:
     """
     Crée une conversation de groupe, définit l'admin (idAdmin),
+    ajoute les langues associées (T_Conversation_Lang),
     et ajoute les membres + l'admin dans ConversationMember.
     """
     now = utc_now()
 
-    # 0) Nettoyage + dédoublonnage (inclure l'admin quoi qu'il arrive)
+    # 0) Nettoyage/dédoublonnage membres (inclure l'admin)
     unique_member_ids = {pid for pid in listIdPeoplesMember if pid}
     unique_member_ids.add(people_public_admin_id)
 
-    # 1) Créer la conversation avec l'admin
+    # 1) Normaliser les langues
+    norm_langs = []
+    for l in (langs or []):
+        if not l:
+            continue
+        l2 = l.strip().lower()[:2]
+        if len(l2) == 2:
+            norm_langs.append(l2)
+
+    # default si rien fourni
+    if not norm_langs:
+        norm_langs = ["fr"]
+
+    # dédoublonnage en gardant l'ordre
+    seen = set()
+    norm_langs = [l for l in norm_langs if not (l in seen or seen.add(l))]
+
+    # 2) Créer la conversation
     conv = Conversation(
         title=title,
         is_group=True,
-        idAdmin=people_public_admin_id,   # ✅ nouveau champ
+        idAdmin=people_public_admin_id,
         created_at=now,
         last_message_at=None,
     )
     session.add(conv)
-    session.flush()  # 🔑 récupère conv.id
+    session.flush()  # 🔑 conv.id
 
-    # 3) Créer les ConversationMember (admin + members)
-    members = []
-    for pid in unique_member_ids:
-        members.append(
-            ConversationMember(
-                conversation_id=conv.id,
-                people_public_id=pid,
-                role="admin" if pid == people_public_admin_id else "member",
-                joined_at=now,
-                last_read_message_id=None,
-                last_read_at=None,
-                is_muted=False,
-            )
+    # 3) Insérer les langues associées à la conversation
+    conv_lang_rows = [
+        ConversationLang(conversation_id=conv.id, lang=l)
+        for l in norm_langs
+    ]
+    session.bulk_save_objects(conv_lang_rows)
+
+    # 4) Insérer les ConversationMember (admin + members)
+    members = [
+        ConversationMember(
+            conversation_id=conv.id,
+            people_public_id=pid,
+            role="admin" if pid == people_public_admin_id else "member",
+            joined_at=now,
+            last_read_message_id=None,
+            last_read_at=None,
+            is_muted=False,
         )
-
+        for pid in unique_member_ids
+    ]
     session.bulk_save_objects(members)
 
     session.commit()

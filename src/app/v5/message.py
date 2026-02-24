@@ -223,6 +223,10 @@ def api_create_group_conversation_all_people():
         if not admin_exists:
             return jsonify({"error": "Admin PeoplePublic introuvable"}), 404
 
+        lang_admin = session.execute(
+            select(PeoplePublic.lang).where(PeoplePublic.id == people_public_admin_id)
+        ).scalar_one_or_none()
+
         # Vérifier que tous les membres existent (optionnel mais recommandé)
         unique_members = {pid for pid in list_ids if pid and pid != people_public_admin_id}
         if unique_members:
@@ -240,6 +244,7 @@ def api_create_group_conversation_all_people():
         conv = create_group_conversation(
             session=session,
             people_public_admin_id=people_public_admin_id,
+            langs = [lang_admin],
             listIdPeoplesMember=list_ids,
             title=title,
         )
