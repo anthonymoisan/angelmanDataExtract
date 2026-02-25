@@ -253,3 +253,94 @@ def countries_from_iso2_list_sorted_dict(
             country_codes, locale=locale, unique=unique, keep_none=keep_none
         )
     ]
+
+######### Traduction fr, es, en, dans les différentes langues
+
+
+def _normalize_locale(locale: str) -> str:
+    if not locale:
+        return "fr"
+    return locale.strip().replace("-", "_")
+
+
+def _normalize_for_sort(s: str) -> str:
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", s)
+        if not unicodedata.combining(c)
+    ).casefold()
+
+
+@lru_cache(maxsize=1024)
+def language_name_from_code(lang_code: str, display_locale: str = "fr") -> Optional[str]:
+    """
+    Donne le nom d'une langue (lang_code) dans une langue d'affichage (display_locale).
+
+    Ex:
+      language_name_from_code("de", "fr") -> "allemand"
+      language_name_from_code("fr", "es") -> "francés"
+      language_name_from_code("es", "en") -> "Spanish"
+    """
+    if not lang_code:
+        return None
+
+    code = lang_code.strip().lower()
+    loc = _normalize_locale(display_locale)
+
+    try:
+        display = Locale.parse(loc)
+        # Babel: languages is a dict: {"fr": "français", ...} in the display locale
+        name = display.languages.get(code)
+        if name:
+            return name
+    except Exception:
+        pass
+
+    # fallback: try English
+    try:
+        display = Locale.parse("en")
+        name = display.languages.get(code)
+        if name:
+            return name
+    except Exception:
+        pass
+
+    # ultimate fallback: return the code
+    return code
+
+
+def languages_from_code_list_sorted_dict(
+    lang_codes: Iterable[str],
+    display_locale: str = "fr",
+    unique: bool = True,
+    keep_none: bool = False,
+) -> List[Dict[str, Optional[str]]]:
+    """
+    [{"code":"fr","name":"français"}, {"code":"es","name":"espagnol"}, ...]
+    trié par "name" (accent-insensitive).
+    """
+    items: List[Tuple[str, Optional[str]]] = []
+
+    for c in lang_codes:
+        if not c:
+            continue
+        code = c.strip().lower()
+        name = language_name_from_code(code, display_locale=display_locale)
+
+        if name is None and not keep_none:
+            continue
+
+        items.append((code, name))
+
+    if unique:
+        seen = set()
+        deduped: List[Tuple[str, Optional[str]]] = []
+        for code, name in items:
+            if code in seen:
+                continue
+            seen.add(code)
+            deduped.append((code, name))
+        items = deduped
+
+    items.sort(key=lambda t: (t[1] is None, _normalize_for_sort(t[1] or "")))
+
+    return [{"code": code, "name": name} for code, name in items]

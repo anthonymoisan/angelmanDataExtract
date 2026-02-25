@@ -9,7 +9,7 @@ from tools.utilsTools import _run_query
 from app.db import get_session
 import tools.crypto_utils as crypto
 import time
-from angelmanSyndromeConnexion.geo_utils3 import countries_from_iso2_list_sorted_dict
+from angelmanSyndromeConnexion.geo_utils3 import countries_from_iso2_list_sorted_dict, languages_from_code_list_sorted_dict
 from angelmanSyndromeConnexion.models.people_public import PeoplePublic
 from sqlalchemy import select, distinct
 logger = setup_logger(debug=False)
@@ -181,6 +181,7 @@ def getRecordsPeople():
                 p.city,
                 p.country,
                 p.country_code,
+                p.lang,
                 p.is_connected,
                 p.age_years,
                 i.firstname,
@@ -219,6 +220,7 @@ def getRecordsPeople():
         city = m["city"]
         country = m["country"]
         country_code = m["country_code"]
+        lang = m["lang"]
         is_connected = m["is_connected"]
         age = m["age_years"]
         fn  = crypto.decrypt_bytes_to_str_strict(m["firstname"])
@@ -235,6 +237,7 @@ def getRecordsPeople():
             "city": city,                 # on prend la ville de la table publique
             "country": country,
             "country_code" : country_code,
+            "lang" : lang,
             "is_connected" : is_connected,
             "age": age,                   # remap age_years -> age pour la sortie
             "genotype": gt,
@@ -242,7 +245,7 @@ def getRecordsPeople():
             "latitude": lat,
         })
 
-    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","country", "country_code", "is_connected", "age","genotype","longitude","latitude"])
+    df = pd.DataFrame(data, columns=["id","firstname","lastname","city","country", "country_code", "lang", "is_connected", "age","genotype","longitude","latitude"])
 
     decrypt_end = time.perf_counter()
     logger.info(
@@ -316,3 +319,10 @@ def getListPaysTranslate(locale: str = "fr"):
         return []
     else:
         return countries_from_iso2_list_sorted_dict(listcountry_codes,locale=locale)
+    
+def getLanguagesTranslate(locale:str = "fr"):
+    listlangue_code = getLanguesPeople()
+    if not listlangue_code:
+        return []
+    else:
+        return languages_from_code_list_sorted_dict(listlangue_code,display_locale=locale)

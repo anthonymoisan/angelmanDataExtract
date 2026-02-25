@@ -12,7 +12,7 @@ from angelmanSyndromeConnexion.peopleAuth import(
     verifySecretAnswer, authenticate_and_get_id, authenticate_email_password, update_person_connection_status
 )
 from angelmanSyndromeConnexion.peopleRead import( 
-    getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId,identity_public, getListPaysTranslate,getLanguesPeople
+    getQuestionSecrete, getRecordsPeople, fetch_person_decrypted, giveId,identity_public, getListPaysTranslate,getLanguesPeople, getLanguagesTranslate
 )
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
 from angelmanSyndromeConnexion.peopleCreate import insertData
@@ -180,7 +180,8 @@ def main():
         #logger.info(getQuestionSecrete(8))
         #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
         #logger.info(getListPaysTranslate("fr"))
-        logger.info(getLanguesPeople())
+        logger.info(getLanguagesTranslate("es"))
+        
         #logger.info(get_place_maptiler(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         #logger.info(get_place_here(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         #cleanDataBase(5)

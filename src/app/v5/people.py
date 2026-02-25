@@ -9,7 +9,7 @@ from angelmanSyndromeConnexion.error import (
 )
 from angelmanSyndromeConnexion.peopleCreate import insertData
 from angelmanSyndromeConnexion.peopleRead import(
-    giveId, fetch_person_decrypted, fetch_photo, getRecordsPeople, identity_public,getListPaysTranslate, getLanguesPeople
+    giveId, fetch_person_decrypted, fetch_photo, getRecordsPeople, identity_public,getListPaysTranslate, getLanguagesTranslate
 )
 from angelmanSyndromeConnexion.peopleUpdate import updateData
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
@@ -337,32 +337,34 @@ def private_countries_translated():
             "detail": str(e),
         }), 500
 
-@bp.get("/people/langues")
-@require_basic
-def private_people_langues():
-    """
-    Renvoie la liste des langues distinctes présentes dans T_People_Public.
-    Endpoint privé (auth privée).
 
-    Response:
-      {
-        "languages": ["en", "fr", ...],
-        "count": 2
-      }
+@bp.get("/people/languagesTranslated")
+@require_basic
+def private_languages_translated():
+    """
+    Renvoie la liste des langues (code ISO alpha-2 + nom traduit),
+    triés alphabétiquement selon la langue demandée.
+
+    Query params:
+      - locale (default: fr) ex: fr, en, es, pt_BR
     """
     try:
-        languages = getLanguesPeople() or []
+        locale = request.args.get("locale", "fr").strip()
+
+        # Ex: [{'code': 'BR', 'name': 'Brésil'}, ...]
+        langues = getLanguagesTranslate(locale=locale) or []
 
         return jsonify({
-            "languages": languages,
-            "count": len(languages),
+            "locale": locale,
+            "langues": langues,
+            "count": len(langues),
         })
 
     except Exception as e:
         current_app.logger.exception(
-            "[PRIVATE][PEOPLE] langues ERROR: %s", e
+            "[PRIVATE_PROXY][LANGUES] languesTranslated ERROR: %s", e
         )
         return jsonify({
-            "error": "private people langues error",
+            "error": " languesTranslated error",
             "detail": str(e),
         }), 500

@@ -17,7 +17,7 @@ from angelmanSyndromeConnexion.peopleRead import (
     getRecordsPeople,
     identity_public,
     getListPaysTranslate,
-    getLanguesPeople,
+    getLanguagesTranslate,
 )
 from angelmanSyndromeConnexion.peopleUpdate import updateData
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
@@ -467,34 +467,33 @@ def public_countries_translated():
             "detail": str(e),
         }), 500
 
-@bp.get("/people/langues")
+@bp.get("/people/languagesTranslated")
 @require_public_app_key
-def public_people_langues():
+def public_languages_translated():
     """
-    Renvoie la liste des langues distinctes présentes dans T_People_Public.
+    Renvoie la liste des langues (code ISO alpha-2 + nom traduit),
+    triés alphabétiquement selon la langue demandée.
 
-    Auth:
-      - Public app key (header)
-
-    Response:
-      {
-        "languages": ["en", "fr", ...],
-        "count": 2
-      }
+    Query params:
+      - locale (default: fr) ex: fr, en, es, pt_BR
     """
     try:
-        languages = getLanguesPeople() or []
+        locale = request.args.get("locale", "fr").strip()
+
+        # Ex: [{'code': 'BR', 'name': 'Brésil'}, ...]
+        langues = getLanguagesTranslate(locale=locale) or []
 
         return jsonify({
-            "languages": languages,
-            "count": len(languages),
+            "locale": locale,
+            "langues": langues,
+            "count": len(langues),
         })
 
     except Exception as e:
         current_app.logger.exception(
-            "[PUBLIC_PROXY][PEOPLE] langues ERROR: %s", e
+            "[PUBLIC_PROXY][LANGUES] languesTranslated ERROR: %s", e
         )
         return jsonify({
-            "error": "people langues error",
+            "error": " languesTranslated error",
             "detail": str(e),
         }), 500
