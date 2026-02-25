@@ -9,7 +9,7 @@ from angelmanSyndromeConnexion.error import (
 )
 from angelmanSyndromeConnexion.peopleCreate import insertData
 from angelmanSyndromeConnexion.peopleRead import(
-    giveId, fetch_person_decrypted, fetch_photo, getRecordsPeople, identity_public,getListPaysTranslate
+    giveId, fetch_person_decrypted, fetch_photo, getRecordsPeople, identity_public,getListPaysTranslate, getLanguesPeople
 )
 from angelmanSyndromeConnexion.peopleUpdate import updateData
 from angelmanSyndromeConnexion.peopleDelete import deleteDataById
@@ -334,5 +334,35 @@ def private_countries_translated():
         )
         return jsonify({
             "error": "countriesTranslated error",
+            "detail": str(e),
+        }), 500
+
+@bp.get("/people/langues")
+@require_basic
+def private_people_langues():
+    """
+    Renvoie la liste des langues distinctes présentes dans T_People_Public.
+    Endpoint privé (auth privée).
+
+    Response:
+      {
+        "languages": ["en", "fr", ...],
+        "count": 2
+      }
+    """
+    try:
+        languages = getLanguesPeople() or []
+
+        return jsonify({
+            "languages": languages,
+            "count": len(languages),
+        })
+
+    except Exception as e:
+        current_app.logger.exception(
+            "[PRIVATE][PEOPLE] langues ERROR: %s", e
+        )
+        return jsonify({
+            "error": "private people langues error",
             "detail": str(e),
         }), 500

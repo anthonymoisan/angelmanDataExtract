@@ -6,11 +6,12 @@ from sqlalchemy import text
 from angelmanSyndromeConnexion.utils_image import recompress_image, normalize_mime
 from tools.logger import setup_logger
 from tools.utilsTools import _run_query
+from app.db import get_session
 import tools.crypto_utils as crypto
 import time
 from angelmanSyndromeConnexion.geo_utils3 import countries_from_iso2_list_sorted_dict
 from angelmanSyndromeConnexion.models.people_public import PeoplePublic
-from sqlalchemy import select
+from sqlalchemy import select, distinct
 logger = setup_logger(debug=False)
 
 
@@ -269,6 +270,14 @@ def giveId(email_real):
     )
     return int(row[0][0]) if row else None
 
+def getLanguesPeople() -> list[str]:
+    with get_session() as session :
+        stmt = (
+            select(distinct(PeoplePublic.lang))
+            .where(PeoplePublic.lang.is_not(None))
+            .order_by(PeoplePublic.lang)
+        )
+        return session.execute(stmt).scalars().all()
 
 def getQuestionSecrete(person_id: int) -> int | None:
     rows = _run_query(
