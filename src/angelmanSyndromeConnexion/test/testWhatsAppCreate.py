@@ -10,11 +10,12 @@ if str(SRC_DIR) not in sys.path:
 from tools.logger import setup_logger
 from tools.utilsTools import dropTable,createTable
 from angelmanSyndromeConnexion import error
-
+from sqlalchemy import select
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from angelmanSyndromeConnexion import models  # noqa: F401  <-- important
 from angelmanSyndromeConnexion.models.people_public import PeoplePublic
+from angelmanSyndromeConnexion.models.conversation import Conversation
 from app.db import get_session  # ton helper de session (context manager)
 from tools.crypto_utils import encrypt_str
 from angelmanSyndromeConnexion.whatsAppCreate import (
@@ -122,9 +123,13 @@ def createMessagesConversationsFromExcel(wkdir):
 
 def create_GroupConversation():
      with get_session() as session:
-        convGroup1 = create_group_conversation(session, 9, ["en", "fr"],[9], "Group ENGLISH and FRENCH")       
-        addMessage(session,convGroup1, 9,"Do you have an idea about this bedroom",None,None,"normal")
-
+        #convGroup1 = create_group_conversation(session, 9, ["en", "fr"],[9], "Group ENGLISH and FRENCH")       
+        #addMessage(session,convGroup1, 9,"Do you have an idea about this bedroom",None,None,"normal")
+        convs = session.execute(
+            select(Conversation)
+        ).scalars().all()
+        for conv in convs:
+            createConversationLangDump(session, conv.id, 'fr')
 
 # Set up logger
 logger = setup_logger(debug=False)
@@ -136,7 +141,7 @@ def main():
         wkdir = os.path.dirname(__file__)
         
         #createMessagesConversationsFromExcel(wkdir=wkdir)
-        create_GroupConversation()
+        #create_GroupConversation()
         
         elapsed = time.time() - start
         logger.info(f"\n✅ Tables for WhatsApp are ok with an execution time in {elapsed:.2f} secondes.")
