@@ -10,6 +10,7 @@ from angelmanSyndromeConnexion.models.conversation import Conversation
 from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
 from angelmanSyndromeConnexion.models.message import Message
 from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
+from angelmanSyndromeConnexion.models.messageAttachment import MessageAttachment
 
 from angelmanSyndromeConnexion.whatsAppCreate import (
     get_or_create_private_conversation,
@@ -18,6 +19,14 @@ from angelmanSyndromeConnexion.whatsAppCreate import (
     toggleMessageReaction,
     create_group_conversation,
 )
+
+from angelmanSyndromeConnexion.whatsAppMessageUpload import (
+    UploadError,
+    attach_files_to_message,
+    ALLOWED_MIME_TYPES,
+    MAX_FILE_SIZE,
+)
+
 from angelmanSyndromeConnexion.whatsAppRead import(
     get_conversations_for_person_sorted,
     get_messages_for_conversation,
@@ -105,6 +114,17 @@ def reaction_to_dict(r: MessageReaction):
         "people_public_id": r.people_public_id,
         "emoji": r.emoji,
         "created_at": _dt_to_str(r.created_at),
+    }
+
+def attachment_to_dict(a: MessageAttachment):
+    return {
+        "id": a.id,
+        "message_id": a.message_id,
+        "file_path": a.file_path,
+        "file_name": a.file_name,
+        "mime_type": a.mime_type,
+        "file_size": a.file_size,
+        "created_at": _dt_to_str(a.created_at),
     }
 
 
@@ -340,7 +360,7 @@ def api_add_message(conversation_id: int):
             sender_people_id=sender_people_id,
             body_text=body_text,
             reply_to_message_id=reply_to_message_id,
-            has_attachments=has_attachments,
+            has_attachments=False,
             status=status,
         )
 
@@ -944,4 +964,126 @@ def api_public_delete_group_conversation(conversation_id: int):
 
         return jsonify({"success": True}), 200
 
-  
+@bp.post("/conversations/<int:conversation_id>/messages/upload")
+@require_public_app_key
+def api_add_message_with_attachment_public(conversation_id: int):
+    """
+    POST /api/public/conversations/<conversation_id>/messages/upload
+
+    multipart/form-data:
+      - sender_people_id: int
+      - file: fichier
+      - body_text: optionnel
+      - reply_to_message_id: optionnel
+      - status: optionnel (défaut: normal)
+    """
+    sender_people_id = request.form.get("sender_people_id")
+    body_text = request.form.get("body_text")
+    reply_to_message_id = request.form.get("reply_to_message_id")
+    status = request.form.get("status", "normal")
+    uploaded_file = request.files.get("file")
+
+    if sender_people_id is None:
+        return jsonify({"error": "sender_people_id est requis"}), 400
+
+    try:
+        sender_people_id = int(sender_people_id)
+    except ValueError:
+        return jsonify({"error": "sender_people_id doit être un entier"}), 400
+
+    if reply_to_message_id is not None and reply_to_message_id != "":
+        try:
+            reply_to_message_id = int(reply_to_message_id)
+        except ValueError:
+            return jsonify({"error": "reply_to_message_id doit être un entier"}), 400
+    else:
+        reply_to_message_id = None
+
+    with get_session() as session:
+        try:
+            message, attachment = create_message_with_attachment(
+                session=session,
+                conversation_id=conversation_id,
+                sender_people_id=sender_people_id,
+                uploaded_file=uploaded_file,
+                body_text=body_text,
+                reply_to_message_id=reply_to_message_id,
+                status=status,
+                allowed_mime_types=ALLOWED_MIME_TYPES,
+                max_file_size=MAX_FILE_SIZE,
+            )
+
+            return jsonify({
+                "message": message_to_dict(message),
+                "attachment": attachment_to_dict(attachment),
+            }), 201
+
+        except UploadError as e:
+            session.rollback()
+            return jsonify(e.to_dict()), e.status_code
+
+        except Exception as e:
+            session.rollback()
+            return jsonify({
+                "error": "Erreur interne lors de l'upload du message",
+                "details": str(e),
+            }), 500
+
+@bp.post("/messages/<int:message_id>/attachments")
+@require_public_app_key
+def api_add_attachments_to_message_public(message_id: int):
+    """
+    POST /api/public/messages/<message_id>/attachments
+
+    multipart/form-data:
+      - people_public_id: int
+      - file: fichier unique (optionnel si files[] utilisé)
+      - files: un ou plusieurs fichiers
+
+    Règle:
+      - le message doit déjà exister
+      - seul l'auteur du message peut attacher des fichiers à ce message
+      - taille max par fichier: 5 Mo
+    """
+    people_public_id = request.form.get("people_public_id")
+
+    if people_public_id is None:
+        return jsonify({"error": "people_public_id est requis"}), 400
+
+    try:
+        people_public_id = int(people_public_id)
+    except ValueError:
+        return jsonify({"error": "people_public_id doit être un entier"}), 400
+
+    uploaded_files = request.files.getlist("files")
+    if not uploaded_files:
+        single = request.files.get("file")
+        if single is not None:
+            uploaded_files = [single]
+
+    with get_session() as session:
+        try:
+            message, attachments = attach_files_to_message(
+                session=session,
+                message_id=message_id,
+                actor_people_id=people_public_id,
+                uploaded_files=uploaded_files,
+                allowed_mime_types=ALLOWED_MIME_TYPES,
+                max_file_size=MAX_FILE_SIZE,
+            )
+
+            return jsonify({
+                "message": message_to_dict(message),
+                "attachments": [attachment_to_dict(a) for a in attachments],
+            }), 201
+
+        except UploadError as e:
+            session.rollback()
+            return jsonify(e.to_dict()), e.status_code
+
+        except Exception as e:
+            session.rollback()
+            return jsonify({
+                "error": "Erreur interne lors de l'ajout des pièces jointes",
+                "details": str(e),
+            }), 500

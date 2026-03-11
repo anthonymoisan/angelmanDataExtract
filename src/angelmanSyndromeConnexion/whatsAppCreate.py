@@ -7,6 +7,8 @@ from angelmanSyndromeConnexion.models.conversationMember import ConversationMemb
 from angelmanSyndromeConnexion.models.conversationLang import ConversationLang
 from angelmanSyndromeConnexion.models.message import Message
 from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
+from angelmanSyndromeConnexion.models.messageAttachment import MessageAttachment
+
 from datetime import datetime,timedelta
 from angelmanSyndromeConnexion.peopleRead import getLang
 
@@ -435,3 +437,23 @@ def toggleMessageReaction(session, message_id: int, people_public_id: int, emoji
     session.refresh(reaction)
     return False, reaction
 
+
+def addMessageAttachment(
+    session,
+    message_id: int,
+    file_path: str,
+    mime_type: str,
+    file_name: str | None,
+    file_size: int | None,
+) -> MessageAttachment:
+    attachment = MessageAttachment(
+        message_id=message_id,
+        file_path=file_path,
+        mime_type=mime_type,
+        file_name=file_name,
+        file_size=file_size,
+        created_at=utc_now(),
+    )
+    session.add(attachment)
+    session.flush()
+    return attachment

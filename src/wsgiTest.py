@@ -13,4 +13,5 @@ application = create_app()
 
 if __name__ == "__main__":
     # pour dev local uniquement
+    print("ROOT PATH =", application.root_path)
     application.run(host="127.0.0.1", port=5000, debug=True)
