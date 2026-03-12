@@ -180,13 +180,15 @@ def main():
         #logger.info(getQuestionSecrete(8))
         #logger.info(verifySecretAnswer(email="octave.mis@gmail.com",answer="Chrun",bAngelmanResult=False))
         #logger.info(getListPaysTranslate("fr"))
-        logger.info(getLanguagesTranslate("es"))
+        #logger.info(getLanguagesTranslate("es"))
         
         #logger.info(get_place_maptiler(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         #logger.info(get_place_here(lat=48.8566, lon=2.3522, api_key="YOUR KEY", language="fr"))
         #cleanDataBase(5)
         #cleanPeople(4044)
-        #cleanPeople(4048)
+        #cleanPeople(4075)
+        #cleanPeople(4076)
+        #cleanPeople(4077)
 
         #setLang(4044, 'en')
         #createPeople()

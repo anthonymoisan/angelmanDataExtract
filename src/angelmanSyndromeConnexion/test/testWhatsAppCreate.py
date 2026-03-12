@@ -33,6 +33,18 @@ import pandas as pd
 
 from angelmanSyndromeConnexion.whatsAppUpdate import setMemberMetaData
 
+from angelmanSyndromeConnexion.whatsAppMessageUpload import (
+    UploadError,
+    attach_files_to_message,
+    ALLOWED_MIME_TYPES,
+    MAX_FILE_SIZE,
+)
+
+from pathlib import Path
+from werkzeug.datastructures import FileStorage
+import mimetypes
+
+
 import traceback
 
 def utc_now() -> datetime:
@@ -131,6 +143,46 @@ def create_GroupConversation():
         for conv in convs:
             createConversationLangDump(session, conv.id, 'fr')
 
+
+def create_AttachementMessage():
+    '''
+    Attention pas fonctionnelle en local mais fonctionne avec les points d'entrée privé et public
+    '''
+    file_path = Path(r"C:\Users\antho\Documents\FAST\Modele WP Marmite\AS Connect\Images\Couverture.png")
+
+    mime_type, _ = mimetypes.guess_type(str(file_path))
+    mime_type = mime_type or "application/octet-stream"
+
+    with open(file_path, "rb") as fh:
+        test_file = FileStorage(
+            stream=fh,
+            filename=file_path.name,
+            name="file",
+            content_type=mime_type,
+        )
+
+        with get_session() as session:
+            try:
+                message, attachments = attach_files_to_message(
+                    session=session,
+                    message_id=533,
+                    actor_people_id=4011,
+                    uploaded_files=[test_file],
+                    allowed_mime_types=ALLOWED_MIME_TYPES,
+                    max_file_size=MAX_FILE_SIZE,
+                )
+
+                logger.info("Attachement OK")
+
+                
+            except UploadError as e:
+                session.rollback()
+                logger.info(str(e))
+
+            except Exception as e:
+                session.rollback()
+                logger.info(str(e))
+
 # Set up logger
 logger = setup_logger(debug=False)
     
@@ -142,7 +194,8 @@ def main():
         
         #createMessagesConversationsFromExcel(wkdir=wkdir)
         #create_GroupConversation()
-        
+        #create_AttachementMessage()
+
         elapsed = time.time() - start
         logger.info(f"\n✅ Tables for WhatsApp are ok with an execution time in {elapsed:.2f} secondes.")
         sys.exit(0)
