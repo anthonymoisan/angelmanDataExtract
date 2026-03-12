@@ -5,6 +5,8 @@ from sqlalchemy import select,func
 
 from app.db import get_session
 
+from angelmanSyndromeConnexion.Language.api_googletranslate import detect_and_translate_text
+
 from angelmanSyndromeConnexion.models.people_public import PeoplePublic
 from angelmanSyndromeConnexion.models.conversation import Conversation
 from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
@@ -1087,3 +1089,42 @@ def api_add_attachments_to_message_public(message_id: int):
                 "error": "Erreur interne lors de l'ajout des pièces jointes",
                 "details": str(e),
             }), 500
+
+@bp.post("/translate/detect")
+@require_public_app_key
+def api_detect_and_translate_text_public():
+    """
+    POST /api/public/translate/detect
+
+    Body JSON :
+    {
+      "sentence": "Bonjour tout le monde",
+      "target_lang": "en"
+    }
+    """
+    data = request.get_json(silent=True) or {}
+
+    sentence = (data.get("sentence") or "").strip()
+    target_lang = (data.get("target_lang") or "").strip().lower()
+
+    if not sentence:
+        return jsonify({"error": "sentence est requis"}), 400
+
+    if not target_lang:
+        return jsonify({"error": "target_lang est requis"}), 400
+
+    try:
+        result = detect_and_translate_text(sentence, target_lang)
+
+        return jsonify({
+            "success": True,
+            "sentence": sentence,
+            **result,
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": "Erreur lors de la détection/traduction",
+            "details": str(e),
+        }), 500

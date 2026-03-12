@@ -12,6 +12,8 @@ from angelmanSyndromeConnexion.models.message import Message
 from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
 from angelmanSyndromeConnexion.models.messageAttachment import MessageAttachment
 
+from angelmanSyndromeConnexion.Language.api_googletranslate import detect_and_translate_text
+
 from angelmanSyndromeConnexion.whatsAppCreate import (
     get_or_create_private_conversation,
     addConversationMember,
@@ -998,7 +1000,7 @@ def api_private_delete_group_conversation(conversation_id: int):
 @bp.post("/messages/<int:message_id>/attachments")
 @ratelimit(3)
 @require_basic
-def api_add_attachments_to_message_public(message_id: int):
+def api_add_attachments_to_message_private(message_id: int):
     """
     POST /api/v5/messages/<message_id>/attachments
 
@@ -1054,3 +1056,42 @@ def api_add_attachments_to_message_public(message_id: int):
                 "error": "Erreur interne lors de l'ajout des pièces jointes",
                 "details": str(e),
             }), 500
+
+@bp.post("/translate/detect")
+@require_basic
+def api_detect_and_translate_text_private():
+    """
+    POST /api/v5/translate/detect
+
+    Body JSON :
+    {
+      "sentence": "Bonjour tout le monde",
+      "target_lang": "en"
+    }
+    """
+    data = request.get_json(silent=True) or {}
+
+    sentence = (data.get("sentence") or "").strip()
+    target_lang = (data.get("target_lang") or "").strip().lower()
+
+    if not sentence:
+        return jsonify({"error": "sentence est requis"}), 400
+
+    if not target_lang:
+        return jsonify({"error": "target_lang est requis"}), 400
+
+    try:
+        result = detect_and_translate_text(sentence, target_lang)
+
+        return jsonify({
+            "success": True,
+            "sentence": sentence,
+            **result,
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": "Erreur lors de la détection/traduction",
+            "details": str(e),
+        }), 500
