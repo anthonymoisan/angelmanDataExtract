@@ -10,6 +10,7 @@ from angelmanSyndromeConnexion.models.conversation import Conversation
 from angelmanSyndromeConnexion.models.conversationMember import ConversationMember
 from angelmanSyndromeConnexion.models.message import Message
 from angelmanSyndromeConnexion.models.messageReaction import MessageReaction
+from angelmanSyndromeConnexion.models.messageAttachment import MessageAttachment
 
 from angelmanSyndromeConnexion.whatsAppCreate import (
     get_or_create_private_conversation,
@@ -40,6 +41,13 @@ from angelmanSyndromeConnexion.whatsAppDelete import(
     leave_conversation,
     leave_group_conversation,
     delete_group_conversation,
+)
+
+from angelmanSyndromeConnexion.whatsAppMessageUpload import (
+    UploadError,
+    attach_files_to_message,
+    ALLOWED_MIME_TYPES,
+    MAX_FILE_SIZE,
 )
 
 from app.common.security import ratelimit
@@ -133,6 +141,17 @@ def reaction_to_dict(r: MessageReaction):
         "people_public_id": r.people_public_id,
         "emoji": r.emoji,
         "created_at": _dt_to_str(r.created_at),
+    }
+
+def attachment_to_dict(a: MessageAttachment):
+    return {
+        "id": a.id,
+        "message_id": a.message_id,
+        "file_path": a.file_path,
+        "file_name": a.file_name,
+        "mime_type": a.mime_type,
+        "file_size": a.file_size,
+        "created_at": _dt_to_str(a.created_at),
     }
 
 
@@ -975,3 +994,63 @@ def api_private_delete_group_conversation(conversation_id: int):
             return jsonify({"error": "Suppression impossible"}), 403
 
         return jsonify({"success": True}), 200
+
+@bp.post("/messages/<int:message_id>/attachments")
+@ratelimit(3)
+@require_basic
+def api_add_attachments_to_message_public(message_id: int):
+    """
+    POST /api/v5/messages/<message_id>/attachments
+
+    multipart/form-data:
+      - people_public_id: int
+      - file: fichier unique (optionnel si files[] utilisé)
+      - files: un ou plusieurs fichiers
+
+    Règle:
+      - le message doit déjà exister
+      - seul l'auteur du message peut attacher des fichiers à ce message
+      - taille max par fichier: 5 Mo
+    """
+    people_public_id = request.form.get("people_public_id")
+
+    if people_public_id is None:
+        return jsonify({"error": "people_public_id est requis"}), 400
+
+    try:
+        people_public_id = int(people_public_id)
+    except ValueError:
+        return jsonify({"error": "people_public_id doit être un entier"}), 400
+
+    uploaded_files = request.files.getlist("files")
+    if not uploaded_files:
+        single = request.files.get("file")
+        if single is not None:
+            uploaded_files = [single]
+
+    with get_session() as session:
+        try:
+            message, attachments = attach_files_to_message(
+                session=session,
+                message_id=message_id,
+                actor_people_id=people_public_id,
+                uploaded_files=uploaded_files,
+                allowed_mime_types=ALLOWED_MIME_TYPES,
+                max_file_size=MAX_FILE_SIZE,
+            )
+
+            return jsonify({
+                "message": message_to_dict(message),
+                "attachments": [attachment_to_dict(a) for a in attachments],
+            }), 201
+
+        except UploadError as e:
+            session.rollback()
+            return jsonify(e.to_dict()), e.status_code
+
+        except Exception as e:
+            session.rollback()
+            return jsonify({
+                "error": "Erreur interne lors de l'ajout des pièces jointes",
+                "details": str(e),
+            }), 500
