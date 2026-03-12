@@ -438,3 +438,10 @@ def get_group_conversations_summary_for_person(session, viewer_people_id: int):
         })
 
     return out
+
+def get_all_messages_raw(session):
+    """
+    Retourne tous les objets Message.
+    """
+    stmt = select(Message).order_by(asc(Message.created_at), asc(Message.id))
+    return session.scalars(stmt).all()

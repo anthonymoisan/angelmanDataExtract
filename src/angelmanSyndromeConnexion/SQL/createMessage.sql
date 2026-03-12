@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS T_Message (
   id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   conversation_id    BIGINT UNSIGNED NOT NULL,
   sender_people_id   INT UNSIGNED    NOT NULL,
+  lang               CHAR(2) NULL,
   
   body_text           VARBINARY(65000)            NULL, -- message texte (peut être vide si seulement PJ)
   reply_to_message_id BIGINT UNSIGNED NULL, -- pour les réponses/thread

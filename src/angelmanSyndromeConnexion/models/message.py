@@ -26,6 +26,12 @@ class Message(Base):
         nullable=False,
     )
 
+    lang: Mapped[str | None] = mapped_column(
+        String(2),
+        nullable=True,
+        comment="Code langue ISO-2 du message, ex: fr, en, de, id",
+    )
+
     body_text: Mapped[bytes | None] = mapped_column(LargeBinary(length=65000), nullable=True)
 
     reply_to_message_id: Mapped[int | None] = mapped_column(
