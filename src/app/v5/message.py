@@ -526,6 +526,7 @@ def api_get_messages_for_conversation_private(conversation_id: int):
                     "body_text":  decrypt_or_plain(r.body_text) if r.body_text else None,
                     "pseudo": r.author_pseudo,
                     "sender_people_id": r.sender_people_id,
+                    "lang": r.lang,
                     "created_at": _dt_to_str(r.created_at),
                     "reply_to_message_id": r.reply_to_message_id,
                     "reply_body_text": decrypt_or_plain(r.reply_body_text) if r.reply_body_text else None,

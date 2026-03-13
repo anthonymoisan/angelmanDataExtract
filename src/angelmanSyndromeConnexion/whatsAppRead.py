@@ -92,6 +92,7 @@ def get_messages_for_conversation(session, conversation_id: int):
       - author_pseudo
       - created_at
       - sender_people_id
+      - lang
       - reply_to_message_id
       - reply_body_text
       - reaction_emoji
@@ -109,6 +110,7 @@ def get_messages_for_conversation(session, conversation_id: int):
             PeoplePublic.pseudo.label("author_pseudo"),
             Message.created_at.label("created_at"),
             Message.sender_people_id.label("sender_people_id"),
+            Message.lang.label("lang"),
             Message.reply_to_message_id.label("reply_to_message_id"),
             ParentMsg.body_text.label("reply_body_text"),
             MessageReaction.emoji.label("reaction_emoji"),

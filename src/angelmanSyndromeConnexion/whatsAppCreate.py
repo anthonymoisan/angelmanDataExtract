@@ -11,6 +11,7 @@ from angelmanSyndromeConnexion.models.messageAttachment import MessageAttachment
 
 from datetime import datetime,timedelta
 from angelmanSyndromeConnexion.peopleRead import getLang
+from angelmanSyndromeConnexion.Language.api_googletranslate import detect_text
 
 from zoneinfo import ZoneInfo
 from typing import List
@@ -345,6 +346,12 @@ def addMessage(session,conv, sender_people_id,body_text,reply_to_message_id,has_
         edited_at=None,
         deleted_at=None,
     )
+
+    
+    lang_detect = detect_text(body_text)
+    message.lang = lang_detect
+
+
     session.add(message)
     session.flush()
 
