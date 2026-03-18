@@ -24,23 +24,24 @@ def _buildDataframeMapTurkey():
         df = pd.DataFrame(sheet_data['values'])# Utiliser la première ligne comme en-têtes
         df.columns = df.iloc[0]      # La première ligne devient les noms de colonnes
         df = df[1:].reset_index(drop=True)  # Supprimer la première ligne devenue inutile
-        df = df[['GENDER', 'DAY OF BIRTH','CITY', 'GENOTYPE']]
+        df = df[['GENDER', 'BIRTH DAY','CITY', 'GENOTYPE']]
         df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
-        df.rename(columns={"GENDER" : "gender", "DAY OF BIRTH" : "dob", "CITY" : "city", "GENOTYPE" : "genotype"},inplace=True)
+        df.rename(columns={"GENDER" : "gender", "BIRTH DAY" : "dob", "CITY" : "city", "GENOTYPE" : "genotype"},inplace=True)
 
         return df
 
 
 def _transformersMapTurkey(df):
 
-    df["genotype"] = df["genotype"].replace("DELESYON","Deletion")
-    df["genotype"] = df["genotype"].replace("MUTASYON","Mutation")
-    df["genotype"] = df["genotype"].replace("UPD","UPD")
-    df["genotype"] = df["genotype"].replace("ICD","ICD")
-    df["genotype"] = df["genotype"].replace("MICRO DELESYON","Deletion")
-    df["genotype"] = df["genotype"].replace("MOZAİK","Mozaic")
-    df["gender"] = df["gender"].replace("MALE","M")
-    df["gender"] = df["gender"].replace("GIRL","F")
+    df["genotype"] = df["genotype"].replace("DELECION","Deletion")
+    df["genotype"] = df["genotype"].replace("MUTATION","Mutation")
+    df["genotype"] = df["genotype"].replace("UPD / Paternal Uniparental Disomy","UPD")
+    df["genotype"] = df["genotype"].replace("MICRO DELECION","Deletion")
+    df["genotype"] = df["genotype"].replace("UNKNOW","I don't know")
+    df["gender"] = df["gender"].replace("male","M")
+    df["gender"] = df["gender"].replace("Girl","F")
+    df["gender"] = df["gender"].replace("girl","F")
+
     
     df['dob'] = pd.to_datetime(df["dob"], format="%d.%m.%Y")
 
