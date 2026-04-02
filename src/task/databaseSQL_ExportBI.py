@@ -22,6 +22,7 @@ import exportBI.exportIndonesia as expIndonesia
 import exportBI.exportGreece as expGreece
 import exportBI.exportMalaysia as expMalaysia
 import exportBI.exportTurkey as expTurkey
+import exportBI.exportHungary as expHungary
 import exportBI.exportASConnect as expASConnect
 
 from tools.utilsTools import export_Table, send_email_alert
@@ -181,6 +182,14 @@ def export_mapTurkey_Turkish():
     reader = expTurkey.T_MapTurkey_TK()
     export_Table("T_MapTurkey_Turkish", "Turkey/createMapTurkey_Turkish.sql", reader)
 
+def export_mapHungary_English():
+    reader = expHungary.T_MapHungary_EN()
+    export_Table("T_MapHungary_English", "Hungary/createMapHungary_English.sql", reader)
+
+def export_mapHungary_Hungarian():
+    reader = expHungary.T_MapHungary_HU()
+    export_Table("T_MapHungary_Hungarian", "Hungary/createMapHungary_Hungarian.sql", reader)
+
 def export_mapGlobal():
     reader = expGlobal.T_MapGlobal()
     export_Table("T_MapGlobal", "Global/createMapGlobal.sql", reader)
@@ -200,7 +209,6 @@ def safe_export(export_func, label):
 def main():
     start = time.time()
     try:
-        
         safe_export(export_DifficultiesSA_English, "DifficultiesSA EN")
         safe_export(export_capabilities_English, "Capabilities FR")
         safe_export(export_mapFrance_French, "Map France FR")
@@ -243,6 +251,9 @@ def main():
     
         safe_export(export_mapBrazil_English, "Map Brazil EN")
         safe_export(export_mapBrazil_Portuguese, "Map Brazil PT")
+
+        safe_export(export_mapHungary_English, "Map Hungary EN")
+        safe_export(export_mapHungary_Hungarian, "Map Hungary HU")
         
         safe_export(export_mapGlobal, "Map Global")
 

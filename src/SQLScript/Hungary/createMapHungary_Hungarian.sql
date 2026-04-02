@@ -1,0 +1,10 @@
+CREATE TABLE T_MapHungary_Hungarian (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    internal_id INT NOT NULL UNIQUE,
+    gender VARBINARY(512) NOT NULL,
+    genotype VARBINARY(512) NOT NULL,
+    city VARBINARY(512) NOT NULL,
+    estate VARBINARY(512) NOT NULL,
+    age VARBINARY(64) NOT NULL,
+    groupAge VARBINARY(512) NOT NULL
+);

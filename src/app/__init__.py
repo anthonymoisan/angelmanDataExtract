@@ -191,6 +191,13 @@ def create_app():
         <li> API in order for reading data from MapTurkey_English : <a href="/api/v4/resources/Turkey/MapTurkey_English">./api/v4/resources/Turkey/MapTurkey_English</a>
         <li> API in order for reading data from MapTurkey_Turkish : <a href="/api/v4/resources/Turkey/MapTurkey_Turkish">./api/v4/resources/Turkey/MapTurkey_Turkish</a>
         </ul>
+
+        API Hungary
+        <ul>
+        <li> API in order for reading data from MapHungary_English : <a href="/api/v4/resources/Hungary/MapHungary_English">./api/v4/resources/Hungary/MapHungary_English</a>
+        <li> API in order for reading data from MapHungary_Hungarian : <a href="/api/v4/resources/Hungary/MapHungary_Hungarian">./api/v4/resources/Hungary/MapHungary_Hungarian</a>
+        </ul>
+    
     
         API Angelman Syndrome Connexion
         <ul>

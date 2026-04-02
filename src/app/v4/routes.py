@@ -169,3 +169,15 @@ def map_turkey_en():
 @ratelimit(5)
 def map_turkey_tk():
     return _read_table_as_json("T_MapTurkey_Turkish")
+
+
+# -------- Hungary --------
+@bp.get("/resources/Hungary/MapHungary_English")
+@ratelimit(5)
+def map_hungary_en():
+    return _read_table_as_json("T_MapHungary_English")
+
+@bp.get("/resources/Hungary/MapHungary_Hungarian")
+@ratelimit(5)
+def map_hungary_hu():
+    return _read_table_as_json("T_MapHungary_Hungarian")
